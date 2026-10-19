@@ -240,7 +240,8 @@ export async function verifyLogin(input: PasskeyLoginVerifyBody) {
     usersRepository.findById(uid),
   ])
   if (!passkey || passkey.uid !== uid) throw loginFailed()
-  if (user?.role !== 'student' || user.status !== 'active') throw loginFailed()
+  if (user?.role !== USER_ROLE.student || user.status !== USER_STATUS.active)
+    throw loginFailed()
 
   const verified = await verifyAuthenticationResponse({
     response,
@@ -297,7 +298,7 @@ export async function removePasskey(
       tx,
       {
         actorUid: uid,
-        actorRole: 'student',
+        actorRole: AUDIT_ACTOR_ROLE.student,
         action: AUDIT_ACTION.passkeyRemove,
         targetUid: uid,
         entityId: credentialId,

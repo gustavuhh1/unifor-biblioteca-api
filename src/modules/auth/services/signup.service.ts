@@ -1,3 +1,4 @@
+import type { Transaction } from 'firebase-admin/firestore'
 import { env } from '../../../config/env.js'
 import { getAdminAuth, getDb } from '../../../config/firebase.js'
 import type { FieldError } from '../../../shared/errors.js'
@@ -18,7 +19,12 @@ import {
   signupNotFound,
   tokenError,
 } from '../auth.errors.js'
-import type { SignupConfirmBody, SignupStartBody } from '../auth.types.js'
+import type {
+  IndexOwners,
+  PendingStudent,
+  SignupConfirmBody,
+  SignupStartBody,
+} from '../auth.types.js'
 import { sendTokenEmail } from '../mail/mailer.js'
 import * as emailTokensRepository from '../repositories/email-tokens.repository.js'
 import * as usersRepository from '../repositories/users.repository.js'
@@ -45,6 +51,63 @@ function authEmailOf(matricula: string): string {
   return `${matricula}@${env.AUTH_EMAIL_DOMAIN}`
 }
 
+// Recusa o cadastro (409, com os campos repetidos) se a matrícula ou o e-mail já
+// têm dono (RF-AUT-01). Uma matrícula pendente é do próprio aluno: pode repetir o
+// cadastro, e o e-mail dele também.
+function assertSignupIsFree(
+  owners: IndexOwners,
+  pending: PendingStudent | undefined,
+): void {
+  const conflicts: FieldError[] = []
+  if (owners.matriculaOwnerUid !== undefined && !pending) {
+    conflicts.push(MATRICULA_TAKEN)
+  }
+  if (
+    owners.emailOwnerUid !== undefined &&
+    owners.emailOwnerUid !== pending?.uid
+  ) {
+    conflicts.push(EMAIL_TAKEN)
+  }
+  if (conflicts.length > 0) throw conflictError(conflicts)
+}
+
+// Grava o aluno pendente: troca o e-mail de um cadastro já pendente (RF-AUT-03)
+// ou cria o usuário novo, com os índices. O nome não vem no cadastro: o aluno o
+// informa depois, no Perfil (decidido em 19/10).
+function savePendingStudent(
+  tx: Transaction,
+  data: {
+    uid: string
+    pending: PendingStudent | undefined
+    input: SignupStartBody
+    authEmail: string
+  },
+  now: Date,
+): void {
+  const { uid, pending, input, authEmail } = data
+  if (pending) {
+    usersRepository.replacePendingEmail(
+      tx,
+      { uid, oldEmail: pending.email, newEmail: input.email },
+      now,
+    )
+    return
+  }
+  usersRepository.createPendingStudent(
+    tx,
+    uid,
+    buildUserDocument({
+      role: USER_ROLE.student,
+      matricula: input.matricula,
+      email: input.email,
+      authEmail,
+      status: USER_STATUS.pendingEmail,
+      createdAt: now,
+    }),
+    now,
+  )
+}
+
 // Inicia o cadastro do aluno (RF-AUT-01). Primeiro os documentos, numa
 // transação que também garante matrícula e e-mail únicos; depois a conta
 // desativada no Firebase; o e-mail do token vai por último. Repetir o cadastro de
@@ -68,17 +131,7 @@ export async function startSignup(input: SignupStartBody) {
       input.matricula,
     )
 
-    const conflicts: FieldError[] = []
-    if (owners.matriculaOwnerUid !== undefined && !pending) {
-      conflicts.push(MATRICULA_TAKEN)
-    }
-    if (
-      owners.emailOwnerUid !== undefined &&
-      owners.emailOwnerUid !== pending?.uid
-    ) {
-      conflicts.push(EMAIL_TAKEN)
-    }
-    if (conflicts.length > 0) throw conflictError(conflicts)
+    assertSignupIsFree(owners, pending)
 
     const uid = pending?.uid ?? newUid
     const previous = pending
@@ -86,29 +139,7 @@ export async function startSignup(input: SignupStartBody) {
       : []
     assertCanSendToken(previous, now)
 
-    if (pending) {
-      usersRepository.replacePendingEmail(
-        tx,
-        { uid, oldEmail: pending.email, newEmail: input.email },
-        now,
-      )
-    } else {
-      // O nome não vem no cadastro: o aluno o informa depois, no Perfil
-      // (decidido em 19/10).
-      usersRepository.createPendingStudent(
-        tx,
-        uid,
-        buildUserDocument({
-          role: USER_ROLE.student,
-          matricula: input.matricula,
-          email: input.email,
-          authEmail,
-          status: USER_STATUS.pendingEmail,
-          createdAt: now,
-        }),
-        now,
-      )
-    }
+    savePendingStudent(tx, { uid, pending, input, authEmail }, now)
 
     const tokenId = emailTokensRepository.issue(
       tx,
