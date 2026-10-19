@@ -1,3 +1,5 @@
+import type { UserRole } from '../../src/shared/types/index.js'
+
 // Static seed data: docs/modelo-de-dados-firestore.md, sections 6.1 to 6.5.
 // Dates are "AAAA-MM-DD" (America/Fortaleza) and are only the example of the
 // documented day: the builder turns each one into an offset from BASE_DATE and
@@ -9,11 +11,9 @@ export const NOW_TIME = '12:00'
 
 export const AUTH_EMAIL_DOMAIN = 'contas.uni-books.app'
 
-export type Role = 'student' | 'librarian'
-
 export interface UserSpec {
   key: string
-  role: Role
+  role: UserRole
   matricula: string
   fullName: string
   email: string

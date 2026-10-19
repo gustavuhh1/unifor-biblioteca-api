@@ -1,11 +1,5 @@
 import { spawnSync } from 'node:child_process'
-
-// docs/modelo-de-dados-firestore.md, section 4.3: TTL policies (field `expiresAt`).
-const TTL_COLLECTION_GROUPS = [
-  'emailTokens',
-  'passkeyChallenges',
-  'assistantActions',
-] as const
+import { TTL_COLLECTION_GROUPS } from '../../src/shared/firestore/collections.js'
 
 function run(command: string, args: string[]): boolean {
   const result = spawnSync(command, args, {

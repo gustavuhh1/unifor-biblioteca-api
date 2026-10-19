@@ -13,6 +13,31 @@ import {
   type LoanSpec,
   type UserSpec,
 } from './data.js'
+import { buildUserDocument } from '../../src/shared/domain/user.js'
+import {
+  COLLECTIONS,
+  SETTINGS_DOC_ID,
+  userSubcollectionPath,
+} from '../../src/shared/firestore/collections.js'
+import { normalizeText } from '../../src/shared/text.js'
+import type {
+  Book,
+  Copy,
+  EmailIndex,
+  Fine,
+  Folder,
+  Holiday,
+  LibrarySettings,
+  Loan,
+  MatriculaIndex,
+  NotificationDelivery,
+  QueueEntry,
+  SavedBook,
+  Timestamps,
+  User,
+  UserNotification,
+  Work,
+} from '../../src/shared/types/index.js'
 import type { HolidaysDocument } from './holidays.js'
 import {
   OPENING_HOURS,
@@ -26,6 +51,9 @@ import {
 } from './time.js'
 
 export type Doc = Record<string, unknown>
+
+// What every loan has, whatever its status.
+type LoanBase = Omit<Loan, 'requestedAt' | 'pickupDeadline' | keyof Timestamps>
 
 export interface Write {
   path: string
@@ -41,71 +69,22 @@ export interface BuildOptions {
   today: string
 }
 
-type BookDoc = {
-  workId: string
-  title: string
-  authors: string[]
-  isbn?: string
-  publisher?: string
-  synopsis?: string
-  coverUrl: string | null
-  copiesTotal: number
-  copiesAvailable: number
-  queueLength: number
-  nextReturnAt?: Date
-  googleBooks?: Doc
-  [field: string]: unknown
-}
-
-type CopyDoc = {
-  bookId: string
-  registration: string
-  status: 'available' | 'reserved' | 'on_loan'
-  currentLoanId?: string
-  dueAt?: Date
-  [field: string]: unknown
-}
-
-type LoanDoc = {
-  studentUid: string
-  bookId: string
-  copyId: string
-  status: 'awaiting_pickup' | 'active' | 'returned'
-  dueAt?: Date
-  returnedAt?: Date
-  [field: string]: unknown
-}
-
-type QueueDoc = {
-  studentUid: string
-  bookId: string
-  status: 'waiting' | 'fulfilled'
-  [field: string]: unknown
-}
-
-type FineDoc = {
-  studentUid: string
-  status: 'accruing' | 'open'
-  amountCents?: number
-  [field: string]: unknown
-}
-
 export interface SeedData {
-  settings: Doc
-  holidays: Doc
-  users: Record<string, Doc>
-  matriculaIndex: Record<string, Doc>
-  emailIndex: Record<string, Doc>
-  works: Record<string, Doc>
-  books: Record<string, BookDoc>
-  copies: Record<string, CopyDoc>
-  loans: Record<string, LoanDoc>
-  queueEntries: Record<string, QueueDoc>
-  fines: Record<string, FineDoc>
+  settings: LibrarySettings
+  holidays: Holiday
+  users: Record<string, User>
+  matriculaIndex: Record<string, MatriculaIndex>
+  emailIndex: Record<string, EmailIndex>
+  works: Record<string, Work>
+  books: Record<string, Book>
+  copies: Record<string, Copy>
+  loans: Record<string, Loan>
+  queueEntries: Record<string, QueueEntry>
+  fines: Record<string, Fine>
   // Lucas's subcollections.
-  folders: Record<string, Doc>
-  savedBooks: Record<string, Doc>
-  notifications: Record<string, Doc>
+  folders: Record<string, Folder>
+  savedBooks: Record<string, SavedBook>
+  notifications: Record<string, UserNotification>
 }
 
 export const FINE_RATE_CENTS = 200
@@ -115,19 +94,6 @@ const RET_4821_QR_TOKEN = 'q9Zr0bH6v3S1kT8xY2mW4pLc'
 export const uidOf = (userKey: string) => `uid_${userKey}`
 export const bookIdOf = (bookKey: string) => `book_${bookKey}`
 export const copyIdOf = (registration: string) => `copy_${registration}`
-
-// Lower case, no accents: the format of `searchText` and the `*Normalized` fields.
-export function normalizeText(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-}
-
-function initialsOf(fullName: string): string {
-  const words = fullName.split(' ')
-  return (words[0]![0]! + words[words.length - 1]![0]!).toUpperCase()
-}
 
 function required<T>(value: T | undefined, what: string): T {
   if (value === undefined) throw new Error(`Seed data is missing ${what}.`)
@@ -154,8 +120,8 @@ export function buildSeed(options: BuildOptions): SeedData {
 
   // --- Books, copies and works ---------------------------------------------
 
-  const books: Record<string, BookDoc> = {}
-  const copies: Record<string, CopyDoc> = {}
+  const books: Record<string, Book> = {}
+  const copies: Record<string, Copy> = {}
 
   BOOKS.forEach((spec, index) => {
     const id = bookIdOf(spec.key)
@@ -215,18 +181,18 @@ export function buildSeed(options: BuildOptions): SeedData {
     return `RET-${nextCodeNumber++}`
   }
 
-  const loans: Record<string, LoanDoc> = {}
+  const loans: Record<string, Loan> = {}
   for (const spec of LOANS) {
     loans[spec.id] = buildLoan(spec)
   }
 
-  function buildLoan(spec: LoanSpec): LoanDoc {
+  function buildLoan(spec: LoanSpec): Loan {
     const student = required(
       userByKey.get(spec.student),
       `user ${spec.student}`,
     )
     const book = required(bookSpecByKey.get(spec.book), `book ${spec.book}`)
-    const common = {
+    const common: LoanBase = {
       studentUid: uidOf(student.key),
       matricula: student.matricula,
       studentName: student.fullName,
@@ -308,7 +274,7 @@ export function buildSeed(options: BuildOptions): SeedData {
 
   // --- Queues ---------------------------------------------------------------
 
-  const queueEntries: Record<string, QueueDoc> = {}
+  const queueEntries: Record<string, QueueEntry> = {}
   for (const spec of QUEUE_ENTRIES) {
     const student = required(
       userByKey.get(spec.student),
@@ -346,7 +312,7 @@ export function buildSeed(options: BuildOptions): SeedData {
 
   // --- Fines ----------------------------------------------------------------
 
-  const fines: Record<string, FineDoc> = {}
+  const fines: Record<string, Fine> = {}
   for (const spec of FINES) {
     const loanSpec = required(loanSpecById.get(spec.loan), `loan ${spec.loan}`)
     const loan = required(loans[spec.loan], `loan ${spec.loan}`)
@@ -360,7 +326,7 @@ export function buildSeed(options: BuildOptions): SeedData {
       bookId: loan.bookId,
       bookTitle: loan.bookTitle,
       ratePerBusinessDayCents: FINE_RATE_CENTS,
-      dueAt: loan.dueAt,
+      dueAt: required(loan.dueAt, 'dueAt'),
     }
     if (spec.status === 'accruing') {
       fines[spec.id] = { ...base, status: 'accruing', ...stamps() }
@@ -402,13 +368,13 @@ export function buildSeed(options: BuildOptions): SeedData {
       : undefined
   }
 
-  const works: Record<string, Doc> = {}
+  const works: Record<string, Work> = {}
   for (const spec of BOOKS) {
     const work = works[spec.workId]
     const bookId = bookIdOf(spec.key)
     if (work) {
-      ;(work.bookIds as string[]).push(bookId)
-      work.editionCount = (work.bookIds as string[]).length
+      work.bookIds.push(bookId)
+      work.editionCount = work.bookIds.length
     } else {
       works[spec.workId] = {
         title: spec.title,
@@ -420,9 +386,9 @@ export function buildSeed(options: BuildOptions): SeedData {
     }
   }
 
-  const users: Record<string, Doc> = {}
-  const matriculaIndex: Record<string, Doc> = {}
-  const emailIndex: Record<string, Doc> = {}
+  const users: Record<string, User> = {}
+  const matriculaIndex: Record<string, MatriculaIndex> = {}
+  const emailIndex: Record<string, EmailIndex> = {}
   for (const spec of USERS) {
     const uid = uidOf(spec.key)
     const mine = <T extends { studentUid: string }>(docs: Record<string, T>) =>
@@ -441,37 +407,11 @@ export function buildSeed(options: BuildOptions): SeedData {
       }
     }
 
-    users[uid] = buildUser(spec, {
-      activeLoanCount: mine(loans).filter(
-        (l) => l.status === 'awaiting_pickup' || l.status === 'active',
-      ).length,
-      activeQueueCount: mine(queueEntries).filter((q) => q.status === 'waiting')
-        .length,
-      openFineTotalCents: mine(fines)
-        .filter((f) => f.status === 'open')
-        .reduce((sum, f) => sum + required(f.amountCents, 'amountCents'), 0),
-      booksReadByYear,
-    })
-    matriculaIndex[spec.matricula] = { uid, role: spec.role, ...stamps() }
-    emailIndex[spec.email.toLowerCase()] = { uid, ...stamps() }
-  }
-
-  function buildUser(
-    spec: UserSpec,
-    counters: {
-      activeLoanCount: number
-      activeQueueCount: number
-      openFineTotalCents: number
-      booksReadByYear: Record<string, number>
-    },
-  ): Doc {
     const isLucas = spec.key === 'lucas'
-    return {
+    users[uid] = buildUserDocument({
       role: spec.role,
       matricula: spec.matricula,
       fullName: spec.fullName,
-      fullNameNormalized: normalizeText(spec.fullName),
-      initials: initialsOf(spec.fullName),
       email: spec.email,
       authEmail: `${spec.matricula}@${AUTH_EMAIL_DOMAIN}`,
       status: 'active',
@@ -484,30 +424,30 @@ export function buildSeed(options: BuildOptions): SeedData {
           ? new Date(created.getTime() + 5 * 60_000)
           : undefined,
       course: spec.course,
-      entryYear:
-        spec.role === 'student'
-          ? 2000 + Number(spec.matricula.slice(0, 2))
-          : undefined,
       deskLabel: spec.deskLabel,
-      ...counters,
-      notificationPrefs: {
-        queueTurn: true,
-        overdueAndFines: true,
-        dueReminders: true,
-        pickupReady: true,
-        queueUpdates: true,
-        returnConfirmed: true,
-        channelPush: true,
-        channelEmail: true,
+      counters: {
+        activeLoanCount: mine(loans).filter(
+          (l) => l.status === 'awaiting_pickup' || l.status === 'active',
+        ).length,
+        activeQueueCount: mine(queueEntries).filter(
+          (q) => q.status === 'waiting',
+        ).length,
+        openFineTotalCents: mine(fines)
+          .filter((f) => f.status === 'open')
+          .reduce((sum, f) => sum + required(f.amountCents, 'amountCents'), 0),
+        booksReadByYear,
       },
-      ...stamps(created, isLucas ? at(today, '09:12') : now),
-    }
+      createdAt: created,
+      updatedAt: isLucas ? at(today, '09:12') : now,
+    })
+    matriculaIndex[spec.matricula] = { uid, role: spec.role, ...stamps() }
+    emailIndex[spec.email.toLowerCase()] = { uid, ...stamps() }
   }
 
   // --- Lucas's folders, saved books and notifications ----------------------
 
-  const folders: Record<string, Doc> = {}
-  const savedBooks: Record<string, Doc> = {}
+  const folders: Record<string, Folder> = {}
+  const savedBooks: Record<string, SavedBook> = {}
   for (const folder of LUCAS_FOLDERS) {
     folders[folder.id] = {
       name: folder.name,
@@ -525,15 +465,15 @@ export function buildSeed(options: BuildOptions): SeedData {
     }
   }
 
-  const delivery = { push: 'sent', email: 'sent' }
+  const delivery: NotificationDelivery = { push: 'sent', email: 'sent' }
   const pickupDeadline = required(
-    loans.loan_ret4821?.pickupDeadline as Date | undefined,
+    loans.loan_ret4821?.pickupDeadline,
     'pickupDeadline',
   )
   const dueAt = required(loans.loan_lucas_engenharia?.dueAt, 'dueAt')
   const waiting = books[bookIdOf('engenharia_de_software')]!.queueLength
   const codigoLimpoId = bookIdOf('codigo_limpo')
-  const notifications: Record<string, Doc> = {
+  const notifications: Record<string, UserNotification> = {
     notif_queue_turn: {
       type: 'queue_turn',
       title: 'É a sua vez: Código Limpo',
@@ -573,7 +513,7 @@ export function buildSeed(options: BuildOptions): SeedData {
 
   // --- Settings and holidays ------------------------------------------------
 
-  const settings: Doc = {
+  const settings: LibrarySettings = {
     timezone: 'America/Fortaleza',
     openingHours: OPENING_HOURS,
     maxActiveLoans: 10,
@@ -599,7 +539,7 @@ export function buildSeed(options: BuildOptions): SeedData {
   }
 
   const fetchedAt = new Date(options.holidays.fetchedAt)
-  const holidays: Doc = {
+  const holidays: Holiday = {
     year: options.holidays.year,
     cityIbge: options.holidays.cityIbge,
     items: options.holidays.items,
@@ -661,23 +601,32 @@ function inCollection(
 // Writes in the order of section 8: settings and holidays, users, catalog,
 // circulation, then Lucas's notifications and saved books.
 export function toWrites(data: SeedData): Write[] {
-  const lucas = `users/${uidOf('lucas')}`
+  const lucas = uidOf('lucas')
   return [
-    ...inCollection('settings', { library: data.settings }),
-    ...inCollection('holidays', {
+    ...inCollection(COLLECTIONS.settings, { [SETTINGS_DOC_ID]: data.settings }),
+    ...inCollection(COLLECTIONS.holidays, {
       [String(data.holidays.year)]: data.holidays,
     }),
-    ...inCollection('users', data.users),
-    ...inCollection('matriculaIndex', data.matriculaIndex),
-    ...inCollection('emailIndex', data.emailIndex),
-    ...inCollection('works', data.works),
-    ...inCollection('books', data.books),
-    ...inCollection('copies', data.copies),
-    ...inCollection('loans', data.loans),
-    ...inCollection('queueEntries', data.queueEntries),
-    ...inCollection('fines', data.fines),
-    ...inCollection(`${lucas}/folders`, data.folders),
-    ...inCollection(`${lucas}/savedBooks`, data.savedBooks),
-    ...inCollection(`${lucas}/notifications`, data.notifications),
+    ...inCollection(COLLECTIONS.users, data.users),
+    ...inCollection(COLLECTIONS.matriculaIndex, data.matriculaIndex),
+    ...inCollection(COLLECTIONS.emailIndex, data.emailIndex),
+    ...inCollection(COLLECTIONS.works, data.works),
+    ...inCollection(COLLECTIONS.books, data.books),
+    ...inCollection(COLLECTIONS.copies, data.copies),
+    ...inCollection(COLLECTIONS.loans, data.loans),
+    ...inCollection(COLLECTIONS.queueEntries, data.queueEntries),
+    ...inCollection(COLLECTIONS.fines, data.fines),
+    ...inCollection(
+      userSubcollectionPath(lucas, COLLECTIONS.folders),
+      data.folders,
+    ),
+    ...inCollection(
+      userSubcollectionPath(lucas, COLLECTIONS.savedBooks),
+      data.savedBooks,
+    ),
+    ...inCollection(
+      userSubcollectionPath(lucas, COLLECTIONS.notifications),
+      data.notifications,
+    ),
   ]
 }

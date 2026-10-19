@@ -1,17 +1,12 @@
 import { readFile } from 'node:fs/promises'
 import { z } from 'zod'
+import type { HolidayItem } from '../../src/shared/types/index.js'
 
 // Fortaleza, IBGE code. One call per year returns the national, state (Ceará)
 // and municipal holidays (docs/infra.md, section 3).
 export const FORTALEZA_IBGE = '2304400'
 
 const API_URL = 'https://feriadosapi.com/api/v1/feriados/cidade'
-
-export interface HolidayItem {
-  date: string
-  name: string
-  scope: 'national' | 'state' | 'municipal'
-}
 
 // Shape of holidays/{year} (docs/modelo-de-dados-firestore.md, section 2.19),
 // with `fetchedAt` as ISO text so the same shape can live in a JSON file.

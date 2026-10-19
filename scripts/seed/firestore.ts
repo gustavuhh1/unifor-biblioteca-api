@@ -1,41 +1,9 @@
 import type { Firestore } from 'firebase-admin/firestore'
+import { ROOT_COLLECTIONS } from '../../src/shared/firestore/collections.js'
 import type { Write } from './build.js'
 
-// Collections of docs/modelo-de-dados-firestore.md, section 1.1. Clearing a
-// document also clears its subcollections (users/{uid}/...).
-export const COLLECTIONS = [
-  'users',
-  'matriculaIndex',
-  'emailIndex',
-  'emailTokens',
-  'passkeys',
-  'passkeyChallenges',
-  'works',
-  'books',
-  'copies',
-  'loans',
-  'queueEntries',
-  'fines',
-  'recommendations',
-  'holidays',
-  'recesses',
-  'settings',
-  'auditLog',
-  'jobRuns',
-] as const
-
-// Collection groups counted in the final summary (section 1.1).
-export const SUBCOLLECTIONS = [
-  'savedBooks',
-  'folders',
-  'notifications',
-  'devices',
-  'assistantMessages',
-  'assistantActions',
-] as const
-
 export async function clearDatabase(db: Firestore): Promise<void> {
-  for (const name of COLLECTIONS) {
+  for (const name of ROOT_COLLECTIONS) {
     await db.recursiveDelete(db.collection(name))
   }
 }

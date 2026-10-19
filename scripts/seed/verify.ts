@@ -1,7 +1,12 @@
-import type { Firestore, Timestamp } from 'firebase-admin/firestore'
+import type { Firestore } from 'firebase-admin/firestore'
+import {
+  COLLECTIONS,
+  ROOT_COLLECTIONS,
+  SUBCOLLECTIONS,
+} from '../../src/shared/firestore/collections.js'
+import { optionalDate } from '../../src/shared/firestore/converters.js'
 import { bookIdOf, uidOf } from './build.js'
 import { lateBusinessDays } from './business-days.js'
-import { COLLECTIONS, SUBCOLLECTIONS } from './firestore.js'
 import { holidayDates, type HolidaysDocument } from './holidays.js'
 import { at, localDate, plusDays } from './time.js'
 
@@ -19,7 +24,7 @@ async function count(db: Firestore, name: string, group: boolean) {
 // Document counts per collection, read back from the database.
 export async function countDocuments(db: Firestore): Promise<string[]> {
   const lines: string[] = []
-  for (const name of COLLECTIONS) {
+  for (const name of ROOT_COLLECTIONS) {
     lines.push(`${name.padEnd(20)} ${await count(db, name, false)}`)
   }
   for (const name of SUBCOLLECTIONS) {
@@ -33,7 +38,7 @@ export async function countDocuments(db: Firestore): Promise<string[]> {
 const formatMoney = (cents: number) =>
   `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`
 
-const toDate = (value: unknown) => (value as Timestamp | undefined)?.toDate()
+const toDate = (value: unknown) => optionalDate(value) ?? undefined
 
 // Section 8, step 9. The dates follow the day the seed runs, so this checks the
 // situations of sections 6.1 to 6.5 (who is late, who has a deadline today...),
@@ -48,14 +53,14 @@ export async function runChecks(
     checks.push({ label, ok, detail })
   const read = async (path: string) => (await db.doc(path).get()).data()
 
-  const lucas = await read(`users/${uidOf('lucas')}`)
+  const lucas = await read(`${COLLECTIONS.users}/${uidOf('lucas')}`)
   check(
     'Lucas com 4 de 10',
     lucas?.activeLoanCount === 4,
     `${lucas?.activeLoanCount} de 10`,
   )
 
-  const marina = await read(`users/${uidOf('marina')}`)
+  const marina = await read(`${COLLECTIONS.users}/${uidOf('marina')}`)
   check(
     'Marina com 3 de 10',
     marina?.activeLoanCount === 3,
@@ -63,8 +68,8 @@ export async function runChecks(
   )
 
   // Marina: loan overdue and fine still accruing (amount computed on the fly).
-  const marinaLoan = await read('loans/loan_marina_calculo1')
-  const marinaFine = await read('fines/fine_marina_calculo1')
+  const marinaLoan = await read(`${COLLECTIONS.loans}/loan_marina_calculo1`)
+  const marinaFine = await read(`${COLLECTIONS.fines}/fine_marina_calculo1`)
   const marinaDue = toDate(marinaLoan?.dueAt)
   const marinaDays = marinaDue
     ? lateBusinessDays(marinaDue, at(today, '12:00'), holidayDates(holidays))
@@ -80,7 +85,7 @@ export async function runChecks(
     `${marinaDays} dias úteis de atraso, ${formatMoney(marinaDays * rate)} até hoje`,
   )
 
-  const ret4821 = await read('loans/loan_ret4821')
+  const ret4821 = await read(`${COLLECTIONS.loans}/loan_ret4821`)
   const ret4821Deadline = toDate(ret4821?.pickupDeadline)
   check(
     'Pedido RET-4821 do Lucas dentro do prazo de retirada',
@@ -91,7 +96,7 @@ export async function runChecks(
   )
 
   const beatriz = toDate(
-    (await read('loans/loan_beatriz_padroes'))?.pickupDeadline,
+    (await read(`${COLLECTIONS.loans}/loan_beatriz_padroes`))?.pickupDeadline,
   )
   check(
     'Beatriz no último dia de retirada',
@@ -100,7 +105,7 @@ export async function runChecks(
   )
 
   const rafael = toDate(
-    (await read('loans/loan_rafael_calculo2'))?.pickupDeadline,
+    (await read(`${COLLECTIONS.loans}/loan_rafael_calculo2`))?.pickupDeadline,
   )
   check(
     'Rafael com prazo até amanhã',
@@ -109,10 +114,10 @@ export async function runChecks(
   )
 
   const engenhariaDue = toDate(
-    (await read('loans/loan_lucas_engenharia'))?.dueAt,
+    (await read(`${COLLECTIONS.loans}/loan_lucas_engenharia`))?.dueAt,
   )
   const engenhariaQueue = await db
-    .collection('queueEntries')
+    .collection(COLLECTIONS.queueEntries)
     .where('bookId', '==', bookIdOf('engenharia_de_software'))
     .where('status', '==', 'waiting')
     .get()
@@ -127,7 +132,7 @@ export async function runChecks(
   )
 
   const queue = await db
-    .collection('queueEntries')
+    .collection(COLLECTIONS.queueEntries)
     .where('bookId', '==', bookIdOf('arquitetura_limpa'))
     .where('status', '==', 'waiting')
     .get()
@@ -138,7 +143,7 @@ export async function runChecks(
   )
 
   const openFines = await db
-    .collection('fines')
+    .collection(COLLECTIONS.fines)
     .where('status', '==', 'open')
     .get()
   const amounts = openFines.docs
@@ -152,7 +157,7 @@ export async function runChecks(
   )
 
   const onLoan = await db
-    .collection('copies')
+    .collection(COLLECTIONS.copies)
     .where('status', '==', 'on_loan')
     .get()
   const orphans = onLoan.docs.filter((doc) => !doc.data().currentLoanId)
