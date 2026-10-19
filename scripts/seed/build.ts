@@ -456,7 +456,14 @@ export function buildSeed(options: BuildOptions): SeedData {
       email: spec.email,
       authEmail: `${spec.matricula}@${AUTH_EMAIL_DOMAIN}`,
       status: 'active',
-      emailVerifiedAt: isLucas ? at('2026-09-01', '10:00') : undefined,
+      // Every active student confirmed the e-mail token: Lucas's time is the
+      // one in section 6.4; the others, 5 minutes after creation. Librarians
+      // are not registered through the app, so they have none.
+      emailVerifiedAt: isLucas
+        ? at('2026-09-01', '10:00')
+        : spec.role === 'student'
+          ? new Date(created.getTime() + 5 * 60_000)
+          : undefined,
       course: spec.course,
       entryYear:
         spec.role === 'student'

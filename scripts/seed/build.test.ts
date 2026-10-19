@@ -250,6 +250,27 @@ describe('documents', () => {
     }
   })
 
+  it('gives every active student a confirmed e-mail, and the librarian none', () => {
+    const students = Object.values(data.users).filter(
+      (u) => u.role === 'student',
+    )
+
+    expect(students).toHaveLength(11)
+    for (const student of students) {
+      expect(student.status).toBe('active')
+      const createdAt = student.createdAt as Date
+      const verifiedAt = student.emailVerifiedAt as Date
+      const minutes = (verifiedAt.getTime() - createdAt.getTime()) / 60_000
+      // Lucas's time is the literal of section 6.4 (10:00); the others, +5 min.
+      expect(minutes, String(student.matricula)).toBe(
+        student.matricula === '2412858' ? 10 : 5,
+      )
+    }
+    expect(data.users.uid_ana!.emailVerifiedAt).toBeUndefined()
+    const written = toWrites(data).find((w) => w.path === 'users/uid_ana')
+    expect(written!.data).not.toHaveProperty('emailVerifiedAt')
+  })
+
   it('indexes every matrícula and e-mail to its user', () => {
     expect(data.matriculaIndex['2412858']).toMatchObject({
       uid: 'uid_lucas',
