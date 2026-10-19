@@ -11,7 +11,6 @@ import {
   USERS,
   type BookSpec,
   type LoanSpec,
-  type UserSpec,
 } from './data.js'
 import { buildUserDocument } from '../../src/shared/domain/user.js'
 import {
