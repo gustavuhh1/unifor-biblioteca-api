@@ -5,6 +5,7 @@ import type {
   UserRole,
   UserStatus,
 } from '../../shared/types/index.js'
+import type { TOKEN_CHECK_RESULT } from './auth.constants.js'
 import type {
   passkeyLoginVerifyBodySchema,
   passkeyRegisterBodySchema,
@@ -65,15 +66,18 @@ export type StoredToken = Pick<
 
 // O que um código digitado significa para um token guardado.
 export type TokenCheck =
-  | { result: 'valid' }
+  | { result: (typeof TOKEN_CHECK_RESULT)['valid'] }
   // Já usado, trocado por um token mais novo, ou vencido.
-  | { result: 'expired_or_used' }
-  | { result: 'locked' }
+  | { result: (typeof TOKEN_CHECK_RESULT)['expiredOrUsed'] }
+  | { result: (typeof TOKEN_CHECK_RESULT)['locked'] }
   // attemptsLeft já desconta o palpite errado que acabou de ser feito.
-  | { result: 'wrong_code'; attemptsLeft: number }
+  | { result: (typeof TOKEN_CHECK_RESULT)['wrongCode']; attemptsLeft: number }
 
 // Qualquer resultado diferente de valid.
-export type FailedTokenCheck = Exclude<TokenCheck, { result: 'valid' }>
+export type FailedTokenCheck = Exclude<
+  TokenCheck,
+  { result: (typeof TOKEN_CHECK_RESULT)['valid'] }
+>
 
 // Documento de emailTokens com o seu id.
 export type EmailTokenRecord = EmailToken & { id: string }
@@ -90,10 +94,7 @@ export interface UserAccount {
 }
 
 // Aluno que se cadastrou e ainda não confirmou o e-mail.
-export interface PendingStudent {
-  uid: string
-  email: string
-}
+export type PendingStudent = Pick<UserAccount, 'uid' | 'email'>
 
 // Quem já ocupa a matrícula e o e-mail de um cadastro.
 export interface IndexOwners {
@@ -109,7 +110,7 @@ export type PasskeyRecord = Passkey & { id: string }
 // Passkey como o @simplewebauthn/server o descreve nas opções.
 export interface CredentialRef {
   id: string
-  transports?: string[]
+  transports?: string[] | undefined
 }
 
 // RP ID e origens aceitas na verificação.

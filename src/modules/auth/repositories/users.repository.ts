@@ -1,11 +1,8 @@
-import type {
-  DocumentReference,
-  DocumentSnapshot,
-  Transaction,
-} from 'firebase-admin/firestore'
+import type { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
 import { getDb } from '../../../config/firebase.js'
 import { COLLECTIONS } from '../../../shared/firestore/collections.js'
-import { toDate } from '../../../shared/firestore/converters.js'
+import { dataWithDates } from '../../../shared/firestore/converters.js'
+import { readDocument } from '../../../shared/firestore/read.js'
 import {
   USER_ROLE,
   USER_STATUS,
@@ -17,13 +14,6 @@ import type { IndexOwners, PendingStudent, UserAccount } from '../auth.types.js'
 
 // Acesso ao Firestore das coleções users, matriculaIndex e emailIndex. O
 // parâmetro tx é opcional nas leituras: com ele, a leitura entra na transação.
-
-function read(
-  ref: DocumentReference,
-  tx?: Transaction,
-): Promise<DocumentSnapshot> {
-  return tx ? tx.get(ref) : ref.get()
-}
 
 const usersRef = (uid: string) => getDb().collection(COLLECTIONS.users).doc(uid)
 const matriculaRef = (matricula: string) =>
@@ -42,11 +32,7 @@ const USER_DATE_FIELDS = [
 
 // Converte o documento lido em User, trocando os Timestamps por Date.
 function toUser(snapshot: DocumentSnapshot): User {
-  const data = { ...snapshot.data() } as Record<string, unknown>
-  for (const field of USER_DATE_FIELDS) {
-    if (data[field] !== undefined) data[field] = toDate(data[field])
-  }
-  return data as unknown as User
+  return dataWithDates(snapshot, USER_DATE_FIELDS) as unknown as User
 }
 
 // Gera o id de um usuário novo, sem gravar nada.
@@ -80,10 +66,10 @@ export async function findByMatricula(
   matricula: string,
   tx?: Transaction,
 ): Promise<UserAccount | undefined> {
-  const index = await read(matriculaRef(matricula), tx)
+  const index = await readDocument(matriculaRef(matricula), tx)
   if (!index.exists) return undefined
   const uid = index.get('uid') as string
-  const user = await read(usersRef(uid), tx)
+  const user = await readDocument(usersRef(uid), tx)
   if (!user.exists) return undefined
   return {
     uid,
@@ -110,7 +96,7 @@ export async function findById(
   uid: string,
   tx?: Transaction,
 ): Promise<User | undefined> {
-  const snapshot = await read(usersRef(uid), tx)
+  const snapshot = await readDocument(usersRef(uid), tx)
   return snapshot.exists ? toUser(snapshot) : undefined
 }
 

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { START } from '../../../test-support/clock.js'
 import type { FakeFirestore } from '../../../test-support/fake-firestore.js'
 
 const h = vi.hoisted(() => ({
@@ -15,8 +16,6 @@ const { FakeFirestore: Fake } =
   await import('../../../test-support/fake-firestore.js')
 const { getMe, logout, updateFullName } =
   await import('../services/session.service.js')
-
-const START = new Date('2026-10-19T12:00:00Z')
 
 beforeEach(() => {
   h.db = new Fake()

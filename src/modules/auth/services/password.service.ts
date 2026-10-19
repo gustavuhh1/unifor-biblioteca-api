@@ -5,8 +5,8 @@ import {
   EMAIL_TOKEN_PURPOSE,
   USER_STATUS,
 } from '../../../shared/types/index.js'
-import { RECOVERY_MESSAGE } from '../auth.constants.js'
-import { tokenError } from '../auth.errors.js'
+import { RECOVERY_MESSAGE, TOKEN_CHECK_RESULT } from '../auth.constants.js'
+import { tokenError, tokenExpiredOrUsed } from '../auth.errors.js'
 import type { PasswordResetBody } from '../auth.types.js'
 import { sendTokenEmail } from '../mail/mailer.js'
 import * as emailTokensRepository from '../repositories/email-tokens.repository.js'
@@ -85,7 +85,7 @@ export async function resetPassword(input: PasswordResetBody) {
   const result = await db.runTransaction(async (tx) => {
     const account = await usersRepository.findByMatricula(input.matricula, tx)
     if (!account || account.status !== USER_STATUS.active) {
-      throw tokenError({ result: 'expired_or_used' })
+      throw tokenExpiredOrUsed()
     }
     const recent = await emailTokensRepository.findRecent(
       tx,
@@ -97,7 +97,7 @@ export async function resetPassword(input: PasswordResetBody) {
       maxAttempts: settings.maxAttempts,
       consume: true,
     })
-    if (check.result === 'valid') {
+    if (check.result === TOKEN_CHECK_RESULT.valid) {
       writeAuditLog(
         tx,
         {
@@ -112,7 +112,8 @@ export async function resetPassword(input: PasswordResetBody) {
     return { uid: account.uid, check }
   })
   // O erro sai depois da transação, para a tentativa errada continuar contada.
-  if (result.check.result !== 'valid') throw tokenError(result.check)
+  if (result.check.result !== TOKEN_CHECK_RESULT.valid)
+    throw tokenError(result.check)
 
   const auth = getAdminAuth()
   await auth.updateUser(result.uid, { password: input.password })

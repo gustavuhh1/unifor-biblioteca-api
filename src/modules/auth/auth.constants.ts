@@ -1,6 +1,18 @@
 import { COSEALG } from '@simplewebauthn/server/helpers'
 import type { FieldError } from '../../shared/errors.js'
+import { constantsOf } from '../../shared/constants-of.js'
 import type { TokenSettings } from './auth.types.js'
+
+// Resultados possíveis ao conferir um código digitado com o token guardado.
+export const TOKEN_CHECK_RESULTS = [
+  'valid',
+  'expired_or_used',
+  'locked',
+  'wrong_code',
+] as const
+
+// Os mesmos resultados com nome: TOKEN_CHECK_RESULT.valid, .expiredOrUsed etc.
+export const TOKEN_CHECK_RESULT = constantsOf(TOKEN_CHECK_RESULTS)
 
 // Valores de settings/library (emailTokenMinutes e emailTokenMaxAttempts), usados
 // quando esse documento não existe.

@@ -16,6 +16,9 @@ export const BASE_DATE = '2026-10-15'
 // Hora usada como "agora" nos dados.
 export const NOW_TIME = '12:00'
 
+// Local do acervo e do atendimento (books.location e settings.contact.place).
+export const LIBRARY_PLACE = 'Biblioteca (Praça Central)'
+
 // Domínio do e-mail interno das contas no Firebase (docs/infra.md).
 export const AUTH_EMAIL_DOMAIN = 'contas.uni-books.app'
 

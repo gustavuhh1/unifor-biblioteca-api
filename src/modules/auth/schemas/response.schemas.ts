@@ -1,9 +1,6 @@
 import { z } from 'zod'
-import {
-  USER_ROLES,
-  USER_STATUS,
-  USER_STATUSES,
-} from '../../../shared/types/index.js'
+import { USER_STATUS, USER_STATUSES } from '../../../shared/types/index.js'
+import { userRoleSchema } from '../../../shared/user-role.js'
 
 // Schemas de saída do módulo de acesso. Também alimentam o Swagger.
 
@@ -82,7 +79,7 @@ export const customTokenResponseSchema = z
 export const meResponseSchema = z
   .object({
     uid: z.string(),
-    role: z.enum(USER_ROLES),
+    role: userRoleSchema,
     status: z.enum(USER_STATUSES),
     matricula: z.string(),
     email: z.string(),

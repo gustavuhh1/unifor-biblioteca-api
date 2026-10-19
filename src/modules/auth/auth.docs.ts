@@ -1,5 +1,5 @@
 import type { ZodType } from 'zod'
-import { bearerAuth, registry } from '../../docs/registry.js'
+import { bearerAuth, jsonContent, registry } from '../../docs/registry.js'
 import { errorResponseSchema } from '../../shared/error-response.js'
 import {
   matriculaBodySchema,
@@ -23,12 +23,17 @@ import {
   signupPendingResponseSchema,
 } from './schemas/response.schemas.js'
 
-const json = (schema: ZodType) => ({ 'application/json': { schema } })
-const body = (schema: ZodType) => ({ required: true, content: json(schema) })
+const body = (schema: ZodType) => ({
+  required: true,
+  content: jsonContent(schema),
+})
 const error = (description: string) => ({
   description,
-  content: json(errorResponseSchema),
+  content: jsonContent(errorResponseSchema),
 })
+
+// Descrição das rotas que devolvem opções do WebAuthn para o celular.
+const PHONE_OPTIONS = 'Opções para o celular.'
 
 const security = [{ [bearerAuth.name]: [] }]
 
@@ -60,7 +65,7 @@ registry.registerPath({
   responses: {
     202: {
       description: 'Cadastro criado; o token foi enviado ao e-mail.',
-      content: json(signupPendingResponseSchema),
+      content: jsonContent(signupPendingResponseSchema),
     },
     400: invalidData,
     409: error(
@@ -84,7 +89,7 @@ registry.registerPath({
   responses: {
     200: {
       description: 'E-mail confirmado.',
-      content: json(signupConfirmResponseSchema),
+      content: jsonContent(signupConfirmResponseSchema),
     },
     400: error('Dados inválidos ou token errado, vencido ou já usado.'),
   },
@@ -99,7 +104,7 @@ registry.registerPath({
   responses: {
     202: {
       description: 'Novo token enviado; o anterior deixa de valer.',
-      content: json(signupPendingResponseSchema),
+      content: jsonContent(signupPendingResponseSchema),
     },
     400: invalidData,
     404: error(
@@ -123,7 +128,7 @@ registry.registerPath({
   responses: {
     200: {
       description: 'Mensagem genérica.',
-      content: json(messageResponseSchema),
+      content: jsonContent(messageResponseSchema),
     },
     400: invalidData,
   },
@@ -156,7 +161,7 @@ registry.registerPath({
   responses: {
     201: {
       description: 'Passkey registrado.',
-      content: json(passkeySummarySchema),
+      content: jsonContent(passkeySummarySchema),
     },
     400: error(
       'Dados inválidos, desafio vencido ou resposta recusada (`passkey_challenge_invalid`, `passkey_registration_failed`).',
@@ -177,8 +182,8 @@ registry.registerPath({
   request: { body: body(matriculaBodySchema) },
   responses: {
     200: {
-      description: 'Opções para o celular.',
-      content: json(passkeyRequestOptionsSchema),
+      description: PHONE_OPTIONS,
+      content: jsonContent(passkeyRequestOptionsSchema),
     },
     400: invalidData,
   },
@@ -195,7 +200,7 @@ registry.registerPath({
   responses: {
     200: {
       description: 'Assinatura válida.',
-      content: json(customTokenResponseSchema),
+      content: jsonContent(customTokenResponseSchema),
     },
     400: invalidData,
     401: error('Passkey recusado (`passkey_login_failed`).'),
@@ -211,7 +216,7 @@ registry.registerPath({
   responses: {
     200: {
       description: 'Aparelhos cadastrados.',
-      content: json(passkeyListResponseSchema),
+      content: jsonContent(passkeyListResponseSchema),
     },
     401: noSession,
     403: notStudent,
@@ -228,8 +233,8 @@ registry.registerPath({
   security,
   responses: {
     200: {
-      description: 'Opções para o celular.',
-      content: json(passkeyCreationOptionsSchema),
+      description: PHONE_OPTIONS,
+      content: jsonContent(passkeyCreationOptionsSchema),
     },
     401: noSession,
     403: notStudent,
@@ -260,7 +265,10 @@ registry.registerPath({
   summary: 'Dados de quem está logado',
   security,
   responses: {
-    200: { description: 'Perfil da conta.', content: json(meResponseSchema) },
+    200: {
+      description: 'Perfil da conta.',
+      content: jsonContent(meResponseSchema),
+    },
     401: noSession,
     403: error(
       'Conta sem perfil ou desativada (`profile_not_found`, `account_disabled`).',
@@ -278,7 +286,10 @@ registry.registerPath({
   security,
   request: { body: body(updateMeBodySchema) },
   responses: {
-    200: { description: 'Perfil atualizado.', content: json(meResponseSchema) },
+    200: {
+      description: 'Perfil atualizado.',
+      content: jsonContent(meResponseSchema),
+    },
     400: invalidData,
     401: noSession,
     403: notStudent,

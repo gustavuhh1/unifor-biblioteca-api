@@ -2,8 +2,13 @@ import { readFile } from 'node:fs/promises'
 import { z } from 'zod'
 import {
   HOLIDAY_SCOPE,
+  type Holiday,
   type HolidayItem,
+  type Timestamps,
 } from '../../src/shared/types/index.js'
+
+// Nome da fonte gravado em holidays/{year}.source.
+const HOLIDAYS_SOURCE = 'FeriadosAPI'
 
 // Código IBGE de Fortaleza. Uma chamada por ano traz os feriados nacionais,
 // estaduais (Ceará) e municipais (docs/infra.md, seção 3).
@@ -13,12 +18,12 @@ const API_URL = 'https://feriadosapi.com/api/v1/feriados/cidade'
 
 // Formato de holidays/{year} (docs/modelo-de-dados-firestore.md, seção 2.19),
 // com `fetchedAt` em texto ISO, para o mesmo formato poder ficar num arquivo JSON.
-export interface HolidaysDocument {
-  year: number
-  cityIbge: string
-  items: HolidayItem[]
+export type HolidaysDocument = Omit<
+  Holiday,
+  keyof Timestamps | 'fetchedAt' | 'source'
+> & {
   fetchedAt: string
-  source: 'FeriadosAPI'
+  source: typeof HOLIDAYS_SOURCE
 }
 
 const scopeByType: Record<string, HolidayItem['scope']> = {
@@ -69,7 +74,7 @@ export function parseHolidaysResponse(
     cityIbge: FORTALEZA_IBGE,
     items,
     fetchedAt: fetchedAt.toISOString(),
-    source: 'FeriadosAPI',
+    source: HOLIDAYS_SOURCE,
   }
 }
 

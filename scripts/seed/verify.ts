@@ -45,8 +45,6 @@ export async function countDocuments(db: Firestore): Promise<string[]> {
 const formatMoney = (cents: number) =>
   `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`
 
-const toDate = (value: unknown) => optionalDate(value) ?? undefined
-
 // Seção 8, passo 9. As datas seguem o dia em que o seed roda, então isto confere
 // as situações das seções 6.1 a 6.5 (quem está atrasado, quem tem prazo hoje...),
 // e não as datas de exemplo.
@@ -77,7 +75,7 @@ export async function runChecks(
   // Marina: empréstimo atrasado e multa ainda contando (valor calculado na hora).
   const marinaLoan = await read(`${COLLECTIONS.loans}/loan_marina_calculo1`)
   const marinaFine = await read(`${COLLECTIONS.fines}/fine_marina_calculo1`)
-  const marinaDue = toDate(marinaLoan?.dueAt)
+  const marinaDue = optionalDate(marinaLoan?.dueAt)
   const marinaDays = marinaDue
     ? lateBusinessDays(marinaDue, at(today, '12:00'), holidayDates(holidays))
     : 0
@@ -86,41 +84,41 @@ export async function runChecks(
     'Marina com empréstimo atrasado e multa contando',
     marinaLoan?.status === LOAN_STATUS.active &&
       marinaFine?.status === FINE_STATUS.accruing &&
-      marinaDue !== undefined &&
+      marinaDue !== null &&
       localDate(marinaDue) < today &&
       marinaDays >= 1,
     `${marinaDays} dias úteis de atraso, ${formatMoney(marinaDays * rate)} até hoje`,
   )
 
   const ret4821 = await read(`${COLLECTIONS.loans}/loan_ret4821`)
-  const ret4821Deadline = toDate(ret4821?.pickupDeadline)
+  const ret4821Deadline = optionalDate(ret4821?.pickupDeadline)
   check(
     'Pedido RET-4821 do Lucas dentro do prazo de retirada',
     ret4821?.status === LOAN_STATUS.awaitingPickup &&
-      ret4821Deadline !== undefined &&
+      ret4821Deadline !== null &&
       ret4821Deadline.getTime() > Date.now(),
     `retirar até ${ret4821Deadline ? localDate(ret4821Deadline) : '?'}`,
   )
 
-  const beatriz = toDate(
+  const beatriz = optionalDate(
     (await read(`${COLLECTIONS.loans}/loan_beatriz_padroes`))?.pickupDeadline,
   )
   check(
     'Beatriz no último dia de retirada',
-    beatriz !== undefined && localDate(beatriz) === today,
+    beatriz !== null && localDate(beatriz) === today,
     `prazo em ${beatriz ? localDate(beatriz) : '?'}`,
   )
 
-  const rafael = toDate(
+  const rafael = optionalDate(
     (await read(`${COLLECTIONS.loans}/loan_rafael_calculo2`))?.pickupDeadline,
   )
   check(
     'Rafael com prazo até amanhã',
-    rafael !== undefined && localDate(rafael) === plusDays(today, 1),
+    rafael !== null && localDate(rafael) === plusDays(today, 1),
     `prazo em ${rafael ? localDate(rafael) : '?'}`,
   )
 
-  const engenhariaDue = toDate(
+  const engenhariaDue = optionalDate(
     (await read(`${COLLECTIONS.loans}/loan_lucas_engenharia`))?.dueAt,
   )
   const engenhariaQueue = await db

@@ -12,12 +12,14 @@ import {
   EMAIL_TAKEN,
   MATRICULA_TAKEN,
   RESEND_COOLDOWN_SECONDS,
+  TOKEN_CHECK_RESULT,
 } from '../auth.constants.js'
 import {
   configMissing,
   conflictError,
   signupNotFound,
   tokenError,
+  tokenExpiredOrUsed,
 } from '../auth.errors.js'
 import type {
   IndexOwners,
@@ -260,7 +262,7 @@ export async function confirmSignup(input: SignupConfirmBody) {
     const account = await usersRepository.findByMatricula(input.matricula, tx)
     // Mesma resposta de um token antigo: não diz que a matrícula é desconhecida.
     if (!account || account.status !== USER_STATUS.pendingEmail) {
-      throw tokenError({ result: 'expired_or_used' })
+      throw tokenExpiredOrUsed()
     }
     const recent = await emailTokensRepository.findRecent(
       tx,
@@ -274,7 +276,8 @@ export async function confirmSignup(input: SignupConfirmBody) {
     return { uid: account.uid, check }
   })
   // O erro sai depois da transação, para a tentativa errada continuar contada.
-  if (checked.check.result !== 'valid') throw tokenError(checked.check)
+  if (checked.check.result !== TOKEN_CHECK_RESULT.valid)
+    throw tokenError(checked.check)
   const { uid } = checked
 
   await getAdminAuth().updateUser(uid, { disabled: false })
@@ -285,7 +288,7 @@ export async function confirmSignup(input: SignupConfirmBody) {
       ...options,
       consume: true,
     })
-    if (check.result !== 'valid') throw tokenError(check)
+    if (check.result !== TOKEN_CHECK_RESULT.valid) throw tokenError(check)
     usersRepository.activate(tx, uid, now)
   })
 

@@ -4,7 +4,7 @@ import {
   COLLECTIONS,
   SETTINGS_DOC_ID,
 } from '../../../shared/firestore/collections.js'
-import { toDate } from '../../../shared/firestore/converters.js'
+import { dataWithDates } from '../../../shared/firestore/converters.js'
 import type {
   EmailToken,
   EmailTokenPurpose,
@@ -34,10 +34,7 @@ const TOKEN_DATE_FIELDS = [
 // Converte o documento lido em EmailTokenRecord (com o id), trocando os
 // Timestamps por Date.
 function toRecord(snapshot: DocumentSnapshot): EmailTokenRecord {
-  const data = { ...snapshot.data() } as Record<string, unknown>
-  for (const field of TOKEN_DATE_FIELDS) {
-    if (data[field] !== undefined) data[field] = toDate(data[field])
-  }
+  const data = dataWithDates(snapshot, TOKEN_DATE_FIELDS)
   return {
     id: snapshot.id,
     ...data,

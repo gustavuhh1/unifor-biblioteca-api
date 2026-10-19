@@ -4,7 +4,10 @@ import {
   randomInt,
   timingSafeEqual,
 } from 'node:crypto'
-import { RESEND_COOLDOWN_SECONDS } from '../auth.constants.js'
+import {
+  RESEND_COOLDOWN_SECONDS,
+  TOKEN_CHECK_RESULT,
+} from '../auth.constants.js'
 import type { StoredToken, TokenCheck, TokenSecret } from '../auth.types.js'
 
 // Regras do token de e-mail (docs/modelo-de-dados-firestore.md, seção 2.3).
@@ -46,14 +49,15 @@ export function checkToken(
   maxAttempts: number,
 ): TokenCheck {
   if (token.usedAt || token.invalidatedAt || now >= token.expiresAt) {
-    return { result: 'expired_or_used' }
+    return { result: TOKEN_CHECK_RESULT.expiredOrUsed }
   }
-  if (token.attempts >= maxAttempts) return { result: 'locked' }
+  if (token.attempts >= maxAttempts)
+    return { result: TOKEN_CHECK_RESULT.locked }
   if (sameHash(token.codeHash, hashTokenCode(code, token.salt))) {
-    return { result: 'valid' }
+    return { result: TOKEN_CHECK_RESULT.valid }
   }
   return {
-    result: 'wrong_code',
+    result: TOKEN_CHECK_RESULT.wrongCode,
     attemptsLeft: Math.max(0, maxAttempts - (token.attempts + 1)),
   }
 }

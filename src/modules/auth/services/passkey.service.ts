@@ -17,6 +17,7 @@ import {
   CHALLENGE_PURPOSE,
   USER_ROLE,
   USER_STATUS,
+  type User,
 } from '../../../shared/types/index.js'
 import {
   alreadyRegistered,
@@ -28,7 +29,6 @@ import {
   registrationFailed,
 } from '../auth.errors.js'
 import type {
-  CredentialRef,
   PasskeyConfig,
   PasskeyLoginVerifyBody,
   PasskeyRecord,
@@ -57,11 +57,9 @@ function getPasskeyConfig(): PasskeyConfig {
   }
 }
 
-// Passkeys guardados, no formato que as opções do WebAuthn esperam.
-function credentialsOf(passkeys: PasskeyRecord[]): CredentialRef[] {
-  return passkeys.map(({ id, transports }) =>
-    transports ? { id, transports } : { id },
-  )
+// Só aluno com a conta ativa usa passkey (RF-AUT-04, RF-AUT-05).
+function isActiveStudent(user: User | undefined): user is User {
+  return user?.role === USER_ROLE.student && user.status === USER_STATUS.active
 }
 
 // Resumo de um passkey para a tela Meus passkeys: nunca traz a chave.
@@ -94,7 +92,7 @@ export async function createRegistrationOptions(
       uid,
       matricula: user.matricula,
       ...(user.fullName ? { fullName: user.fullName } : {}),
-      existingCredentials: credentialsOf(passkeys),
+      existingCredentials: passkeys,
     }),
   )
   await passkeysRepository.storeChallenge(
@@ -142,12 +140,7 @@ export async function verifyRegistration(
   await getDb().runTransaction(async (tx) => {
     const user = await usersRepository.findById(uid, tx)
     const existing = await passkeysRepository.findById(credential.id, tx)
-    if (
-      user?.role !== USER_ROLE.student ||
-      user.status !== USER_STATUS.active
-    ) {
-      throw registrationFailed()
-    }
+    if (!isActiveStudent(user)) throw registrationFailed()
     if (existing) throw alreadyRegistered()
 
     // Só a chave pública é guardada (RNF-SEG-03).
@@ -200,7 +193,7 @@ export async function createLoginOptions(
   const options = await generateAuthenticationOptions(
     buildAuthenticationOptionsInput({
       rpId,
-      credentials: credentialsOf(passkeys),
+      credentials: passkeys,
     }),
   )
   if (account && passkeys.length > 0) {
@@ -240,8 +233,7 @@ export async function verifyLogin(input: PasskeyLoginVerifyBody) {
     usersRepository.findById(uid),
   ])
   if (!passkey || passkey.uid !== uid) throw loginFailed()
-  if (user?.role !== USER_ROLE.student || user.status !== USER_STATUS.active)
-    throw loginFailed()
+  if (!isActiveStudent(user)) throw loginFailed()
 
   const verified = await verifyAuthenticationResponse({
     response,

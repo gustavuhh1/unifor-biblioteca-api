@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { START, after } from '../../../test-support/clock.js'
 import type { FakeFirestore } from '../../../test-support/fake-firestore.js'
 
 const h = vi.hoisted(() => ({
@@ -32,9 +33,6 @@ const { FakeFirestore: Fake } =
   await import('../../../test-support/fake-firestore.js')
 const { confirmSignup, resendSignupToken, startSignup } =
   await import('../services/signup.service.js')
-
-const START = new Date('2026-10-19T12:00:00Z')
-const after = (seconds: number) => new Date(START.getTime() + seconds * 1000)
 
 const form = {
   email: 'lucas@edu.unifor.br',

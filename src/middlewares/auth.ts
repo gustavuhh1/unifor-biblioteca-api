@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express'
 import { getAdminAuth, getDb } from '../config/firebase.js'
+import { errorCodeOf } from '../shared/error-property.js'
 import { AppError, unauthorized } from '../shared/errors.js'
 import { userRoleSchema } from '../shared/user-role.js'
 import { USER_STATUS, type UserRole } from '../shared/types/index.js'
@@ -22,12 +23,9 @@ const BEARER_HEADER = /^Bearer\s+(\S+)$/i
 // malformado, conta desativada). Qualquer outro (rede, credenciais) não é culpa
 // do cliente e deve aparecer como 500, não como logout.
 function isSessionError(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null || !('code' in error)) {
-    return false
-  }
-  const { code } = error
+  const code = errorCodeOf(error)
   return (
-    typeof code === 'string' &&
+    code !== undefined &&
     code.startsWith('auth/') &&
     code !== 'auth/internal-error'
   )

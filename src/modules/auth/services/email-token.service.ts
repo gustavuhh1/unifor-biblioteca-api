@@ -1,4 +1,5 @@
 import type { Transaction } from 'firebase-admin/firestore'
+import { TOKEN_CHECK_RESULT } from '../auth.constants.js'
 import { tooSoon } from '../auth.errors.js'
 import type { EmailTokenRecord, TokenCheck } from '../auth.types.js'
 import * as emailTokensRepository from '../repositories/email-tokens.repository.js'
@@ -25,12 +26,12 @@ export function verifyTokenAndRecordAttempt(
   options: { now: Date; maxAttempts: number; consume: boolean },
 ): TokenCheck {
   const newest = recent[0]
-  if (!newest) return { result: 'expired_or_used' }
+  if (!newest) return { result: TOKEN_CHECK_RESULT.expiredOrUsed }
 
   const check = checkToken(newest, code, options.now, options.maxAttempts)
-  if (check.result === 'wrong_code') {
+  if (check.result === TOKEN_CHECK_RESULT.wrongCode) {
     emailTokensRepository.recordWrongAttempt(tx, newest, options.now)
-  } else if (check.result === 'valid' && options.consume) {
+  } else if (check.result === TOKEN_CHECK_RESULT.valid && options.consume) {
     emailTokensRepository.markUsed(tx, newest.id, options.now)
   }
   return check

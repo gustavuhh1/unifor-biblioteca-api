@@ -1,4 +1,5 @@
 import { AppError, type FieldError } from '../../shared/errors.js'
+import { TOKEN_CHECK_RESULT } from './auth.constants.js'
 import type { FailedTokenCheck } from './auth.types.js'
 
 // Erros do módulo de acesso. O code é estável e em inglês; a mensagem é mostrada
@@ -26,19 +27,19 @@ export function conflictError(fields: FieldError[]): AppError {
 // 400: o que o app mostra para cada jeito de um token falhar (tela A77).
 export function tokenError(check: FailedTokenCheck): AppError {
   switch (check.result) {
-    case 'expired_or_used':
+    case TOKEN_CHECK_RESULT.expiredOrUsed:
       return new AppError(
         400,
         'token_expired_or_used',
         'Token expirado ou já usado. Peça um novo token.',
       )
-    case 'locked':
+    case TOKEN_CHECK_RESULT.locked:
       return new AppError(
         400,
         'token_attempts_exceeded',
         'Você errou o token muitas vezes. Peça um novo token.',
       )
-    case 'wrong_code':
+    case TOKEN_CHECK_RESULT.wrongCode:
       return new AppError(
         400,
         'token_invalid',
@@ -47,6 +48,11 @@ export function tokenError(check: FailedTokenCheck): AppError {
           : 'Token incorreto. Peça um novo token.',
       )
   }
+}
+
+// 400: o token não existe, venceu, foi substituído ou já foi usado (tela A77).
+export function tokenExpiredOrUsed(): AppError {
+  return tokenError({ result: TOKEN_CHECK_RESULT.expiredOrUsed })
 }
 
 // 500: falta uma variável de ambiente que o módulo precisa.

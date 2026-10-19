@@ -4,6 +4,7 @@ import {
   BASE_DATE,
   BOOKS,
   FINES,
+  LIBRARY_PLACE,
   LOANS,
   LUCAS_FOLDERS,
   NOW_TIME,
@@ -19,6 +20,7 @@ import {
   userSubcollectionPath,
 } from '../../src/shared/firestore/collections.js'
 import { normalizeText } from '../../src/shared/text.js'
+import { LIBRARY_TIMEZONE } from '../../src/shared/time.js'
 import {
   BOOK_STATUS,
   COPY_STATUS,
@@ -135,6 +137,10 @@ export function buildSeed(options: BuildOptions): SeedData {
   const userByKey = new Map(USERS.map((user) => [user.key, user]))
   const bookSpecByKey = new Map(BOOKS.map((book) => [book.key, book]))
   const loanSpecById = new Map(LOANS.map((loan) => [loan.id, loan]))
+  // Acham o usuário e o livro pela chave dos dados; o dado que não existe é erro.
+  const userOf = (key: string) => required(userByKey.get(key), `user ${key}`)
+  const bookOf = (key: string) =>
+    required(bookSpecByKey.get(key), `book ${key}`)
 
   const stamps = (createdAt = created, updatedAt = now) => ({
     createdAt,
@@ -169,7 +175,7 @@ export function buildSeed(options: BuildOptions): SeedData {
       cdu: spec.cdu,
       cutter: spec.cutter,
       shelf: spec.cdu ? `Estante ${spec.cdu}` : '',
-      location: 'Biblioteca (Praça Central)',
+      location: LIBRARY_PLACE,
       googleBooks: spec.isbn
         ? { volumeId: null, lastSyncedAt: null, found: true }
         : undefined,
@@ -210,11 +216,8 @@ export function buildSeed(options: BuildOptions): SeedData {
   }
 
   function buildLoan(spec: LoanSpec): Loan {
-    const student = required(
-      userByKey.get(spec.student),
-      `user ${spec.student}`,
-    )
-    const book = required(bookSpecByKey.get(spec.book), `book ${spec.book}`)
+    const student = userOf(spec.student)
+    const book = bookOf(spec.book)
     const common: LoanBase = {
       studentUid: uidOf(student.key),
       matricula: student.matricula,
@@ -301,11 +304,8 @@ export function buildSeed(options: BuildOptions): SeedData {
 
   const queueEntries: Record<string, QueueEntry> = {}
   for (const spec of QUEUE_ENTRIES) {
-    const student = required(
-      userByKey.get(spec.student),
-      `user ${spec.student}`,
-    )
-    const book = required(bookSpecByKey.get(spec.book), `book ${spec.book}`)
+    const student = userOf(spec.student)
+    const book = bookOf(spec.book)
     const joinedAt = at(shift(spec.joinedOn), '10:00')
     const fulfilled = spec.status === QUEUE_ENTRY_STATUS.fulfilled
     // Lucas foi chamado às 09:12 de hoje e confirmou às 09:30 (24 h para
@@ -342,7 +342,7 @@ export function buildSeed(options: BuildOptions): SeedData {
   for (const spec of FINES) {
     const loanSpec = required(loanSpecById.get(spec.loan), `loan ${spec.loan}`)
     const loan = required(loans[spec.loan], `loan ${spec.loan}`)
-    const student = required(userByKey.get(loanSpec.student), 'fine student')
+    const student = userOf(loanSpec.student)
     const base = {
       loanId: spec.loan,
       studentUid: loan.studentUid,
@@ -548,7 +548,7 @@ export function buildSeed(options: BuildOptions): SeedData {
   // --- Configurações e feriados ------------------------------------------------
 
   const settings: LibrarySettings = {
-    timezone: 'America/Fortaleza',
+    timezone: LIBRARY_TIMEZONE,
     openingHours: OPENING_HOURS,
     maxActiveLoans: 10,
     maxActiveQueues: 7,
@@ -563,7 +563,7 @@ export function buildSeed(options: BuildOptions): SeedData {
     emailTokenMaxAttempts: 5,
     assistantActionMinutes: 15,
     contact: {
-      place: 'Biblioteca (Praça Central)',
+      place: LIBRARY_PLACE,
       biblioZap: '(85) 3477-3257',
       loanPhone: '(85) 3477-3162',
       loanEmail: 'bibemprestimo@unifor.br',

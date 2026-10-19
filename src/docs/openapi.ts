@@ -1,7 +1,7 @@
 import { OpenApiGeneratorV31 } from '@asteasolutions/zod-to-openapi'
 import '../modules/auth/auth.docs.js'
 import { healthResponseSchema } from '../shared/health.js'
-import { registry } from './registry.js'
+import { jsonContent, registry } from './registry.js'
 
 registry.registerPath({
   method: 'get',
@@ -11,7 +11,7 @@ registry.registerPath({
   responses: {
     200: {
       description: 'A API está funcionando.',
-      content: { 'application/json': { schema: healthResponseSchema } },
+      content: jsonContent(healthResponseSchema),
     },
   },
 })

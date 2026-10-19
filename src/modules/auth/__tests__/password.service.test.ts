@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { START, after } from '../../../test-support/clock.js'
 import type { FakeFirestore } from '../../../test-support/fake-firestore.js'
 
 const h = vi.hoisted(() => ({
@@ -23,9 +24,6 @@ const { FakeFirestore: Fake } =
 const { RECOVERY_MESSAGE } = await import('../auth.constants.js')
 const { requestPasswordRecovery, resetPassword } =
   await import('../services/password.service.js')
-
-const START = new Date('2026-10-19T12:00:00Z')
-const after = (seconds: number) => new Date(START.getTime() + seconds * 1000)
 
 function addUser(
   uid: string,

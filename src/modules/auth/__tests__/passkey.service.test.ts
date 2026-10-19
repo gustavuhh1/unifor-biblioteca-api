@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { START, after } from '../../../test-support/clock.js'
 import type { FakeFirestore } from '../../../test-support/fake-firestore.js'
 
 const h = vi.hoisted(() => ({
@@ -27,9 +28,6 @@ const {
   verifyLogin,
   verifyRegistration,
 } = await import('../services/passkey.service.js')
-
-const START = new Date('2026-10-19T12:00:00Z')
-const after = (seconds: number) => new Date(START.getTime() + seconds * 1000)
 
 function addStudent(uid: string, matricula: string, role = 'student') {
   h.db.put('matriculaIndex', matricula, { uid, role })

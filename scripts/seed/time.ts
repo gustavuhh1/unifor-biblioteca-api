@@ -2,6 +2,9 @@ import { TZDate } from '@date-fns/tz'
 import { addDays, differenceInCalendarDays, format, getDay } from 'date-fns'
 import { LIBRARY_TIMEZONE } from '../../src/shared/time.js'
 
+// Formato "AAAA-MM-DD" das datas sem hora (date-fns).
+export const DATE_FORMAT = 'yyyy-MM-dd'
+
 // Horário da biblioteca (docs/modelo-de-dados-firestore.md, seção 2.21).
 export const OPENING_HOURS = {
   mon: { open: '07:00', close: '21:55' },
@@ -32,7 +35,7 @@ export function at(date: string, time: string): Date {
 
 // "AAAA-MM-DD" de um instante, como visto em America/Fortaleza.
 export function localDate(instant: Date): string {
-  return format(new TZDate(instant, LIBRARY_TIMEZONE), 'yyyy-MM-dd')
+  return format(new TZDate(instant, LIBRARY_TIMEZONE), DATE_FORMAT)
 }
 
 // Soma dias a uma data "AAAA-MM-DD".
@@ -40,7 +43,7 @@ export function plusDays(date: string, days: number): string {
   const [year, month, day] = parts(date)
   return format(
     addDays(new TZDate(year, month, day, LIBRARY_TIMEZONE), days),
-    'yyyy-MM-dd',
+    DATE_FORMAT,
   )
 }
 

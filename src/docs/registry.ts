@@ -2,7 +2,7 @@ import {
   OpenAPIRegistry,
   extendZodWithOpenApi,
 } from '@asteasolutions/zod-to-openapi'
-import { z } from 'zod'
+import { z, type ZodType } from 'zod'
 
 // Acrescenta `.openapi()` aos schemas do Zod. Importe este arquivo antes de
 // montar os schemas que o usam.
@@ -11,6 +11,11 @@ extendZodWithOpenApi(z)
 // Registro do Swagger: toda rota é documentada aqui, a partir dos mesmos
 // schemas do Zod que a validam.
 export const registry = new OpenAPIRegistry()
+
+// Conteúdo JSON de uma resposta ou corpo documentado no Swagger.
+export const jsonContent = (schema: ZodType) => ({
+  'application/json': { schema },
+})
 
 // Esquema de segurança das rotas com sessão: o ID token do Firebase vai no
 // cabeçalho Authorization.

@@ -49,6 +49,12 @@ export const tokenCodeSchema = z
   .regex(TOKEN_CODE, 'O token tem 6 dígitos.')
   .meta({ example: '482913' })
 
+// Os dois campos de todo formulário que define senha.
+const passwordFields = {
+  password: passwordSchema,
+  passwordConfirmation: z.string('Confirme a senha.'),
+}
+
 // Todo formulário que define senha confere se as duas digitações são iguais.
 function passwordsMatch(value: {
   password: string
@@ -62,6 +68,8 @@ const passwordsDoNotMatch = {
   error: 'As senhas não conferem.',
 }
 
+const FULL_NAME_LENGTH = 'O nome deve ter de 3 a 100 caracteres.'
+
 // Nome completo: precisa de nome e sobrenome, de 3 a 100 caracteres.
 export const fullNameSchema = z
   .string('Informe o nome completo.')
@@ -69,8 +77,8 @@ export const fullNameSchema = z
   .pipe(
     z
       .string()
-      .min(3, 'O nome deve ter de 3 a 100 caracteres.')
-      .max(100, 'O nome deve ter de 3 a 100 caracteres.')
+      .min(3, FULL_NAME_LENGTH)
+      .max(100, FULL_NAME_LENGTH)
       .refine((name) => name.includes(' '), 'Informe nome e sobrenome.'),
   )
   .meta({ example: 'Lucas Almeida' })
@@ -82,8 +90,7 @@ export const signupStartBodySchema = z
   .object({
     email: institutionalEmailSchema,
     matricula: matriculaSchema,
-    password: passwordSchema,
-    passwordConfirmation: z.string('Confirme a senha.'),
+    ...passwordFields,
   })
   .refine(passwordsMatch, passwordsDoNotMatch)
   .meta({ id: 'SignupStartBody' })
@@ -103,8 +110,7 @@ export const passwordResetBodySchema = z
   .object({
     matricula: matriculaSchema,
     token: tokenCodeSchema,
-    password: passwordSchema,
-    passwordConfirmation: z.string('Confirme a senha.'),
+    ...passwordFields,
   })
   .refine(passwordsMatch, passwordsDoNotMatch)
   .meta({ id: 'PasswordResetBody' })
@@ -113,13 +119,18 @@ export const passwordResetBodySchema = z
 // @simplewebauthn/server confere o resto.
 const clientExtensionResults = z.record(z.string(), z.unknown()).default({})
 
+// Os campos que toda resposta do celular tem, ao criar ou ao usar um passkey.
+const credentialFields = {
+  id: z.string().min(1),
+  rawId: z.string().min(1),
+  type: z.literal('public-key'),
+  clientExtensionResults,
+}
+
 // Resposta do celular ao criar um passkey.
 export const registrationResponseSchema = z
   .looseObject({
-    id: z.string().min(1),
-    rawId: z.string().min(1),
-    type: z.literal('public-key'),
-    clientExtensionResults,
+    ...credentialFields,
     response: z.looseObject({
       clientDataJSON: z.string().min(1),
       attestationObject: z.string().min(1),
@@ -130,10 +141,7 @@ export const registrationResponseSchema = z
 // Resposta do celular ao assinar o desafio do login.
 export const authenticationResponseSchema = z
   .looseObject({
-    id: z.string().min(1),
-    rawId: z.string().min(1),
-    type: z.literal('public-key'),
-    clientExtensionResults,
+    ...credentialFields,
     response: z.looseObject({
       clientDataJSON: z.string().min(1),
       authenticatorData: z.string().min(1),
@@ -142,14 +150,16 @@ export const authenticationResponseSchema = z
   })
   .meta({ id: 'AuthenticationResponse' })
 
+const DEVICE_NAME_REQUIRED = 'Informe o nome do aparelho.'
+
 // Corpo de POST /auth/passkey/register: a resposta do celular e o nome do aparelho.
 export const passkeyRegisterBodySchema = z
   .object({
     response: registrationResponseSchema,
     deviceName: z
-      .string('Informe o nome do aparelho.')
+      .string(DEVICE_NAME_REQUIRED)
       .trim()
-      .min(1, 'Informe o nome do aparelho.')
+      .min(1, DEVICE_NAME_REQUIRED)
       .max(60, 'O nome do aparelho deve ter até 60 caracteres.')
       .meta({ example: 'Galaxy A54' }),
   })

@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express'
 import { ZodError } from 'zod'
+import { errorProperty } from '../shared/error-property.js'
 import { AppError, type ErrorExtra } from '../shared/errors.js'
 
 interface ErrorBody extends ErrorExtra {
@@ -13,13 +14,6 @@ export const notFoundHandler: RequestHandler = (_req, res) => {
     code: 'not_found',
     message: 'Recurso não encontrado.',
   } satisfies ErrorBody)
-}
-
-// Os erros levantados pelo express.json() trazem um `type` (veja o body-parser).
-function bodyParserErrorType(error: unknown): unknown {
-  return typeof error === 'object' && error !== null && 'type' in error
-    ? error.type
-    : undefined
 }
 
 function toErrorResponse(error: unknown): { status: number; body: ErrorBody } {
@@ -44,7 +38,8 @@ function toErrorResponse(error: unknown): { status: number; body: ErrorBody } {
     }
   }
 
-  const type = bodyParserErrorType(error)
+  // Os erros levantados pelo express.json() trazem um `type` (veja o body-parser).
+  const type = errorProperty(error, 'type')
   if (type === 'entity.parse.failed') {
     return {
       status: 400,

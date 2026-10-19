@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { unauthorized } from './errors.js'
 
 // Corpo de todo erro que a API responde (veja middlewares/error-handler.ts).
 export const errorResponseSchema = z
@@ -15,8 +16,5 @@ export const errorResponseSchema = z
   })
   .meta({
     id: 'ErrorResponse',
-    example: {
-      code: 'unauthorized',
-      message: 'Sua sessão expirou ou é inválida. Entre novamente.',
-    },
+    example: { code: unauthorized().code, message: unauthorized().message },
   })

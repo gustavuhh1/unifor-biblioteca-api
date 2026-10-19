@@ -1,7 +1,8 @@
 import type { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
 import { getDb } from '../../../config/firebase.js'
 import { COLLECTIONS } from '../../../shared/firestore/collections.js'
-import { toDate } from '../../../shared/firestore/converters.js'
+import { dataWithDates, toDate } from '../../../shared/firestore/converters.js'
+import { readDocument } from '../../../shared/firestore/read.js'
 import type {
   ChallengePurpose,
   Passkey,
@@ -27,10 +28,7 @@ const PASSKEY_DATE_FIELDS = [
 // Converte o documento lido em PasskeyRecord (com o id), trocando os Timestamps
 // por Date.
 function toRecord(snapshot: DocumentSnapshot): PasskeyRecord {
-  const data = { ...snapshot.data() } as Record<string, unknown>
-  for (const field of PASSKEY_DATE_FIELDS) {
-    if (data[field] !== undefined) data[field] = toDate(data[field])
-  }
+  const data = dataWithDates(snapshot, PASSKEY_DATE_FIELDS)
   return { id: snapshot.id, ...data } as PasskeyRecord
 }
 
@@ -49,8 +47,7 @@ export async function findById(
   id: string,
   tx?: Transaction,
 ): Promise<PasskeyRecord | undefined> {
-  const ref = passkeys().doc(id)
-  const snapshot = await (tx ? tx.get(ref) : ref.get())
+  const snapshot = await readDocument(passkeys().doc(id), tx)
   return snapshot.exists ? toRecord(snapshot) : undefined
 }
 
