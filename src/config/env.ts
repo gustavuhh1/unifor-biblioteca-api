@@ -5,6 +5,27 @@ const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value)
 
 const optionalString = z.preprocess(emptyToUndefined, z.string().optional())
 
+// Origin the Android app reports in a passkey response (WebAuthn).
+export const ANDROID_ORIGIN = /^android:apk-key-hash:[A-Za-z0-9_-]+$/
+
+// Comma separated list; blank items are ignored.
+const androidOrigins = z.preprocess(
+  (value) =>
+    typeof value === 'string'
+      ? value
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : value,
+  z
+    .array(
+      z.string().regex(ANDROID_ORIGIN, {
+        error: 'must look like android:apk-key-hash:<base64url>',
+      }),
+    )
+    .default([]),
+)
+
 // Names follow docs/infra.md. Secrets and module settings are optional: the API
 // must start without the key of a module that is not implemented yet.
 export const envSchema = z.object({
@@ -27,6 +48,7 @@ export const envSchema = z.object({
   FIREBASE_AUTH_EMULATOR_HOST: optionalString,
 
   PASSKEY_RP_ID: optionalString,
+  PASSKEY_ANDROID_ORIGINS: androidOrigins,
   AUTH_EMAIL_DOMAIN: optionalString,
 
   EMAIL_FROM: optionalString,

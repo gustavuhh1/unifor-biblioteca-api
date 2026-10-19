@@ -46,4 +46,34 @@ describe('parseEnv', () => {
   it('rejects an unknown NODE_ENV', () => {
     expect(() => parseEnv({ NODE_ENV: 'staging' })).toThrow(/NODE_ENV/)
   })
+
+  describe('PASSKEY_ANDROID_ORIGINS', () => {
+    it('is an empty list when not set or blank', () => {
+      expect(parseEnv({}).PASSKEY_ANDROID_ORIGINS).toEqual([])
+      expect(
+        parseEnv({ PASSKEY_ANDROID_ORIGINS: '' }).PASSKEY_ANDROID_ORIGINS,
+      ).toEqual([])
+    })
+
+    it('splits the comma separated list and trims each item', () => {
+      const env = parseEnv({
+        PASSKEY_ANDROID_ORIGINS:
+          'android:apk-key-hash:AbC-_123, android:apk-key-hash:xyz987 ,',
+      })
+
+      expect(env.PASSKEY_ANDROID_ORIGINS).toEqual([
+        'android:apk-key-hash:AbC-_123',
+        'android:apk-key-hash:xyz987',
+      ])
+    })
+
+    it('rejects an origin that is not android:apk-key-hash:<base64url>', () => {
+      expect(() =>
+        parseEnv({ PASSKEY_ANDROID_ORIGINS: 'https://example.com' }),
+      ).toThrow(/PASSKEY_ANDROID_ORIGINS/)
+      expect(() =>
+        parseEnv({ PASSKEY_ANDROID_ORIGINS: 'android:apk-key-hash:' }),
+      ).toThrow(/PASSKEY_ANDROID_ORIGINS/)
+    })
+  })
 })
