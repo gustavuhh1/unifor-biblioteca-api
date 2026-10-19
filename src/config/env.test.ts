@@ -29,6 +29,8 @@ describe('parseEnv', () => {
   it('keeps the values that were provided', () => {
     const env = parseEnv({
       NODE_ENV: 'production',
+      PASSKEY_RP_ID: 'uni-books.app',
+      AUTH_EMAIL_DOMAIN: 'contas.uni-books.app',
       FIRESTORE_EMULATOR_HOST: '127.0.0.1:8081',
       RESEND_API_KEY: 'dummy-key',
     })
@@ -45,6 +47,47 @@ describe('parseEnv', () => {
 
   it('rejects an unknown NODE_ENV', () => {
     expect(() => parseEnv({ NODE_ENV: 'staging' })).toThrow(/NODE_ENV/)
+  })
+
+  describe('PASSKEY_RP_ID and AUTH_EMAIL_DOMAIN', () => {
+    const configured = {
+      PASSKEY_RP_ID: 'uni-books.app',
+      AUTH_EMAIL_DOMAIN: 'contas.uni-books.app',
+    }
+
+    it('are optional in development and in tests', () => {
+      expect(() => parseEnv({})).not.toThrow()
+      expect(() => parseEnv({ NODE_ENV: 'development' })).not.toThrow()
+      expect(() => parseEnv({ NODE_ENV: 'test' })).not.toThrow()
+    })
+
+    it('are required in production, and the error names each missing one', () => {
+      expect(() => parseEnv({ NODE_ENV: 'production' })).toThrow(
+        /PASSKEY_RP_ID is required when NODE_ENV=production[\s\S]*AUTH_EMAIL_DOMAIN is required when NODE_ENV=production/,
+      )
+      expect(() =>
+        parseEnv({ NODE_ENV: 'production', PASSKEY_RP_ID: 'uni-books.app' }),
+      ).toThrow(/AUTH_EMAIL_DOMAIN is required/)
+      expect(() =>
+        parseEnv({
+          NODE_ENV: 'production',
+          AUTH_EMAIL_DOMAIN: 'contas.uni-books.app',
+        }),
+      ).toThrow(/PASSKEY_RP_ID is required/)
+    })
+
+    it('count a blank value as missing in production', () => {
+      expect(() =>
+        parseEnv({ NODE_ENV: 'production', ...configured, PASSKEY_RP_ID: '' }),
+      ).toThrow(/PASSKEY_RP_ID is required/)
+    })
+
+    it('let the API start in production when both are set', () => {
+      const env = parseEnv({ NODE_ENV: 'production', ...configured })
+
+      expect(env.PASSKEY_RP_ID).toBe('uni-books.app')
+      expect(env.AUTH_EMAIL_DOMAIN).toBe('contas.uni-books.app')
+    })
   })
 
   describe('PASSKEY_ANDROID_ORIGINS', () => {

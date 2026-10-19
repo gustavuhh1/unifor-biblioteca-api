@@ -36,6 +36,8 @@ Responsáveis: **Gustavo** (contas, cartão, DNS, chaves) e **Claude** (pesquisa
 | `AUTH_EMAIL_DOMAIN` | não | `contas.uni-books.app` (e-mail interno das contas no Firebase: `<matrícula>@contas.uni-books.app`; não recebe mensagens) | Firebase Authentication |
 | `EXPO_PUBLIC_FIREBASE_*` | não | configuração web do Firebase no app (apiKey, authDomain, projectId, appId). É pública por natureza; a proteção vem das regras e da API | App (SDK JavaScript do Firebase) |
 
+`PASSKEY_RP_ID` e `AUTH_EMAIL_DOMAIN` são obrigatórias com `NODE_ENV=production`: a API não sobe sem elas (no desenvolvimento são opcionais).
+
 Não há `JWT_SECRET`: desde 17/10 a sessão é o ID token do Firebase, e a API o confere com o Firebase Admin. A API no Cloud Run usa a própria conta de serviço para o Firebase Admin, sem arquivo de chave.
 
 O Secret Manager dá 6 versões de segredo ativas por mês de graça, somando todos os projetos da conta. Com os 4 segredos acima, cabe. Ao trocar uma chave, **destruir a versão antiga**.
