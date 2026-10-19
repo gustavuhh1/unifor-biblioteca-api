@@ -732,7 +732,7 @@ service cloud.firestore {
 
 ## 6. Dados de demonstração
 
-Seguem a linha do tempo das telas: **hoje é quinta, 15/10/2026**, e o teste usa `settings/library.simulatedNow = 2026-10-15T12:00:00-03:00`. 12/10 é feriado.
+Seguem a linha do tempo das telas: **hoje é quinta, 15/10/2026**, e 12/10 é feriado. Desde 19/10 o seed desloca essas datas para o dia em que roda (nota da seção 6.5) e não grava `simulatedNow`.
 
 As telas mostram momentos diferentes da mesma história. A carga usa **um único momento**: Lucas **já confirmou** a vez em Código Limpo (pedido RET-4821, 4 de 10) e Marina **ainda não devolveu** Cálculo, Vol. 1 (multa contando). As telas de antes ("É a sua vez") e de depois (devolução da Marina) são demonstradas fazendo essas ações ao vivo.
 
@@ -976,7 +976,7 @@ O script fica no repositório `unifor-biblioteca-api` (ex.: `scripts/seed.ts`), 
 
 1. **Escolhe o ambiente:** por padrão o Firebase Emulator Suite (`FIRESTORE_EMULATOR_HOST` e `FIREBASE_AUTH_EMULATOR_HOST`). Produção só com a opção explícita `--prod` e uma confirmação digitada, para nunca apagar dados reais sem querer (RNF-SEG-08).
 2. **Limpa** as coleções da seção 1 (só no emulador, ou em produção com `--reset` confirmado).
-3. **Grava as configurações:** `settings/library` (com `simulatedNow` só no emulador), `recesses` e `holidays/2026` (buscado na FeriadosAPI, ou um arquivo local se a chave não estiver no `.env`).
+3. **Grava as configurações:** `settings/library` (sem `simulatedNow`: as datas do seed já são relativas ao dia em que roda), `recesses` e `holidays/2026` (buscado na FeriadosAPI, ou um arquivo local se a chave não estiver no `.env`).
 4. **Cria as contas no Firebase Authentication:** cada usuário da seção 6.1 com `authEmail` e uma senha de teste lida do `.env` (nunca escrita no código), já ativas, e grava `users`, `matriculaIndex` e `emailIndex` com o mesmo `uid`.
 5. **Grava o acervo:** `works`, `books` e `copies` da seção 6.2; com a chave do Google Books, completa capa, sinopse e editora pelo ISBN (RF-ACE-04, RF-ACE-05).
 6. **Grava a circulação:** `loans`, `queueEntries` e `fines` da seção 6.3, com contadores (`activeLoanCount`, `activeQueueCount`, `copiesAvailable`, `queueLength`, `openFineTotalCents`, `booksReadByYear`) calculados a partir dos próprios dados, nunca digitados à mão.
