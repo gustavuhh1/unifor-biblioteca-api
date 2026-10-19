@@ -1,21 +1,29 @@
 import { createHmac } from 'node:crypto'
-import { lateBusinessDays } from './business-days.js'
 import {
   AUTH_EMAIL_DOMAIN,
+  BASE_DATE,
   BOOKS,
   FINES,
   LOANS,
   LUCAS_FOLDERS,
   NOW_TIME,
   QUEUE_ENTRIES,
-  TODAY,
   USERS,
   type BookSpec,
   type LoanSpec,
   type UserSpec,
 } from './data.js'
-import { holidayDates, type HolidaysDocument } from './holidays.js'
-import { OPENING_HOURS, at, atClosing, closingTime, plusDays } from './time.js'
+import type { HolidaysDocument } from './holidays.js'
+import {
+  OPENING_HOURS,
+  at,
+  atClosing,
+  closingTime,
+  daysBetween,
+  formatDayMonth,
+  localDate,
+  plusDays,
+} from './time.js'
 
 export type Doc = Record<string, unknown>
 
@@ -28,8 +36,9 @@ export interface BuildOptions {
   holidays: HolidaysDocument
   // Key of the HMAC that makes the QR tokens stable between runs but unguessable.
   tokenSecret: string
-  // The simulated "today" only exists in the test environment (RF-SIS-04).
-  simulatedNow: boolean
+  // "Today" ("AAAA-MM-DD", America/Fortaleza). Every date of the data is shifted
+  // from the example day (15/10) to this day, keeping the same situations.
+  today: string
 }
 
 type BookDoc = {
@@ -126,9 +135,14 @@ function required<T>(value: T | undefined, what: string): T {
 }
 
 export function buildSeed(options: BuildOptions): SeedData {
-  const now = at(TODAY, NOW_TIME)
-  const created = at('2026-09-01', '09:50')
-  const nonWorkingDates = holidayDates(options.holidays)
+  const today = options.today
+  // The documented dates are the example of 15/10: each one is an offset from
+  // that day, applied to today (e.g. picked up 02/10 = today - 13 days).
+  const dayShift = daysBetween(BASE_DATE, today)
+  const shift = (date: string) => plusDays(date, dayShift)
+  const atShifted = ([date, time]: [string, string]) => at(shift(date), time)
+  const now = at(today, NOW_TIME)
+  const created = at(shift('2026-09-01'), '09:50')
   const userByKey = new Map(USERS.map((user) => [user.key, user]))
   const bookSpecByKey = new Map(BOOKS.map((book) => [book.key, book]))
   const loanSpecById = new Map(LOANS.map((loan) => [loan.id, loan]))
@@ -236,28 +250,32 @@ export function buildSeed(options: BuildOptions): SeedData {
       renewalCount: spec.renewedOn ? 1 : 0,
       fineId: spec.fine,
       remindersSent: spec.due2DaysReminderAt
-        ? { due2Days: at(...spec.due2DaysReminderAt) }
+        ? { due2Days: atShifted(spec.due2DaysReminderAt) }
         : {},
     }
 
     if (spec.status === 'awaiting_pickup') {
-      const requestedAt = at(...required(spec.requestedAt, 'requestedAt'))
+      const requestedAt = atShifted(required(spec.requestedAt, 'requestedAt'))
       return {
         ...common,
         status: 'awaiting_pickup',
         requestedAt,
-        pickupDeadline: at(...required(spec.pickupDeadline, 'pickupDeadline')),
+        pickupDeadline: atShifted(
+          required(spec.pickupDeadline, 'pickupDeadline'),
+        ),
         ...stamps(requestedAt, requestedAt),
       }
     }
 
     // Already picked up: due date = pickup + 14 days (+14 if renewed), at closing time.
-    const pickedUpOn = required(spec.pickedUpOn, 'pickedUpOn')
+    const pickedUpOn = shift(required(spec.pickedUpOn, 'pickedUpOn'))
     const originalDueOn = plusDays(pickedUpOn, 14)
     const dueOn = spec.renewedOn ? plusDays(originalDueOn, 14) : originalDueOn
     const pickedUpAt = at(pickedUpOn, closingTime(originalDueOn))
-    const renewedAt = spec.renewedOn ? at(spec.renewedOn, '12:00') : undefined
-    const returnedAt = spec.returnedAt ? at(...spec.returnedAt) : undefined
+    const renewedAt = spec.renewedOn
+      ? at(shift(spec.renewedOn), '12:00')
+      : undefined
+    const returnedAt = spec.returnedAt ? atShifted(spec.returnedAt) : undefined
     return {
       ...common,
       status: spec.status,
@@ -297,10 +315,10 @@ export function buildSeed(options: BuildOptions): SeedData {
       `user ${spec.student}`,
     )
     const book = required(bookSpecByKey.get(spec.book), `book ${spec.book}`)
-    const joinedAt = at(spec.joinedOn, '10:00')
+    const joinedAt = at(shift(spec.joinedOn), '10:00')
     const fulfilled = spec.status === 'fulfilled'
     // Lucas was called at 09:12 today and confirmed at 09:30 (24 h to confirm).
-    const turnStartedAt = fulfilled ? at(TODAY, '09:12') : undefined
+    const turnStartedAt = fulfilled ? at(today, '09:12') : undefined
     queueEntries[spec.id] = {
       bookId: bookIdOf(book.key),
       workId: book.workId,
@@ -314,15 +332,15 @@ export function buildSeed(options: BuildOptions): SeedData {
       origin: 'student',
       turnStartedAt,
       confirmDeadline: turnStartedAt
-        ? at(plusDays(TODAY, 1), '09:12')
+        ? at(plusDays(today, 1), '09:12')
         : undefined,
       reservedCopyId: fulfilled
         ? loans[required(spec.loan, 'loan')]?.copyId
         : undefined,
       loanId: spec.loan,
-      endedAt: fulfilled ? at(TODAY, '09:30') : undefined,
+      endedAt: fulfilled ? at(today, '09:30') : undefined,
       notifyCount: 0,
-      ...stamps(joinedAt, fulfilled ? at(TODAY, '09:30') : joinedAt),
+      ...stamps(joinedAt, fulfilled ? at(today, '09:30') : joinedAt),
     }
   }
 
@@ -348,10 +366,11 @@ export function buildSeed(options: BuildOptions): SeedData {
       fines[spec.id] = { ...base, status: 'accruing', ...stamps() }
     } else {
       const returnedAt = required(loan.returnedAt, 'returnedAt')
-      const businessDaysLate = lateBusinessDays(
-        required(loan.dueAt, 'dueAt'),
-        returnedAt,
-        nonWorkingDates,
+      // Frozen at the return: the documented days and amounts do not move with
+      // the dates (section 6.5).
+      const businessDaysLate = required(
+        spec.businessDaysLate,
+        'businessDaysLate',
       )
       fines[spec.id] = {
         ...base,
@@ -456,11 +475,11 @@ export function buildSeed(options: BuildOptions): SeedData {
       email: spec.email,
       authEmail: `${spec.matricula}@${AUTH_EMAIL_DOMAIN}`,
       status: 'active',
-      // Every active student confirmed the e-mail token: Lucas's time is the
-      // one in section 6.4; the others, 5 minutes after creation. Librarians
-      // are not registered through the app, so they have none.
+      // Every active student confirmed the e-mail token: Lucas 10 minutes after
+      // creation (section 6.4), the others 5. Librarians are not registered
+      // through the app, so they have none.
       emailVerifiedAt: isLucas
-        ? at('2026-09-01', '10:00')
+        ? new Date(created.getTime() + 10 * 60_000)
         : spec.role === 'student'
           ? new Date(created.getTime() + 5 * 60_000)
           : undefined,
@@ -481,7 +500,7 @@ export function buildSeed(options: BuildOptions): SeedData {
         channelPush: true,
         channelEmail: true,
       },
-      ...stamps(created, isLucas ? at(TODAY, '09:12') : now),
+      ...stamps(created, isLucas ? at(today, '09:12') : now),
     }
   }
 
@@ -507,6 +526,12 @@ export function buildSeed(options: BuildOptions): SeedData {
   }
 
   const delivery = { push: 'sent', email: 'sent' }
+  const pickupDeadline = required(
+    loans.loan_ret4821?.pickupDeadline as Date | undefined,
+    'pickupDeadline',
+  )
+  const dueAt = required(loans.loan_lucas_engenharia?.dueAt, 'dueAt')
+  const waiting = books[bookIdOf('engenharia_de_software')]!.queueLength
   const codigoLimpoId = bookIdOf('codigo_limpo')
   const notifications: Record<string, Doc> = {
     notif_queue_turn: {
@@ -517,29 +542,32 @@ export function buildSeed(options: BuildOptions): SeedData {
       loanId: 'loan_ret4821',
       queueEntryId: 'qe_lucas_codigo_limpo',
       action: 'open_loan',
-      readAt: at(TODAY, '09:30'),
+      readAt: at(today, '09:30'),
       delivery,
-      ...stamps(at(TODAY, '09:12'), at(TODAY, '09:30')),
+      ...stamps(at(today, '09:12'), at(today, '09:30')),
     },
     notif_pickup_ready: {
       type: 'pickup_ready',
       title: 'Pedido pronto: Código Limpo',
-      body: 'Retire até seg, 19/10. Código RET-4821.',
+      body: `Retire até ${formatDayMonth(localDate(pickupDeadline))}. Código RET-4821.`,
       bookId: codigoLimpoId,
       loanId: 'loan_ret4821',
       action: 'show_qr',
       delivery,
-      ...stamps(at(TODAY, '09:30'), at(TODAY, '09:30')),
+      ...stamps(at(today, '09:30'), at(today, '09:30')),
     },
     notif_due_reminder: {
       type: 'due_reminder',
       title: 'Engenharia de Software vence em 2 dias',
-      body: 'Devolva até sex, 16/10. Há 2 pessoas na fila, então não dá para renovar.',
+      body: `Devolva até ${formatDayMonth(localDate(dueAt))}. Há ${waiting} pessoas na fila, então não dá para renovar.`,
       bookId: bookIdOf('engenharia_de_software'),
       loanId: 'loan_lucas_engenharia',
       action: 'open_loan',
       delivery,
-      ...stamps(at('2026-10-14', '09:00'), at('2026-10-14', '09:00')),
+      ...stamps(
+        at(shift('2026-10-14'), '09:00'),
+        at(shift('2026-10-14'), '09:00'),
+      ),
     },
   }
 
@@ -560,7 +588,6 @@ export function buildSeed(options: BuildOptions): SeedData {
     emailTokenMinutes: 20,
     emailTokenMaxAttempts: 5,
     assistantActionMinutes: 15,
-    simulatedNow: options.simulatedNow ? now : null,
     contact: {
       place: 'Biblioteca (Praça Central)',
       biblioZap: '(85) 3477-3257',

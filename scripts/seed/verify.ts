@@ -1,11 +1,9 @@
-import { Timestamp, type Firestore } from 'firebase-admin/firestore'
+import type { Firestore, Timestamp } from 'firebase-admin/firestore'
+import { bookIdOf, uidOf } from './build.js'
 import { lateBusinessDays } from './business-days.js'
-import { uidOf, bookIdOf } from './build.js'
 import { COLLECTIONS, SUBCOLLECTIONS } from './firestore.js'
-import type { HolidaysDocument } from './holidays.js'
-import { holidayDates } from './holidays.js'
-import { NOW_TIME, TODAY } from './data.js'
-import { at } from './time.js'
+import { holidayDates, type HolidaysDocument } from './holidays.js'
+import { at, localDate, plusDays } from './time.js'
 
 export interface Check {
   label: string
@@ -35,45 +33,97 @@ export async function countDocuments(db: Firestore): Promise<string[]> {
 const formatMoney = (cents: number) =>
   `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`
 
-// Section 8, step 9: reads the data back and checks the documented figures.
+const toDate = (value: unknown) => (value as Timestamp | undefined)?.toDate()
+
+// Section 8, step 9. The dates follow the day the seed runs, so this checks the
+// situations of sections 6.1 to 6.5 (who is late, who has a deadline today...),
+// not the example dates.
 export async function runChecks(
   db: Firestore,
   holidays: HolidaysDocument,
+  today: string,
 ): Promise<Check[]> {
   const checks: Check[] = []
-  const check = (
-    label: string,
-    expected: unknown,
-    actual: unknown,
-    detail: string,
-  ) => checks.push({ label, ok: expected === actual, detail })
+  const check = (label: string, ok: boolean, detail: string) =>
+    checks.push({ label, ok, detail })
+  const read = async (path: string) => (await db.doc(path).get()).data()
 
-  const lucas = (await db.doc(`users/${uidOf('lucas')}`).get()).data()
+  const lucas = await read(`users/${uidOf('lucas')}`)
   check(
     'Lucas com 4 de 10',
-    4,
-    lucas?.activeLoanCount,
+    lucas?.activeLoanCount === 4,
     `${lucas?.activeLoanCount} de 10`,
   )
 
-  const marina = (await db.doc(`users/${uidOf('marina')}`).get()).data()
+  const marina = await read(`users/${uidOf('marina')}`)
   check(
     'Marina com 3 de 10',
-    3,
-    marina?.activeLoanCount,
+    marina?.activeLoanCount === 3,
     `${marina?.activeLoanCount} de 10`,
   )
 
-  const marinaFine = (await db.doc('fines/fine_marina_calculo1').get()).data()
-  const dueAt = (marinaFine?.dueAt as Timestamp | undefined)?.toDate()
-  const days = dueAt
-    ? lateBusinessDays(dueAt, at(TODAY, NOW_TIME), holidayDates(holidays))
-    : -1
+  // Marina: loan overdue and fine still accruing (amount computed on the fly).
+  const marinaLoan = await read('loans/loan_marina_calculo1')
+  const marinaFine = await read('fines/fine_marina_calculo1')
+  const marinaDue = toDate(marinaLoan?.dueAt)
+  const marinaDays = marinaDue
+    ? lateBusinessDays(marinaDue, at(today, '12:00'), holidayDates(holidays))
+    : 0
+  const rate = (marinaFine?.ratePerBusinessDayCents as number | undefined) ?? 0
   check(
-    'Marina com 3 dias úteis e R$ 6,00',
-    600,
-    days * ((marinaFine?.ratePerBusinessDayCents as number | undefined) ?? 0),
-    `${days} dias úteis, ${formatMoney(days * 200)}`,
+    'Marina com empréstimo atrasado e multa contando',
+    marinaLoan?.status === 'active' &&
+      marinaFine?.status === 'accruing' &&
+      marinaDue !== undefined &&
+      localDate(marinaDue) < today &&
+      marinaDays >= 1,
+    `${marinaDays} dias úteis de atraso, ${formatMoney(marinaDays * rate)} até hoje`,
+  )
+
+  const ret4821 = await read('loans/loan_ret4821')
+  const ret4821Deadline = toDate(ret4821?.pickupDeadline)
+  check(
+    'Pedido RET-4821 do Lucas dentro do prazo de retirada',
+    ret4821?.status === 'awaiting_pickup' &&
+      ret4821Deadline !== undefined &&
+      ret4821Deadline.getTime() > Date.now(),
+    `retirar até ${ret4821Deadline ? localDate(ret4821Deadline) : '?'}`,
+  )
+
+  const beatriz = toDate(
+    (await read('loans/loan_beatriz_padroes'))?.pickupDeadline,
+  )
+  check(
+    'Beatriz no último dia de retirada',
+    beatriz !== undefined && localDate(beatriz) === today,
+    `prazo em ${beatriz ? localDate(beatriz) : '?'}`,
+  )
+
+  const rafael = toDate(
+    (await read('loans/loan_rafael_calculo2'))?.pickupDeadline,
+  )
+  check(
+    'Rafael com prazo até amanhã',
+    rafael !== undefined && localDate(rafael) === plusDays(today, 1),
+    `prazo em ${rafael ? localDate(rafael) : '?'}`,
+  )
+
+  const engenhariaDue = toDate(
+    (await read('loans/loan_lucas_engenharia'))?.dueAt,
+  )
+  const engenhariaQueue = await db
+    .collection('queueEntries')
+    .where('bookId', '==', bookIdOf('engenharia_de_software'))
+    .where('status', '==', 'waiting')
+    .get()
+  const dueDay = engenhariaDue ? localDate(engenhariaDue) : undefined
+  check(
+    'Engenharia de Software do Lucas vencendo em breve, com 2 na fila',
+    dueDay !== undefined &&
+      dueDay >= today &&
+      dueDay <= plusDays(today, 2) &&
+      engenhariaQueue.size === 2,
+    `vence em ${dueDay}, ${engenhariaQueue.size} na fila`,
   )
 
   const queue = await db
@@ -83,8 +133,7 @@ export async function runChecks(
     .get()
   check(
     'Arquitetura Limpa com 4 na fila',
-    4,
-    queue.size,
+    queue.size === 4,
     `${queue.size} na fila`,
   )
 
@@ -92,14 +141,13 @@ export async function runChecks(
     .collection('fines')
     .where('status', '==', 'open')
     .get()
-  const total = openFines.docs.reduce(
-    (sum, doc) => sum + (doc.data().amountCents as number),
-    0,
-  )
+  const amounts = openFines.docs
+    .map((doc) => doc.data().amountCents as number)
+    .sort((a, b) => b - a)
+  const total = amounts.reduce((sum, cents) => sum + cents, 0)
   check(
-    'R$ 28,00 em aberto',
-    2800,
-    total,
+    'Multas em aberto: 1000, 800, 600 e 400 centavos (R$ 28,00)',
+    amounts.join(',') === '1000,800,600,400',
     `${formatMoney(total)} em ${openFines.size} alunos`,
   )
 
@@ -110,8 +158,7 @@ export async function runChecks(
   const orphans = onLoan.docs.filter((doc) => !doc.data().currentLoanId)
   check(
     'Todo exemplar emprestado tem currentLoanId',
-    0,
-    orphans.length,
+    orphans.length === 0,
     `${onLoan.size} emprestados, ${orphans.length} sem empréstimo`,
   )
 

@@ -66,43 +66,57 @@ describe('lateBusinessDays', () => {
 })
 
 describe('fines in the seed data', () => {
-  it('match the documented amounts, using the holidays of the local file', async () => {
+  // The open fines are frozen: their days and amounts do not move with the dates.
+  it.each(['2026-10-15', '2026-10-19', '2027-02-17'])(
+    'keeps the 4 open fines fixed when the seed runs on %s',
+    async (today) => {
+      const holidays = await loadHolidaysFile(2026)
+      const { fines } = buildSeed({
+        holidays,
+        tokenSecret: 'test-secret',
+        today,
+      })
+
+      expect(fines.fine_pedrohenrique_fisica).toMatchObject({
+        status: 'open',
+        businessDaysLate: 5,
+        amountCents: 1000,
+      })
+      expect(fines.fine_julia_contabilidade).toMatchObject({
+        businessDaysLate: 2,
+        amountCents: 400,
+      })
+      expect(fines.fine_camila_direito).toMatchObject({
+        businessDaysLate: 4,
+        amountCents: 800,
+      })
+      expect(fines.fine_diego_anatomia).toMatchObject({
+        businessDaysLate: 3,
+        amountCents: 600,
+      })
+    },
+  )
+
+  it("counts Marina's accruing fine as 3 business days on the example day (15/10)", async () => {
     const holidays = await loadHolidaysFile(2026)
     expect(holidayDates(holidays).has('2026-10-12')).toBe(true)
 
     const { fines } = buildSeed({
       holidays,
       tokenSecret: 'test-secret',
-      simulatedNow: true,
+      today: '2026-10-15',
     })
 
-    expect(fines.fine_pedrohenrique_fisica).toMatchObject({
-      status: 'open',
-      businessDaysLate: 5,
-      amountCents: 1000,
-    })
-    expect(fines.fine_julia_contabilidade).toMatchObject({
-      businessDaysLate: 2,
-      amountCents: 400,
-    })
-    expect(fines.fine_camila_direito).toMatchObject({
-      businessDaysLate: 4,
-      amountCents: 800,
-    })
-    expect(fines.fine_diego_anatomia).toMatchObject({
-      businessDaysLate: 3,
-      amountCents: 600,
-    })
-    // Marina's fine is still accruing: no frozen amount, computed on the fly.
+    // Still accruing: no frozen amount, computed on the fly.
     expect(fines.fine_marina_calculo1).toMatchObject({ status: 'accruing' })
     expect(fines.fine_marina_calculo1).not.toHaveProperty('amountCents')
     const dueAt = fines.fine_marina_calculo1!.dueAt as Date
-    expect(
-      lateBusinessDays(
-        dueAt,
-        at('2026-10-15', '12:00'),
-        holidayDates(holidays),
-      ),
-    ).toBe(3)
+    const late = lateBusinessDays(
+      dueAt,
+      at('2026-10-15', '12:00'),
+      holidayDates(holidays),
+    )
+    expect(late).toBe(3)
+    expect(late * RATE_CENTS).toBe(600)
   })
 })

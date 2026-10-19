@@ -7,7 +7,7 @@ async function freshBooks() {
   const { books } = buildSeed({
     holidays: await loadHolidaysFile(2026),
     tokenSecret: 'test-secret',
-    simulatedNow: true,
+    today: '2026-10-15',
   })
   return books
 }

@@ -1,20 +1,23 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildSeed, toWrites, type SeedData } from './build.js'
+import { lateBusinessDays } from './business-days.js'
 import {
   holidayDates,
   loadHolidaysFile,
   type HolidaysDocument,
 } from './holidays.js'
-import { at } from './time.js'
+import { at, localDate, plusDays } from './time.js'
+
+const BASE_DAY = '2026-10-15'
 
 let data: SeedData
 let holidays: HolidaysDocument
-let nonWorkingDates: Set<string>
 
 beforeAll(async () => {
   holidays = await loadHolidaysFile(2026)
-  nonWorkingDates = holidayDates(holidays)
-  data = buildSeed({ holidays, tokenSecret: 'test-secret', simulatedNow: true })
+  // The example day of the documents (15/10): the shift is zero, so the tables
+  // of sections 6.1 to 6.5 can be checked date by date.
+  data = buildSeed({ holidays, tokenSecret: 'test-secret', today: BASE_DAY })
 })
 
 describe('counters (section 8, step 6)', () => {
@@ -178,15 +181,6 @@ describe('consistency', () => {
     )
   })
 
-  it('never lands a due date on a Sunday or a holiday', () => {
-    for (const [id, loan] of Object.entries(data.loans)) {
-      if (!loan.dueAt) continue
-      const day = loan.dueAt.toISOString().slice(0, 10)
-      expect(loan.dueAt.getUTCDay() === 0, id).toBe(false)
-      expect(nonWorkingDates.has(day), id).toBe(false)
-    }
-  })
-
   it('RET-4821 follows section 6.4 and links the fulfilled queue entry', () => {
     expect(data.loans.loan_ret4821).toMatchObject({
       status: 'awaiting_pickup',
@@ -211,7 +205,7 @@ describe('consistency', () => {
     const again = buildSeed({
       holidays,
       tokenSecret: 'test-secret',
-      simulatedNow: true,
+      today: BASE_DAY,
     })
     expect(again.loans.loan_diego_refatoracao!.qrToken).toBe(
       data.loans.loan_diego_refatoracao!.qrToken,
@@ -219,7 +213,7 @@ describe('consistency', () => {
     const other = buildSeed({
       holidays,
       tokenSecret: 'another-secret',
-      simulatedNow: true,
+      today: BASE_DAY,
     })
     expect(other.loans.loan_diego_refatoracao!.qrToken).not.toBe(
       data.loans.loan_diego_refatoracao!.qrToken,
@@ -300,15 +294,8 @@ describe('documents', () => {
     expect(tones.slice(0, 8)).toEqual([1, 2, 3, 4, 5, 6, 1, 2])
   })
 
-  it('puts simulatedNow only in the test environment', () => {
-    const production = buildSeed({
-      holidays,
-      tokenSecret: 'test-secret',
-      simulatedNow: false,
-    })
-
-    expect(data.settings.simulatedNow).toEqual(at('2026-10-15', '12:00'))
-    expect(production.settings.simulatedNow).toBeNull()
+  it('has no simulated "today" in the settings: the dates are real', () => {
+    expect(data.settings).not.toHaveProperty('simulatedNow')
   })
 
   it("creates Lucas's three folders and three saved books", () => {
@@ -358,5 +345,95 @@ describe('documents', () => {
     expect(collections).not.toContain('recesses')
     expect(collections).not.toContain('auditLog')
     expect(collections).not.toContain('emailTokens')
+  })
+})
+
+// The seed follows the day it runs: whichever day that is, the situations of
+// sections 6.1 to 6.5 must hold (not the example dates).
+describe.each([
+  ['the example day (Thursday)', '2026-10-15'],
+  ['a Monday', '2026-10-19'],
+  ['a Wednesday', '2026-10-21'],
+  ['a Saturday', '2026-10-24'],
+  ['a Sunday', '2026-10-25'],
+  ['another month', '2026-12-09'],
+  ['next year', '2027-02-17'],
+])('situations when the seed runs on %s', (_label, today) => {
+  let run: SeedData
+
+  beforeAll(() => {
+    run = buildSeed({ holidays, tokenSecret: 'test-secret', today })
+  })
+
+  const day = (date: Date | undefined) => localDate(date!)
+
+  it('keeps Lucas with 4 of 10 and the RET-4821 order inside its pickup deadline', () => {
+    expect(run.users.uid_lucas).toMatchObject({ activeLoanCount: 4 })
+    const order = run.loans.loan_ret4821!
+    expect(order.status).toBe('awaiting_pickup')
+    expect(day(order.pickupDeadline as Date)).toBe(plusDays(today, 4))
+    expect(day(order.requestedAt as Date)).toBe(today)
+    expect((order.pickupDeadline as Date).getTime()).toBeGreaterThan(
+      (order.requestedAt as Date).getTime(),
+    )
+  })
+
+  it('keeps Marina with an overdue loan and an accruing fine', () => {
+    expect(run.users.uid_marina).toMatchObject({ activeLoanCount: 3 })
+    const loan = run.loans.loan_marina_calculo1!
+    expect(loan.status).toBe('active')
+    expect(day(loan.dueAt)).toBe(plusDays(today, -5))
+    expect(run.fines.fine_marina_calculo1).toMatchObject({
+      status: 'accruing',
+      loanId: 'loan_marina_calculo1',
+    })
+    // About 3 business days (a holiday or a weekend may change it by a little).
+    expect(
+      lateBusinessDays(loan.dueAt!, at(today, '12:00'), holidayDates(holidays)),
+    ).toBeGreaterThanOrEqual(1)
+  })
+
+  it('keeps Beatriz on her last pickup day and Rafael with a deadline until tomorrow', () => {
+    expect(day(run.loans.loan_beatriz_padroes!.pickupDeadline as Date)).toBe(
+      today,
+    )
+    expect(day(run.loans.loan_rafael_calculo2!.pickupDeadline as Date)).toBe(
+      plusDays(today, 1),
+    )
+  })
+
+  it("keeps Lucas's Engenharia de Software due soon, with 2 people in the queue", () => {
+    expect(day(run.loans.loan_lucas_engenharia!.dueAt)).toBe(plusDays(today, 1))
+    expect(run.books.book_engenharia_de_software).toMatchObject({
+      queueLength: 2,
+    })
+  })
+
+  it('keeps Arquitetura Limpa with 4 in the queue and the open fines fixed', () => {
+    expect(run.books.book_arquitetura_limpa).toMatchObject({ queueLength: 4 })
+    const open = Object.values(run.fines).filter((f) => f.status === 'open')
+    expect(open.map((f) => f.amountCents).sort()).toEqual([1000, 400, 600, 800])
+  })
+
+  it('keeps the dates in order: nothing is due or returned before it is ordered, and returns are in the past', () => {
+    for (const [id, loan] of Object.entries(run.loans)) {
+      const requested = (loan.requestedAt as Date).getTime()
+      if (loan.dueAt)
+        expect(loan.dueAt.getTime(), id).toBeGreaterThan(requested)
+      if (loan.returnedAt) {
+        expect(loan.returnedAt.getTime(), id).toBeGreaterThan(requested)
+        expect(day(loan.returnedAt) < today, id).toBe(true)
+      }
+    }
+  })
+
+  it('keeps the notification texts in line with the deadlines', () => {
+    const pickup = run.notifications.notif_pickup_ready!.body as string
+    const reminder = run.notifications.notif_due_reminder!.body as string
+
+    expect(pickup).toMatch(
+      /^Retire até (dom|seg|ter|qua|qui|sex|sáb), \d{2}\/\d{2}\. Código RET-4821\.$/,
+    )
+    expect(reminder).toContain('Há 2 pessoas na fila')
   })
 })

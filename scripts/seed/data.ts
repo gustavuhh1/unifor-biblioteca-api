@@ -1,8 +1,10 @@
 // Static seed data: docs/modelo-de-dados-firestore.md, sections 6.1 to 6.5.
-// Dates are "AAAA-MM-DD" (America/Fortaleza). Nothing here is computed.
+// Dates are "AAAA-MM-DD" (America/Fortaleza) and are only the example of the
+// documented day: the builder turns each one into an offset from BASE_DATE and
+// applies it to the day the seed runs. Nothing here is computed.
 
-// "Today" of the demo (section 6): Thursday, 15/10/2026, at noon.
-export const TODAY = '2026-10-15'
+// The documented "today" (section 6): Thursday, 15/10/2026.
+export const BASE_DATE = '2026-10-15'
 export const NOW_TIME = '12:00'
 
 export const AUTH_EMAIL_DOMAIN = 'contas.uni-books.app'
@@ -632,6 +634,8 @@ export interface FineSpec {
   id: string
   loan: string
   status: 'accruing' | 'open'
+  // Open fines are frozen: their days (and amounts) stay fixed (section 6.5).
+  businessDaysLate?: number
 }
 
 export const FINES: FineSpec[] = [
@@ -644,14 +648,26 @@ export const FINES: FineSpec[] = [
     id: 'fine_pedrohenrique_fisica',
     loan: 'loan_pedrohenrique_fisica',
     status: 'open',
+    businessDaysLate: 5,
   },
   {
     id: 'fine_julia_contabilidade',
     loan: 'loan_julia_contabilidade',
     status: 'open',
+    businessDaysLate: 2,
   },
-  { id: 'fine_camila_direito', loan: 'loan_camila_direito', status: 'open' },
-  { id: 'fine_diego_anatomia', loan: 'loan_diego_anatomia', status: 'open' },
+  {
+    id: 'fine_camila_direito',
+    loan: 'loan_camila_direito',
+    status: 'open',
+    businessDaysLate: 4,
+  },
+  {
+    id: 'fine_diego_anatomia',
+    loan: 'loan_diego_anatomia',
+    status: 'open',
+    businessDaysLate: 3,
+  },
 ]
 
 // Lucas's saved books and folders (section 6.5): the first folder holds three books.

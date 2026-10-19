@@ -14,7 +14,7 @@ import {
   parseCliArgs,
   type CliOptions,
 } from './seed/cli.js'
-import { AUTH_EMAIL_DOMAIN, USERS } from './seed/data.js'
+import { AUTH_EMAIL_DOMAIN, BASE_DATE, USERS } from './seed/data.js'
 import { publishFirestoreConfig } from './seed/deploy.js'
 import { clearDatabase, writeAll } from './seed/firestore.js'
 import { enrichFromGoogleBooks } from './seed/google-books.js'
@@ -23,17 +23,19 @@ import {
   loadHolidaysFile,
   type HolidaysDocument,
 } from './seed/holidays.js'
+import { daysBetween, localDate } from './seed/time.js'
 import { countDocuments, runChecks } from './seed/verify.js'
 
-const YEAR = 2026
-
-async function loadHolidays(options: CliOptions): Promise<HolidaysDocument> {
+async function loadHolidays(
+  options: CliOptions,
+  year: number,
+): Promise<HolidaysDocument> {
   const apiKey = process.env.FERIADOS_API_KEY
   if (!options.offline && apiKey) {
     try {
-      const document = await fetchHolidays(YEAR, apiKey)
+      const document = await fetchHolidays(year, apiKey)
       console.log(
-        `  holidays/${YEAR}: ${document.items.length} feriados da FeriadosAPI`,
+        `  holidays/${year}: ${document.items.length} feriados da FeriadosAPI`,
       )
       return document
     } catch (error) {
@@ -42,9 +44,13 @@ async function loadHolidays(options: CliOptions): Promise<HolidaysDocument> {
       console.warn(`  FeriadosAPI falhou (${reason}); usando o arquivo local.`)
     }
   }
-  const document = await loadHolidaysFile(YEAR)
+  const document = await loadHolidaysFile(year).catch(() => {
+    throw new Error(
+      `Não há arquivo local de feriados de ${year}. Rode sem --offline e com FERIADOS_API_KEY no .env.`,
+    )
+  })
   console.log(
-    `  holidays/${YEAR}: ${document.items.length} feriados do arquivo local`,
+    `  holidays/${year}: ${document.items.length} feriados do arquivo local`,
   )
   return document
 }
@@ -73,6 +79,10 @@ async function main(): Promise<number> {
   }
   const password = process.env.SEED_TEST_PASSWORD!
 
+  // "Today" is the day the seed runs: every date of the data follows it.
+  const today = localDate(new Date())
+  const year = Number(today.slice(0, 4))
+
   console.log('1. Ambiente')
   if (options.prod) {
     if (!(await confirmProduction(options))) {
@@ -100,7 +110,10 @@ async function main(): Promise<number> {
   }
 
   console.log('3. Configurações e feriados')
-  const holidays = await loadHolidays(options)
+  console.log(
+    `  hoje (America/Fortaleza): ${today}; datas deslocadas ${daysBetween(BASE_DATE, today)} dia(s) em relação ao exemplo de ${BASE_DATE}`,
+  )
+  const holidays = await loadHolidays(options, year)
 
   console.log('4. Contas do Firebase Authentication')
   await upsertAccounts(
@@ -115,11 +128,7 @@ async function main(): Promise<number> {
   console.log(`  ${USERS.length} contas prontas`)
 
   console.log('5. a 7. Dados')
-  const data = buildSeed({
-    holidays,
-    tokenSecret: password,
-    simulatedNow: !options.prod,
-  })
+  const data = buildSeed({ holidays, tokenSecret: password, today })
   if (options.googleBooks && process.env.GOOGLE_BOOKS_API_KEY) {
     const result = await enrichFromGoogleBooks(
       data.books,
@@ -147,7 +156,7 @@ async function main(): Promise<number> {
 
   console.log('9. Conferência')
   for (const line of await countDocuments(db)) console.log(`  ${line}`)
-  const checks = await runChecks(db, holidays)
+  const checks = await runChecks(db, holidays, today)
   for (const check of checks) {
     console.log(
       `  ${check.ok ? 'OK    ' : 'FALHOU'} ${check.label} (${check.detail})`,
