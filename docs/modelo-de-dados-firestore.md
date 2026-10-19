@@ -683,9 +683,6 @@ Todas em **transação** (Firestore `runTransaction`), para os contadores e os e
     { "collectionGroup": "savedBooks", "queryScope": "COLLECTION",
       "fields": [ {"fieldPath": "folderIds", "arrayConfig": "CONTAINS"}, {"fieldPath": "savedAt", "order": "DESCENDING"} ] },
 
-    { "collectionGroup": "assistantMessages", "queryScope": "COLLECTION",
-      "fields": [ {"fieldPath": "createdAt", "order": "ASCENDING"} ] },
-
     { "collectionGroup": "auditLog", "queryScope": "COLLECTION",
       "fields": [ {"fieldPath": "bookId", "order": "ASCENDING"}, {"fieldPath": "createdAt", "order": "DESCENDING"} ] },
 
@@ -695,6 +692,8 @@ Todas em **transação** (Firestore `runTransaction`), para os contadores e os e
   "fieldOverrides": []
 }
 ```
+
+A conversa do Assistente (assistantMessages ordenada por createdAt) também usa o índice automático: o Firestore recusa índice composto de um campo só (removido em 18/10).
 
 Consultas com um campo só (ex.: `loans.pickupCode == "RET-4821"`, `loans.qrToken == …`, `copies.registration == …`) usam os índices automáticos.
 
