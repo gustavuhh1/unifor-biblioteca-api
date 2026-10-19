@@ -1,0 +1,44 @@
+{
+  "name": "unifor-biblioteca-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "REST API for Unifor Biblioteca",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node --env-file-if-exists=.env dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "emulators": "firebase emulators:start",
+    "seed": "node -e \"console.error('O seed (scripts/seed.ts) ainda não existe: é a próxima tarefa.'); process.exit(1)\""
+  },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^9.1.0",
+    "@date-fns/tz": "^1.5.0",
+    "@simplewebauthn/server": "^14.0.3",
+    "date-fns": "^4.4.0",
+    "express": "^5.3.0",
+    "firebase-admin": "^14.5.0",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.19.2",
+    "@types/swagger-ui-express": "^4.1.8",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5"
+  }
+}
