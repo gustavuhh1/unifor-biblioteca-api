@@ -6,24 +6,19 @@ import { checkToken, resendWaitSeconds } from '../rules/email-token.rules.js'
 
 // Regras do fluxo do token de e-mail, em cima do repositório.
 
-// Segundos que faltam para poder enviar outro token; 0 quer dizer que já pode.
-export function sendWaitSeconds(recent: EmailTokenRecord[], now: Date): number {
-  return resendWaitSeconds(recent[0]?.createdAt, now)
-}
-
 // Responde 429 se o último token foi enviado há menos de 60 segundos.
 export function assertCanSendToken(
   recent: EmailTokenRecord[],
   now: Date,
 ): void {
-  const wait = sendWaitSeconds(recent, now)
+  const wait = resendWaitSeconds(recent[0]?.createdAt, now)
   if (wait > 0) throw tooSoon(wait)
 }
 
 // Confere o código digitado com o token mais novo. Um código errado conta uma
 // tentativa; com consume, um código certo marca o token como usado. Sem token, a
 // resposta é a mesma de um token vencido.
-export function evaluateToken(
+export function verifyTokenAndRecordAttempt(
   tx: Transaction,
   recent: EmailTokenRecord[],
   code: string,

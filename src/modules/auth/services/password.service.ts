@@ -6,8 +6,11 @@ import type { PasswordResetBody } from '../auth.types.js'
 import { sendTokenEmail } from '../mail/mailer.js'
 import * as emailTokensRepository from '../repositories/email-tokens.repository.js'
 import * as usersRepository from '../repositories/users.repository.js'
-import { createTokenSecret } from '../rules/email-token.rules.js'
-import { evaluateToken, sendWaitSeconds } from './email-token.service.js'
+import {
+  createTokenSecret,
+  resendWaitSeconds,
+} from '../rules/email-token.rules.js'
+import { verifyTokenAndRecordAttempt } from './email-token.service.js'
 
 const PURPOSE = TOKEN_PURPOSE.passwordReset
 
@@ -32,7 +35,7 @@ export async function requestPasswordRecovery(matricula: string) {
     )
     // Dentro dos 60 segundos nada é enviado, e a resposta continua igual: um
     // erro aqui mostraria que a conta existe.
-    if (sendWaitSeconds(previous, now) > 0) return undefined
+    if (resendWaitSeconds(previous[0]?.createdAt, now) > 0) return undefined
 
     emailTokensRepository.issue(
       tx,
@@ -84,7 +87,7 @@ export async function resetPassword(input: PasswordResetBody) {
       account.uid,
       PURPOSE,
     )
-    const check = evaluateToken(tx, recent, input.token, {
+    const check = verifyTokenAndRecordAttempt(tx, recent, input.token, {
       now,
       maxAttempts: settings.maxAttempts,
       consume: true,

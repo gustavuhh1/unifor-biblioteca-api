@@ -19,7 +19,10 @@ import { sendTokenEmail } from '../mail/mailer.js'
 import * as emailTokensRepository from '../repositories/email-tokens.repository.js'
 import * as usersRepository from '../repositories/users.repository.js'
 import { createTokenSecret } from '../rules/email-token.rules.js'
-import { assertCanSendToken, evaluateToken } from './email-token.service.js'
+import {
+  assertCanSendToken,
+  verifyTokenAndRecordAttempt,
+} from './email-token.service.js'
 import { createRegistrationOptions } from './passkey.service.js'
 
 const PURPOSE = TOKEN_PURPOSE.emailConfirmation
@@ -229,7 +232,7 @@ export async function confirmSignup(input: SignupConfirmBody) {
       account.uid,
       PURPOSE,
     )
-    const check = evaluateToken(tx, recent, input.token, {
+    const check = verifyTokenAndRecordAttempt(tx, recent, input.token, {
       ...options,
       consume: false,
     })
@@ -243,7 +246,7 @@ export async function confirmSignup(input: SignupConfirmBody) {
 
   await db.runTransaction(async (tx) => {
     const recent = await emailTokensRepository.findRecent(tx, uid, PURPOSE)
-    const check = evaluateToken(tx, recent, input.token, {
+    const check = verifyTokenAndRecordAttempt(tx, recent, input.token, {
       ...options,
       consume: true,
     })
