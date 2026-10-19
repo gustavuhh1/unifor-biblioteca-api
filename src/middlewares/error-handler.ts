@@ -1,8 +1,8 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express'
 import { ZodError } from 'zod'
-import { AppError } from '../shared/errors.js'
+import { AppError, type ErrorExtra } from '../shared/errors.js'
 
-interface ErrorBody {
+interface ErrorBody extends ErrorExtra {
   code: string
   message: string
 }
@@ -25,13 +25,21 @@ function toErrorResponse(error: unknown): { status: number; body: ErrorBody } {
   if (error instanceof AppError) {
     return {
       status: error.status,
-      body: { code: error.code, message: error.message },
+      body: { code: error.code, message: error.message, ...error.extra },
     }
   }
   if (error instanceof ZodError) {
+    // The messages come from the schemas, which are written in Portuguese.
     return {
       status: 400,
-      body: { code: 'validation_error', message: 'Dados inválidos.' },
+      body: {
+        code: 'validation_error',
+        message: 'Dados inválidos.',
+        fields: error.issues.map((issue) => ({
+          field: issue.path.join('.'),
+          message: issue.message,
+        })),
+      },
     }
   }
 
@@ -72,5 +80,8 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, next) => {
     return
   }
   const { status, body } = toErrorResponse(error)
+  if (body.retryAfterSeconds !== undefined) {
+    res.set('Retry-After', String(body.retryAfterSeconds))
+  }
   res.status(status).json(body)
 }

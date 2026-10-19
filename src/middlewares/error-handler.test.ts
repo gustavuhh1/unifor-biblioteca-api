@@ -8,6 +8,7 @@ function fakeResponse() {
   return {
     headersSent: false,
     status: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
     json: vi.fn(),
   }
 }
@@ -31,14 +32,49 @@ describe('errorHandler', () => {
     })
   })
 
-  it('turns Zod validation errors into 400', () => {
-    const parsed = z.object({ matricula: z.string().length(7) }).safeParse({})
+  it('adds the extra fields of an AppError to the body', () => {
+    const res = handle(
+      new AppError(409, 'signup_conflict', 'Já cadastrado.', {
+        fields: [{ field: 'matricula', message: 'Matrícula já cadastrada.' }],
+      }),
+    )
+
+    expect(res.json).toHaveBeenCalledWith({
+      code: 'signup_conflict',
+      message: 'Já cadastrado.',
+      fields: [{ field: 'matricula', message: 'Matrícula já cadastrada.' }],
+    })
+  })
+
+  it('sends Retry-After when the error says when to try again', () => {
+    const res = handle(
+      new AppError(429, 'token_resend_too_soon', 'Aguarde.', {
+        retryAfterSeconds: 42,
+      }),
+    )
+
+    expect(res.status).toHaveBeenCalledWith(429)
+    expect(res.set).toHaveBeenCalledWith('Retry-After', '42')
+    expect(res.json).toHaveBeenCalledWith({
+      code: 'token_resend_too_soon',
+      message: 'Aguarde.',
+      retryAfterSeconds: 42,
+    })
+  })
+
+  it('turns Zod validation errors into 400 with the wrong fields', () => {
+    const parsed = z
+      .object({
+        matricula: z.string().length(7, 'A matrícula tem 7 dígitos.'),
+      })
+      .safeParse({ matricula: '12' })
     const res = handle(parsed.error)
 
     expect(res.status).toHaveBeenCalledWith(400)
     expect(res.json).toHaveBeenCalledWith({
       code: 'validation_error',
       message: 'Dados inválidos.',
+      fields: [{ field: 'matricula', message: 'A matrícula tem 7 dígitos.' }],
     })
   })
 

@@ -1,3 +1,15 @@
+// A field the app can mark as wrong. `message` is Portuguese.
+export interface FieldError {
+  field: string
+  message: string
+}
+
+// Optional parts of the error body, next to `code` and `message`.
+export interface ErrorExtra {
+  fields?: FieldError[]
+  retryAfterSeconds?: number
+}
+
 // `code` is a stable English identifier the app can rely on.
 // `message` is Portuguese and shown to the user as is.
 export class AppError extends Error {
@@ -5,6 +17,7 @@ export class AppError extends Error {
     readonly status: number,
     readonly code: string,
     message: string,
+    readonly extra: ErrorExtra = {},
   ) {
     super(message)
     this.name = 'AppError'
