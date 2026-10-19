@@ -86,6 +86,14 @@ Regras:
 - **Testes em `__tests__/`** do módulo. O código de `src/shared`, `src/middlewares`, `src/config` e `src/docs` tem o teste ao lado (`*.test.ts`). O Firestore falso dos testes está em `src/test-support`.
 - **Comentários e textos de `describe`/`it` em português (pt-BR)**: toda função exportada tem uma linha dizendo o que faz e, quando houver, o requisito que atende (ex.: `RF-AUT-01`). Os nomes continuam em inglês.
 
+## Sem redundância
+
+- Antes de criar uma função, tipo, constante, schema ou mensagem de erro, **procure no projeto** (`src/shared` e o módulo) se já existe algo igual ou parecido. Se existir, reutilize; se for quase igual, **generalize o que já existe** em vez de criar outro.
+- **Nada é declarado duas vezes**: tipos fundamentais só em `src/shared/types`; nomes de coleções só em `src/shared/firestore/collections.ts`; regras usadas por mais de um módulo vão para `src/shared`.
+- **Duas funções com o mesmo objetivo e nomes diferentes são proibidas.**
+- **Texto que se repete** (status, perfis, finalidades, mensagens de erro) **vira constante tipada**. Os valores dos enums têm objetos de constantes em `src/shared/types/enums.ts` (`USER_STATUS.pendingEmail`, `USER_ROLE.student`, `EMAIL_TOKEN_PURPOSE.emailConfirmation`...): o código não escreve `'pending_email'` nem `'student'` soltos. Cada valor é escrito uma vez só, na lista do enum. Conjuntos fixos de textos de um módulo usam o mesmo `constantsOf` (`src/shared/constants-of.ts`).
+- **No fim de cada tarefa, informe** quais funções ou tipos você reutilizou e se encontrou alguma duplicação; se encontrou e não removeu, diga onde.
+
 ## Segredos
 
 - Nunca escreva chave, senha ou token no código, em testes, em logs ou em documentos. Nunca peça ao Gustavo para colar uma chave na conversa.
