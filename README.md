@@ -44,13 +44,33 @@ REST API for Unifor Biblioteca, a university library app. Node + TypeScript + Ex
 
 ### Other commands
 
-| Command              | What it does                         |
-| -------------------- | ------------------------------------ |
-| `npm test`           | Unit tests (Vitest)                  |
-| `npm run test:watch` | Unit tests in watch mode             |
-| `npm run lint`       | ESLint                               |
-| `npm run format`     | Prettier                             |
-| `npm run typecheck`  | Type-check without emitting files    |
-| `npm run build`      | Compile to `dist/`                   |
-| `npm start`          | Run the compiled server              |
-| `npm run seed`       | Load demo data (not implemented yet) |
+| Command              | What it does                      |
+| -------------------- | --------------------------------- |
+| `npm test`           | Unit tests (Vitest)               |
+| `npm run test:watch` | Unit tests in watch mode          |
+| `npm run lint`       | ESLint                            |
+| `npm run format`     | Prettier                          |
+| `npm run typecheck`  | Type-check without emitting files |
+| `npm run build`      | Compile to `dist/`                |
+| `npm start`          | Run the compiled server           |
+| `npm run seed`       | Load the demo data (see below)    |
+
+## Loading the demo data
+
+The seed fills the database with the demo data of `docs/modelo-de-dados-firestore.md` (sections 6 and 8). It runs against the emulators by default, so start them first (`npm run emulators`).
+
+1. Set `SEED_TEST_PASSWORD` in your `.env`: the password of the test accounts. The seed stops with a message if it is missing.
+2. Run it:
+
+   ```sh
+   npm run seed
+   ```
+
+It can be run again at any time and always reaches the same state. Options (pass them after `--`):
+
+| Option              | What it does                                                                                  |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `--no-google-books` | Skip the Google Books requests (cover, synopsis and publisher)                                |
+| `--offline`         | No external call at all: holidays come from `scripts/data/holidays-2026.json`                 |
+| `--prod`            | Write to **production** (`estoque-pay`). Asks you to type the project ID first                |
+| `--reset`           | With `--prod` only: wipe the collections before writing. Asks for a second typed confirmation |
