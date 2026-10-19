@@ -42,8 +42,8 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-describe('getMe', () => {
-  it('shows the profile, with null where the student has no name yet', async () => {
+describe('dados de quem está logado (getMe)', () => {
+  it('mostra o perfil, com null onde o aluno ainda não tem nome', async () => {
     const me = await getMe('uid_lucas')
 
     expect(me).toMatchObject({
@@ -61,11 +61,11 @@ describe('getMe', () => {
     })
   })
 
-  it('never exposes the internal Firebase e-mail', async () => {
+  it('nunca expõe o e-mail interno do Firebase', async () => {
     expect(await getMe('uid_lucas')).not.toHaveProperty('authEmail')
   })
 
-  it('answers 404 for an account without a profile document', async () => {
+  it('responde 404 para conta sem documento de perfil', async () => {
     await expect(getMe('uid_nobody')).rejects.toMatchObject({
       status: 404,
       code: 'profile_not_found',
@@ -73,8 +73,8 @@ describe('getMe', () => {
   })
 })
 
-describe('updateFullName', () => {
-  it('saves the name with the normalized name and the initials', async () => {
+describe('nome completo do aluno (updateFullName)', () => {
+  it('grava o nome com o nome normalizado e as iniciais', async () => {
     const me = await updateFullName('uid_lucas', 'João da Conceição Almeida')
 
     expect(me).toMatchObject({
@@ -90,8 +90,8 @@ describe('updateFullName', () => {
   })
 })
 
-describe('logout', () => {
-  it('revokes the refresh tokens of the user', async () => {
+describe('encerramento da sessão (logout)', () => {
+  it('revoga os refresh tokens do usuário', async () => {
     await logout('uid_lucas')
 
     expect(h.auth.revokeRefreshTokens).toHaveBeenCalledWith('uid_lucas')

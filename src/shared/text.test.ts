@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { initialsOf, normalizeText } from './text.js'
 
-describe('normalizeText', () => {
-  it('lower-cases and removes accents', () => {
+describe('texto normalizado (normalizeText)', () => {
+  it('passa para minúsculas e tira os acentos', () => {
     expect(normalizeText('João da Conceição')).toBe('joao da conceicao')
   })
 })
 
-describe('initialsOf', () => {
-  it('takes the first letter of the first and of the last name', () => {
+describe('iniciais do aluno (initialsOf)', () => {
+  it('pega a primeira letra do primeiro e do último nome', () => {
     expect(initialsOf('Lucas Almeida')).toBe('LA')
     expect(initialsOf('Maria da Silva Souza')).toBe('MS')
     expect(initialsOf('álvaro ávila')).toBe('ÁÁ')
   })
 
-  it('uses one letter for a single name', () => {
+  it('usa uma letra para um nome só', () => {
     expect(initialsOf('Lucas')).toBe('L')
   })
 })

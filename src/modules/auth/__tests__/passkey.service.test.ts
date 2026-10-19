@@ -107,8 +107,8 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-describe('createRegistrationOptions', () => {
-  it('stores a challenge for the account that lasts 5 minutes', async () => {
+describe('opções para criar o passkey (createRegistrationOptions)', () => {
+  it('guarda um desafio da conta que vale 5 minutos', async () => {
     const options = await createRegistrationOptions('uid_lucas')
 
     expect(h.db.all('passkeyChallenges')).toMatchObject([
@@ -121,7 +121,7 @@ describe('createRegistrationOptions', () => {
     ])
   })
 
-  it('makes the phone refuse a second passkey on a device that has one', async () => {
+  it('faz o celular recusar um segundo passkey num aparelho que já tem um', async () => {
     addPasskey('cred-1', 'uid_lucas', { transports: ['internal'] })
     addPasskey('cred-other', 'uid_marina')
 
@@ -133,8 +133,8 @@ describe('createRegistrationOptions', () => {
   })
 })
 
-describe('createLoginOptions', () => {
-  it('lists the passkeys of the matrícula and stores a challenge for its owner', async () => {
+describe('desafio do login com passkey (createLoginOptions)', () => {
+  it('lista os passkeys da matrícula e guarda um desafio para o dono', async () => {
     addPasskey('cred-1', 'uid_lucas')
 
     const options = await createLoginOptions('2412858')
@@ -151,7 +151,7 @@ describe('createLoginOptions', () => {
     ])
   })
 
-  it('gives a new challenge on every request', async () => {
+  it('dá um desafio novo a cada pedido', async () => {
     addPasskey('cred-1', 'uid_lucas')
 
     const first = await createLoginOptions('2412858')
@@ -160,7 +160,7 @@ describe('createLoginOptions', () => {
     expect(first.challenge).not.toBe(second.challenge)
   })
 
-  it('answers an unknown matrícula, a librarian and a student without passkeys the same way', async () => {
+  it('responde igual para matrícula desconhecida, bibliotecário e aluno sem passkey', async () => {
     addStudent('uid_ana', '1000001', 'librarian')
     addPasskey('cred-ana', 'uid_ana')
     addStudent('uid_marina', '2513320')
@@ -177,22 +177,22 @@ describe('createLoginOptions', () => {
   })
 })
 
-describe('verifyLogin', () => {
-  it('refuses a challenge the API never issued', async () => {
+describe('login com passkey (verifyLogin)', () => {
+  it('recusa um desafio que a API nunca emitiu', async () => {
     await expect(verifyLogin(loginBody('made-up'))).rejects.toMatchObject({
       status: 401,
       code: 'passkey_login_failed',
     })
   })
 
-  it('refuses client data without a challenge', async () => {
+  it('recusa dados do cliente sem desafio', async () => {
     const body = loginBody('x')
     body.response.response.clientDataJSON = 'not json'
 
     await expect(verifyLogin(body)).rejects.toMatchObject({ status: 401 })
   })
 
-  it('refuses an expired challenge', async () => {
+  it('recusa um desafio vencido', async () => {
     addPasskey('cred-1', 'uid_lucas')
     addChallenge('old', { expiresAt: after(-1) })
 
@@ -202,7 +202,7 @@ describe('verifyLogin', () => {
     expect(h.db.read('passkeyChallenges', 'ch-old')!.usedAt).toBeUndefined()
   })
 
-  it('refuses a challenge made for registration', async () => {
+  it('recusa um desafio feito para registro', async () => {
     addPasskey('cred-1', 'uid_lucas')
     addChallenge('reg', { purpose: 'registration' })
 
@@ -211,7 +211,7 @@ describe('verifyLogin', () => {
     })
   })
 
-  it('spends the challenge even when the response is wrong, so it works once', async () => {
+  it('gasta o desafio mesmo com resposta errada, então ele vale uma vez só', async () => {
     addPasskey('cred-1', 'uid_lucas')
     addChallenge('c1')
 
@@ -226,7 +226,7 @@ describe('verifyLogin', () => {
     })
   })
 
-  it('refuses a passkey that belongs to another account', async () => {
+  it('recusa um passkey que pertence a outra conta', async () => {
     addPasskey('cred-1', 'uid_marina')
     addChallenge('c2')
 
@@ -236,7 +236,7 @@ describe('verifyLogin', () => {
     expect(h.auth.createCustomToken).not.toHaveBeenCalled()
   })
 
-  it('refuses a passkey that does not exist', async () => {
+  it('recusa um passkey que não existe', async () => {
     addChallenge('c3')
 
     await expect(
@@ -244,7 +244,7 @@ describe('verifyLogin', () => {
     ).rejects.toMatchObject({ code: 'passkey_login_failed' })
   })
 
-  it('refuses a signature that does not verify, without issuing a token', async () => {
+  it('recusa uma assinatura que não confere, sem emitir token', async () => {
     addPasskey('cred-1', 'uid_lucas')
     addChallenge('c4')
 
@@ -256,8 +256,8 @@ describe('verifyLogin', () => {
   })
 })
 
-describe('verifyRegistration', () => {
-  it('refuses a challenge the API never issued', async () => {
+describe('registro do passkey (verifyRegistration)', () => {
+  it('recusa um desafio que a API nunca emitiu', async () => {
     await expect(
       verifyRegistration(registerBody('made-up')),
     ).rejects.toMatchObject({
@@ -266,7 +266,7 @@ describe('verifyRegistration', () => {
     })
   })
 
-  it('refuses an authentication challenge', async () => {
+  it('recusa um desafio de login', async () => {
     addChallenge('login-challenge')
 
     await expect(
@@ -274,7 +274,7 @@ describe('verifyRegistration', () => {
     ).rejects.toMatchObject({ code: 'passkey_challenge_invalid' })
   })
 
-  it('spends the registration challenge even when the response is wrong', async () => {
+  it('gasta o desafio de registro mesmo com resposta errada', async () => {
     addChallenge('r1', { purpose: 'registration' })
 
     await expect(verifyRegistration(registerBody('r1'))).rejects.toMatchObject({
@@ -289,8 +289,8 @@ describe('verifyRegistration', () => {
   })
 })
 
-describe('listPasskeys', () => {
-  it('lists only the devices of the account, newest first, without the key', async () => {
+describe('lista de passkeys (listPasskeys)', () => {
+  it('lista só os aparelhos da conta, do mais novo ao mais antigo, sem a chave', async () => {
     addPasskey('cred-old', 'uid_lucas', {
       deviceName: 'Pixel 7',
       createdAt: after(-1000),
@@ -319,8 +319,8 @@ describe('listPasskeys', () => {
   })
 })
 
-describe('removePasskey', () => {
-  it('deletes the passkey and writes the audit log', async () => {
+describe('remoção de passkey (removePasskey)', () => {
+  it('apaga o passkey e grava o log de auditoria', async () => {
     addPasskey('cred-1', 'uid_lucas')
 
     await removePasskey('uid_lucas', 'cred-1')
@@ -335,7 +335,7 @@ describe('removePasskey', () => {
     ])
   })
 
-  it('says "not found" for a passkey of someone else and keeps it', async () => {
+  it('diz "não encontrado" para passkey de outra pessoa e o mantém', async () => {
     addPasskey('cred-1', 'uid_marina')
 
     await expect(removePasskey('uid_lucas', 'cred-1')).rejects.toMatchObject({

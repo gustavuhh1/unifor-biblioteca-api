@@ -70,8 +70,8 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-describe('startSignup', () => {
-  it('creates the user, both indexes and the token, and sends the code', async () => {
+describe('cadastro do aluno (startSignup)', () => {
+  it('cria o usuário, os dois índices e o token, e envia o código', async () => {
     const result = await startSignup(form)
 
     expect(result).toEqual({
@@ -105,7 +105,7 @@ describe('startSignup', () => {
     })
   })
 
-  it('creates the Firebase account disabled, with the internal e-mail', async () => {
+  it('cria a conta do Firebase desativada, com o e-mail interno', async () => {
     await startSignup(form)
     const uid = h.db.read('matriculaIndex', '2412858')!.uid
 
@@ -117,7 +117,7 @@ describe('startSignup', () => {
     })
   })
 
-  it('never keeps the code or the password in the database', async () => {
+  it('nunca guarda o código nem a senha no banco', async () => {
     await startSignup(form)
     const documents = [
       ...h.db.all('emailTokens'),
@@ -143,14 +143,14 @@ describe('startSignup', () => {
     expect(token!.expiresAt).toEqual(after(20 * 60))
   })
 
-  describe('uniqueness', () => {
+  describe('unicidade de matrícula e e-mail', () => {
     async function activeStudent() {
       const uid = await signUp()
       h.db.put('users', uid, { ...h.db.read('users', uid)!, status: 'active' })
       return uid
     }
 
-    it('refuses a matrícula that already has an account, naming the field', async () => {
+    it('recusa uma matrícula que já tem conta, dizendo o campo', async () => {
       await activeStudent()
       h.auth.createUser.mockClear()
       h.sent.length = 0
@@ -171,7 +171,7 @@ describe('startSignup', () => {
       expect(h.db.read('emailIndex', 'outro@edu.unifor.br')).toBeUndefined()
     })
 
-    it('refuses an e-mail that already has an account, naming the field', async () => {
+    it('recusa um e-mail que já tem conta, dizendo o campo', async () => {
       await activeStudent()
 
       await expect(
@@ -186,7 +186,7 @@ describe('startSignup', () => {
       expect(h.db.all('users')).toHaveLength(1)
     })
 
-    it('names both fields when both are taken', async () => {
+    it('diz os dois campos quando os dois estão ocupados', async () => {
       await activeStudent()
 
       await expect(startSignup(form)).rejects.toMatchObject({
@@ -195,7 +195,7 @@ describe('startSignup', () => {
       })
     })
 
-    it('treats a librarian matrícula as taken', async () => {
+    it('trata a matrícula de um bibliotecário como ocupada', async () => {
       h.db.put('matriculaIndex', '1000001', {
         uid: 'uid_ana',
         role: 'librarian',
@@ -209,7 +209,7 @@ describe('startSignup', () => {
       })
     })
 
-    it('compares the e-mail without caring about case', async () => {
+    it('compara o e-mail sem diferenciar maiúsculas', async () => {
       await activeStudent()
 
       await expect(
@@ -222,7 +222,7 @@ describe('startSignup', () => {
     })
   })
 
-  it('undoes the documents when the Firebase account cannot be created', async () => {
+  it('desfaz os documentos quando a conta do Firebase não pode ser criada', async () => {
     h.auth.createUser.mockRejectedValue(new Error('auth is down'))
 
     await expect(startSignup(form)).rejects.toThrow('auth is down')
@@ -234,8 +234,8 @@ describe('startSignup', () => {
     expect(h.sent).toEqual([])
   })
 
-  describe('repeating the sign-up while the e-mail is not confirmed', () => {
-    it('waits 60 seconds between two sends', async () => {
+  describe('repetir o cadastro enquanto o e-mail não foi confirmado', () => {
+    it('espera 60 segundos entre dois envios', async () => {
       await signUp()
       vi.setSystemTime(after(18))
 
@@ -247,7 +247,7 @@ describe('startSignup', () => {
       expect(h.sent).toHaveLength(1)
     })
 
-    it('replaces the e-mail, the password and the token', async () => {
+    it('troca o e-mail, a senha e o token', async () => {
       const uid = await signUp()
       const firstCode = lastCode()
       vi.setSystemTime(after(61))
@@ -279,7 +279,7 @@ describe('startSignup', () => {
       ).rejects.toMatchObject({ code: 'token_invalid' })
     })
 
-    it('does not take an e-mail that belongs to another account', async () => {
+    it('não aceita um e-mail que pertence a outra conta', async () => {
       await signUp()
       h.db.put('emailIndex', 'ocupado@edu.unifor.br', { uid: 'uid_other' })
       vi.setSystemTime(after(61))
@@ -291,8 +291,8 @@ describe('startSignup', () => {
   })
 })
 
-describe('resendSignupToken', () => {
-  it('sends a new token and invalidates the old one', async () => {
+describe('reenvio do token de confirmação (resendSignupToken)', () => {
+  it('envia um token novo e invalida o antigo', async () => {
     await signUp()
     const firstCode = lastCode()
     vi.setSystemTime(after(60))
@@ -309,7 +309,7 @@ describe('resendSignupToken', () => {
     ).rejects.toBeDefined()
   })
 
-  it('answers 429 with the seconds left when asked too soon', async () => {
+  it('responde 429 com os segundos que faltam quando pedido cedo demais', async () => {
     await signUp()
     vi.setSystemTime(after(10))
 
@@ -321,7 +321,7 @@ describe('resendSignupToken', () => {
     expect(h.sent).toHaveLength(1)
   })
 
-  it('has nothing to resend for an unknown matrícula or a confirmed account', async () => {
+  it('não tem o que reenviar para matrícula desconhecida ou conta já confirmada', async () => {
     await expect(resendSignupToken('2513320')).rejects.toMatchObject({
       status: 404,
       code: 'signup_not_found',
@@ -336,8 +336,8 @@ describe('resendSignupToken', () => {
   })
 })
 
-describe('confirmSignup', () => {
-  it('activates the account, enables it in Firebase and returns the passkey options', async () => {
+describe('confirmação do e-mail (confirmSignup)', () => {
+  it('ativa a conta, habilita no Firebase e devolve as opções do passkey', async () => {
     const uid = await signUp()
     vi.setSystemTime(after(5 * 60))
 
@@ -363,7 +363,7 @@ describe('confirmSignup', () => {
     expect(challenge!.expiresAt).toEqual(after(5 * 60 + 5 * 60))
   })
 
-  it('is single use: the same token cannot confirm twice', async () => {
+  it('é de uso único: o mesmo token não confirma duas vezes', async () => {
     await signUp()
     const code = lastCode()
     await confirmSignup({ matricula: form.matricula, token: code })
@@ -373,7 +373,7 @@ describe('confirmSignup', () => {
     ).rejects.toMatchObject({ status: 400, code: 'token_expired_or_used' })
   })
 
-  it('refuses the token after 20 minutes', async () => {
+  it('recusa o token depois de 20 minutos', async () => {
     await signUp()
     vi.setSystemTime(after(20 * 60))
 
@@ -383,7 +383,7 @@ describe('confirmSignup', () => {
     expect(h.auth.updateUser).not.toHaveBeenCalled()
   })
 
-  it('accepts the token one second before it expires', async () => {
+  it('aceita o token um segundo antes de vencer', async () => {
     await signUp()
     vi.setSystemTime(after(20 * 60 - 1))
 
@@ -392,7 +392,7 @@ describe('confirmSignup', () => {
     ).resolves.toBeDefined()
   })
 
-  it('counts each wrong code, and locks the token at the fifth', async () => {
+  it('conta cada código errado e bloqueia o token no quinto', async () => {
     await signUp()
     const right = lastCode()
     const wrong = right === '000000' ? '111111' : '000000'
@@ -420,13 +420,13 @@ describe('confirmSignup', () => {
     expect(h.auth.updateUser).not.toHaveBeenCalled()
   })
 
-  it('does not tell an unknown matrícula from an old token', async () => {
+  it('não diferencia matrícula desconhecida de token antigo', async () => {
     await expect(
       confirmSignup({ matricula: '2513320', token: '123456' }),
     ).rejects.toMatchObject({ code: 'token_expired_or_used' })
   })
 
-  it('leaves the token usable when Firebase fails to enable the account', async () => {
+  it('deixa o token utilizável quando o Firebase falha ao habilitar a conta', async () => {
     await signUp()
     const code = lastCode()
     h.auth.updateUser.mockRejectedValueOnce(new Error('auth is down'))

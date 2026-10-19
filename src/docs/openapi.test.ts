@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { buildOpenApiDocument } from './openapi.js'
 
-describe('buildOpenApiDocument', () => {
+describe('documento OpenAPI (buildOpenApiDocument)', () => {
   const document = buildOpenApiDocument()
 
-  it('documents GET /health', () => {
+  it('documenta GET /health', () => {
     expect(document.openapi).toBe('3.1.0')
     expect(document.paths?.['/health']?.get?.summary).toBeTruthy()
   })
 
-  it('documents every route of the access module', () => {
+  it('documenta todas as rotas do módulo de acesso', () => {
     const operations = Object.entries(document.paths ?? {}).flatMap(
       ([path, item]) =>
         ['get', 'post', 'patch', 'delete']
@@ -38,7 +38,7 @@ describe('buildOpenApiDocument', () => {
     )
   })
 
-  it('asks for the Firebase ID token only on the routes with a session', () => {
+  it('pede o ID token do Firebase só nas rotas com sessão', () => {
     const paths = document.paths ?? {}
 
     expect(paths['/me']?.get?.security).toEqual([{ bearerAuth: [] }])
@@ -51,7 +51,7 @@ describe('buildOpenApiDocument', () => {
     })
   })
 
-  it('builds the health response from the Zod schema', () => {
+  it('monta a resposta do health a partir do schema do Zod', () => {
     expect(document.components?.schemas?.HealthResponse).toMatchObject({
       type: 'object',
       properties: { status: { type: 'string', enum: ['ok'] } },

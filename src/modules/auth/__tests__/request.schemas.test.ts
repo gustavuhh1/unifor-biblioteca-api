@@ -10,8 +10,8 @@ import {
   tokenCodeSchema,
 } from '../schemas/request.schemas.js'
 
-describe('institutionalEmailSchema', () => {
-  it('accepts an @edu.unifor.br e-mail and lower-cases it', () => {
+describe('e-mail institucional (institutionalEmailSchema)', () => {
+  it('aceita um e-mail @edu.unifor.br e passa para minúsculas', () => {
     expect(institutionalEmailSchema.parse('lucas@edu.unifor.br')).toBe(
       'lucas@edu.unifor.br',
     )
@@ -34,11 +34,11 @@ describe('institutionalEmailSchema', () => {
     '@edu.unifor.br',
     'edu.unifor.br',
     '',
-  ])('refuses %j', (email) => {
+  ])('recusa %j', (email) => {
     expect(institutionalEmailSchema.safeParse(email).success).toBe(false)
   })
 
-  it('explains the rule in Portuguese', () => {
+  it('explica a regra em português', () => {
     const result = institutionalEmailSchema.safeParse('lucas@gmail.com')
 
     expect(result.error?.issues[0]?.message).toBe(
@@ -47,8 +47,8 @@ describe('institutionalEmailSchema', () => {
   })
 })
 
-describe('matriculaSchema', () => {
-  it('accepts exactly seven digits', () => {
+describe('matrícula (matriculaSchema)', () => {
+  it('aceita exatamente sete dígitos', () => {
     expect(matriculaSchema.parse('2412858')).toBe('2412858')
     expect(matriculaSchema.parse(' 2513320 ')).toBe('2513320')
     expect(matriculaSchema.parse('0012345')).toBe('0012345')
@@ -62,17 +62,17 @@ describe('matriculaSchema', () => {
     '241 2858',
     '',
     '-241285',
-  ])('refuses %j', (matricula) => {
+  ])('recusa %j', (matricula) => {
     expect(matriculaSchema.safeParse(matricula).success).toBe(false)
   })
 
-  it('refuses a number that is not text', () => {
+  it('recusa um número que não é texto', () => {
     expect(matriculaSchema.safeParse(2412858).success).toBe(false)
   })
 })
 
-describe('passwordSchema', () => {
-  it('accepts digits only, from 8 up', () => {
+describe('senha (passwordSchema)', () => {
+  it('aceita só dígitos, a partir de 8', () => {
     expect(passwordSchema.safeParse('12345678').success).toBe(true)
     expect(passwordSchema.safeParse('1234567890123').success).toBe(true)
   })
@@ -84,28 +84,28 @@ describe('passwordSchema', () => {
     '12345678a',
     '',
     '１２３４５６７８',
-  ])('refuses %j', (password) => {
+  ])('recusa %j', (password) => {
     expect(passwordSchema.safeParse(password).success).toBe(false)
   })
 
-  it('limits the length of the input', () => {
+  it('limita o tamanho da entrada', () => {
     expect(passwordSchema.safeParse('1'.repeat(128)).success).toBe(true)
     expect(passwordSchema.safeParse('1'.repeat(129)).success).toBe(false)
   })
 })
 
-describe('tokenCodeSchema', () => {
-  it('accepts six digits', () => {
+describe('token de e-mail digitado (tokenCodeSchema)', () => {
+  it('aceita seis dígitos', () => {
     expect(tokenCodeSchema.parse('012345')).toBe('012345')
     expect(tokenCodeSchema.parse(' 482913 ')).toBe('482913')
   })
 
-  it.each(['12345', '1234567', 'abcdef', '12 456'])('refuses %j', (token) => {
+  it.each(['12345', '1234567', 'abcdef', '12 456'])('recusa %j', (token) => {
     expect(tokenCodeSchema.safeParse(token).success).toBe(false)
   })
 })
 
-describe('signupStartBodySchema', () => {
+describe('formulário de cadastro (signupStartBodySchema)', () => {
   const valid = {
     email: 'lucas@edu.unifor.br',
     matricula: '2412858',
@@ -113,11 +113,11 @@ describe('signupStartBodySchema', () => {
     passwordConfirmation: '12345678',
   }
 
-  it('accepts a complete form', () => {
+  it('aceita um formulário completo', () => {
     expect(signupStartBodySchema.parse(valid)).toEqual(valid)
   })
 
-  it('points at the confirmation when the passwords differ', () => {
+  it('aponta a confirmação quando as senhas diferem', () => {
     const result = signupStartBodySchema.safeParse({
       ...valid,
       passwordConfirmation: '87654321',
@@ -128,7 +128,7 @@ describe('signupStartBodySchema', () => {
     ])
   })
 
-  it('reports each wrong field', () => {
+  it('informa cada campo errado', () => {
     const result = signupStartBodySchema.safeParse({
       email: 'lucas@gmail.com',
       matricula: '12',
@@ -143,7 +143,7 @@ describe('signupStartBodySchema', () => {
     ])
   })
 
-  it('refuses a missing field in Portuguese', () => {
+  it('recusa campo ausente em português', () => {
     const result = signupStartBodySchema.safeParse({})
 
     expect(result.error?.issues.map((issue) => issue.message)).toEqual([
@@ -155,8 +155,8 @@ describe('signupStartBodySchema', () => {
   })
 })
 
-describe('passwordResetBodySchema', () => {
-  it('needs the matrícula, the token and a matching new password', () => {
+describe('redefinição de senha (passwordResetBodySchema)', () => {
+  it('exige a matrícula, o token e uma nova senha que confere', () => {
     const body = {
       matricula: '2412858',
       token: '123456',
@@ -176,13 +176,13 @@ describe('passwordResetBodySchema', () => {
   })
 })
 
-describe('fullNameSchema', () => {
-  it('accepts a first name and a surname and tidies the spaces', () => {
+describe('nome completo (fullNameSchema)', () => {
+  it('aceita nome e sobrenome e arruma os espaços', () => {
     expect(fullNameSchema.parse('Lucas Almeida')).toBe('Lucas Almeida')
     expect(fullNameSchema.parse('  Maria   da  Silva ')).toBe('Maria da Silva')
   })
 
-  it('refuses one word, too short and too long', () => {
+  it('recusa uma palavra só, curto demais e longo demais', () => {
     expect(fullNameSchema.safeParse('Lucas').error?.issues[0]?.message).toBe(
       'Informe nome e sobrenome.',
     )
@@ -191,7 +191,7 @@ describe('fullNameSchema', () => {
     expect(fullNameSchema.safeParse(`A ${'b'.repeat(99)}`).success).toBe(false)
   })
 
-  it('accepts the limits of 3 and 100 characters', () => {
+  it('aceita os limites de 3 e 100 caracteres', () => {
     expect(fullNameSchema.safeParse('A B').success).toBe(true)
     expect(
       fullNameSchema.safeParse(`A ${'b'.repeat(98)}`.slice(0, 100)).success,
@@ -199,7 +199,7 @@ describe('fullNameSchema', () => {
   })
 })
 
-describe('passkeyRegisterBodySchema', () => {
+describe('corpo do registro do passkey (passkeyRegisterBodySchema)', () => {
   const response = {
     id: 'cred',
     rawId: 'cred',
@@ -207,7 +207,7 @@ describe('passkeyRegisterBodySchema', () => {
     response: { clientDataJSON: 'a', attestationObject: 'b' },
   }
 
-  it('needs the phone response and a device name', () => {
+  it('exige a resposta do celular e o nome do aparelho', () => {
     expect(
       passkeyRegisterBodySchema.safeParse({
         response,
@@ -229,7 +229,7 @@ describe('passkeyRegisterBodySchema', () => {
     ).toBe(false)
   })
 
-  it('keeps the fields of the response it does not know', () => {
+  it('mantém os campos da resposta que não conhece', () => {
     const parsed = passkeyRegisterBodySchema.parse({
       response: { ...response, authenticatorAttachment: 'platform' },
       deviceName: 'Galaxy A54',

@@ -69,8 +69,8 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-describe('requestPasswordRecovery', () => {
-  it('sends a token to the e-mail of the account and answers the generic message', async () => {
+describe('pedido de recuperação de senha (requestPasswordRecovery)', () => {
+  it('envia um token ao e-mail da conta e responde a mensagem genérica', async () => {
     const result = await requestPasswordRecovery('2412858')
 
     expect(result).toEqual({ message: RECOVERY_MESSAGE })
@@ -86,7 +86,7 @@ describe('requestPasswordRecovery', () => {
     })
   })
 
-  it('works for a librarian', async () => {
+  it('funciona para bibliotecário', async () => {
     addUser('uid_ana', '1000001', {
       role: 'librarian',
       email: 'ana@unifor.br',
@@ -97,7 +97,7 @@ describe('requestPasswordRecovery', () => {
     expect(h.sent[0]).toMatchObject({ to: 'ana@unifor.br' })
   })
 
-  it('gives the same answer, and sends nothing, when there is no such account', async () => {
+  it('dá a mesma resposta, sem enviar nada, quando a conta não existe', async () => {
     const unknown = await requestPasswordRecovery('2513320')
     const known = await requestPasswordRecovery('2412858')
 
@@ -106,7 +106,7 @@ describe('requestPasswordRecovery', () => {
     expect(h.db.all('emailTokens')).toHaveLength(1)
   })
 
-  it('sends nothing to an account that did not confirm the e-mail yet', async () => {
+  it('não envia nada a uma conta que ainda não confirmou o e-mail', async () => {
     addUser('uid_marina', '2513320', { status: 'pending_email' })
 
     const result = await requestPasswordRecovery('2513320')
@@ -115,7 +115,7 @@ describe('requestPasswordRecovery', () => {
     expect(h.sent).toEqual([])
   })
 
-  it('sends no second e-mail within 60 seconds, but answers the same', async () => {
+  it('não envia um segundo e-mail em 60 segundos, mas responde igual', async () => {
     const first = await requestPasswordRecovery('2412858')
     vi.setSystemTime(after(25))
 
@@ -132,7 +132,7 @@ describe('requestPasswordRecovery', () => {
     expect(h.sent).toHaveLength(2)
   })
 
-  it('answers exactly the same for an account, an unknown matrícula and a request too soon', async () => {
+  it('responde exatamente igual para uma conta, uma matrícula desconhecida e um pedido cedo demais', async () => {
     const unknown = await requestPasswordRecovery('2999999')
     const known = await requestPasswordRecovery('2412858')
     const tooSoon = await requestPasswordRecovery('2412858')
@@ -141,7 +141,7 @@ describe('requestPasswordRecovery', () => {
     expect(JSON.stringify(tooSoon)).toBe(JSON.stringify(unknown))
   })
 
-  it('keeps the generic answer when the e-mail cannot be sent', async () => {
+  it('mantém a resposta genérica quando o e-mail não pode ser enviado', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     h.sendEmail.mockRejectedValue(new Error('resend is down'))
 
@@ -150,7 +150,7 @@ describe('requestPasswordRecovery', () => {
     })
   })
 
-  it('keeps the confirmation token separate from the recovery token', async () => {
+  it('mantém o token de confirmação separado do de recuperação', async () => {
     h.db.put('emailTokens', 'old', {
       uid: 'uid_lucas',
       purpose: 'email_confirmation',
@@ -163,8 +163,8 @@ describe('requestPasswordRecovery', () => {
   })
 })
 
-describe('resetPassword', () => {
-  it('sets the new password, revokes the sessions and uses the token', async () => {
+describe('redefinição de senha (resetPassword)', () => {
+  it('define a nova senha, revoga as sessões e usa o token', async () => {
     await requestPasswordRecovery('2412858')
     vi.setSystemTime(after(120))
 
@@ -180,7 +180,7 @@ describe('resetPassword', () => {
     ])
   })
 
-  it('is single use: the token cannot reset the password twice', async () => {
+  it('é de uso único: o token não redefine a senha duas vezes', async () => {
     await requestPasswordRecovery('2412858')
     const code = lastCode()
     await resetPassword(resetBody(code))
@@ -193,7 +193,7 @@ describe('resetPassword', () => {
     expect(h.auth.updateUser).not.toHaveBeenCalled()
   })
 
-  it('refuses the token after 20 minutes', async () => {
+  it('recusa o token depois de 20 minutos', async () => {
     await requestPasswordRecovery('2412858')
     vi.setSystemTime(after(20 * 60))
 
@@ -203,7 +203,7 @@ describe('resetPassword', () => {
     expect(h.auth.updateUser).not.toHaveBeenCalled()
   })
 
-  it('locks the token after five wrong codes', async () => {
+  it('bloqueia o token depois de cinco códigos errados', async () => {
     await requestPasswordRecovery('2412858')
     const right = lastCode()
     const wrong = right === '000000' ? '111111' : '000000'
@@ -222,7 +222,7 @@ describe('resetPassword', () => {
     expect(h.db.all('auditLog')).toEqual([])
   })
 
-  it('refuses a token that a newer request replaced', async () => {
+  it('recusa um token que um pedido mais novo substituiu', async () => {
     await requestPasswordRecovery('2412858')
     const first = lastCode()
     vi.setSystemTime(after(61))
@@ -233,13 +233,13 @@ describe('resetPassword', () => {
     })
   })
 
-  it('answers an unknown matrícula like an expired token', async () => {
+  it('responde uma matrícula desconhecida como um token vencido', async () => {
     await expect(
       resetPassword(resetBody('123456', '2513320')),
     ).rejects.toMatchObject({ code: 'token_expired_or_used' })
   })
 
-  it('does not accept a confirmation token to reset a password', async () => {
+  it('não aceita um token de confirmação para redefinir a senha', async () => {
     h.db.put('emailTokens', 'confirm', {
       uid: 'uid_lucas',
       purpose: 'email_confirmation',

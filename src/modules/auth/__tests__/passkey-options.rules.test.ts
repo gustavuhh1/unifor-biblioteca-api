@@ -10,14 +10,14 @@ import {
 
 const ANDROID = 'android:apk-key-hash:AbC-_123'
 
-describe('buildExpectedOrigins', () => {
-  it('accepts the web origin of the RP ID', () => {
+describe('origens aceitas (buildExpectedOrigins)', () => {
+  it('aceita a origem web do RP ID', () => {
     expect(buildExpectedOrigins('uni-books.app', [])).toEqual([
       'https://uni-books.app',
     ])
   })
 
-  it('adds the origins of the Android app', () => {
+  it('acrescenta as origens do app Android', () => {
     expect(buildExpectedOrigins('uni-books.app', [ANDROID])).toEqual([
       'https://uni-books.app',
       ANDROID,
@@ -25,7 +25,7 @@ describe('buildExpectedOrigins', () => {
   })
 })
 
-describe('buildRegistrationOptionsInput', () => {
+describe('opções de criação do passkey (buildRegistrationOptionsInput)', () => {
   const input = {
     rpId: 'uni-books.app',
     uid: 'uid_lucas',
@@ -37,7 +37,7 @@ describe('buildRegistrationOptionsInput', () => {
     ],
   }
 
-  it('names the RP and the user without using the e-mail', () => {
+  it('nomeia o RP e o usuário sem usar o e-mail', () => {
     const options = buildRegistrationOptionsInput(input)
 
     expect(options.rpID).toBe('uni-books.app')
@@ -47,7 +47,7 @@ describe('buildRegistrationOptionsInput', () => {
     expect(new TextDecoder().decode(options.userID)).toBe('uid_lucas')
   })
 
-  it('shows the matrícula when the student has no name yet', () => {
+  it('mostra a matrícula quando o aluno ainda não tem nome', () => {
     const { fullName, ...withoutName } = input
     void fullName
 
@@ -56,20 +56,20 @@ describe('buildRegistrationOptionsInput', () => {
     )
   })
 
-  it('asks for a discoverable key with user verification (biometrics or PIN)', () => {
+  it('pede chave descobrível com verificação do usuário (biometria ou PIN)', () => {
     expect(buildRegistrationOptionsInput(input).authenticatorSelection).toEqual(
       { residentKey: 'required', userVerification: 'required' },
     )
   })
 
-  it('excludes the passkeys the account already has', () => {
+  it('exclui os passkeys que a conta já tem', () => {
     expect(buildRegistrationOptionsInput(input).excludeCredentials).toEqual([
       { id: 'cred-1', transports: ['internal', 'hybrid'] },
       { id: 'cred-2' },
     ])
   })
 
-  it('turns into options with a new challenge each time', async () => {
+  it('vira opções com um desafio novo a cada vez', async () => {
     const first = await generateRegistrationOptions(
       buildRegistrationOptionsInput(input),
     )
@@ -91,8 +91,8 @@ describe('buildRegistrationOptionsInput', () => {
   })
 })
 
-describe('buildAuthenticationOptionsInput', () => {
-  it('lists the passkeys of the matrícula and requires user verification', () => {
+describe('opções do login com passkey (buildAuthenticationOptionsInput)', () => {
+  it('lista os passkeys da matrícula e exige a verificação do usuário', () => {
     const options = buildAuthenticationOptionsInput({
       rpId: 'uni-books.app',
       credentials: [{ id: 'cred-1', transports: ['internal'] }],
@@ -105,7 +105,7 @@ describe('buildAuthenticationOptionsInput', () => {
     })
   })
 
-  it('has no credentials for a matrícula without passkeys', () => {
+  it('não tem credenciais para uma matrícula sem passkeys', () => {
     expect(
       buildAuthenticationOptionsInput({
         rpId: 'uni-books.app',
@@ -115,11 +115,11 @@ describe('buildAuthenticationOptionsInput', () => {
   })
 })
 
-describe('challengeFromClientData', () => {
+describe('desafio dentro do clientDataJSON (challengeFromClientData)', () => {
   const encode = (value: unknown) =>
     Buffer.from(JSON.stringify(value)).toString('base64url')
 
-  it('reads the challenge the phone signed', () => {
+  it('lê o desafio que o celular assinou', () => {
     const clientData = encode({
       type: 'webauthn.create',
       challenge: 'abc-123_xyz',
@@ -129,7 +129,7 @@ describe('challengeFromClientData', () => {
     expect(challengeFromClientData(clientData)).toBe('abc-123_xyz')
   })
 
-  it('returns nothing for data that is not a client data JSON', () => {
+  it('não devolve nada para um dado que não é um clientDataJSON', () => {
     expect(challengeFromClientData('not base64 json')).toBeUndefined()
     expect(challengeFromClientData(encode({ type: 'webauthn.get' }))).toBe(
       undefined,

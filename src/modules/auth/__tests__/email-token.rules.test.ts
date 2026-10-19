@@ -23,14 +23,14 @@ function storedToken(overrides: Partial<StoredToken> = {}): StoredToken {
   }
 }
 
-describe('createTokenSecret', () => {
-  it('makes a six digit code, keeping leading zeros', () => {
+describe('geração do token de e-mail (createTokenSecret)', () => {
+  it('gera um código de seis dígitos, mantendo os zeros à esquerda', () => {
     for (let i = 0; i < 200; i++) {
       expect(createTokenSecret().code).toMatch(/^\d{6}$/)
     }
   })
 
-  it('hashes the code with its own salt and never keeps the code in the hash', () => {
+  it('faz o hash do código com salt próprio e nunca guarda o código no hash', () => {
     const first = createTokenSecret()
     const second = createTokenSecret()
 
@@ -40,27 +40,27 @@ describe('createTokenSecret', () => {
     expect(first.codeHash).toMatch(/^[0-9a-f]{64}$/)
   })
 
-  it('gives the same code a different hash under another salt', () => {
+  it('dá hash diferente ao mesmo código com outro salt', () => {
     expect(hashTokenCode('123456', 'a')).not.toBe(hashTokenCode('123456', 'b'))
   })
 })
 
-describe('tokenExpiresAt', () => {
-  it('adds the validity in minutes (20 by default in the model)', () => {
+describe('validade do token (tokenExpiresAt)', () => {
+  it('soma a validade em minutos (20 por padrão no modelo)', () => {
     expect(tokenExpiresAt(NOW, 20).toISOString()).toBe(
       '2026-10-19T12:20:00.000Z',
     )
   })
 })
 
-describe('checkToken', () => {
-  it('accepts the right code of a token that is still valid', () => {
+describe('conferência do token (checkToken)', () => {
+  it('aceita o código certo de um token ainda válido', () => {
     expect(checkToken(storedToken(), '123456', NOW, 5)).toEqual({
       result: 'valid',
     })
   })
 
-  it('refuses a token at and after the moment it expires', () => {
+  it('recusa o token a partir do momento em que vence', () => {
     const token = storedToken({ expiresAt: NOW })
 
     expect(checkToken(token, '123456', NOW, 5)).toEqual({
@@ -71,13 +71,13 @@ describe('checkToken', () => {
     ).toEqual({ result: 'expired_or_used' })
   })
 
-  it('accepts the code until one millisecond before it expires', () => {
+  it('aceita o código até um milissegundo antes de vencer', () => {
     const token = storedToken({ expiresAt: new Date(NOW.getTime() + 1) })
 
     expect(checkToken(token, '123456', NOW, 5).result).toBe('valid')
   })
 
-  it('is single use: a token that was used no longer works', () => {
+  it('é de uso único: um token já usado não vale mais', () => {
     const token = storedToken({ usedAt: new Date(NOW.getTime() - 1000) })
 
     expect(checkToken(token, '123456', NOW, 5)).toEqual({
@@ -85,7 +85,7 @@ describe('checkToken', () => {
     })
   })
 
-  it('refuses a token that a newer one replaced', () => {
+  it('recusa um token que outro mais novo substituiu', () => {
     const token = storedToken({ invalidatedAt: new Date(NOW.getTime() - 1000) })
 
     expect(checkToken(token, '123456', NOW, 5)).toEqual({
@@ -93,7 +93,7 @@ describe('checkToken', () => {
     })
   })
 
-  it('counts a wrong code and says how many attempts are left', () => {
+  it('conta um código errado e diz quantas tentativas restam', () => {
     expect(checkToken(storedToken(), '000000', NOW, 5)).toEqual({
       result: 'wrong_code',
       attemptsLeft: 4,
@@ -104,46 +104,46 @@ describe('checkToken', () => {
     })
   })
 
-  it('has no attempts left after the fifth wrong code', () => {
+  it('não deixa tentativas depois do quinto código errado', () => {
     expect(checkToken(storedToken({ attempts: 4 }), '000000', NOW, 5)).toEqual({
       result: 'wrong_code',
       attemptsLeft: 0,
     })
   })
 
-  it('locks the token at the attempt limit, even for the right code', () => {
+  it('bloqueia o token no limite de tentativas, até para o código certo', () => {
     const token = storedToken({ attempts: 5 })
 
     expect(checkToken(token, '123456', NOW, 5)).toEqual({ result: 'locked' })
     expect(checkToken(token, '000000', NOW, 5)).toEqual({ result: 'locked' })
   })
 
-  it('uses the limit it is given', () => {
+  it('usa o limite que recebe', () => {
     expect(
       checkToken(storedToken({ attempts: 3 }), '123456', NOW, 3).result,
     ).toBe('locked')
   })
 })
 
-describe('resendWaitSeconds', () => {
-  it('lets the first token go out right away', () => {
+describe('espera entre envios (resendWaitSeconds)', () => {
+  it('deixa o primeiro token sair na hora', () => {
     expect(resendWaitSeconds(undefined, NOW)).toBe(0)
   })
 
-  it('makes a second request wait the rest of the 60 seconds', () => {
+  it('faz um segundo pedido esperar o resto dos 60 segundos', () => {
     const sentAt = new Date(NOW.getTime() - 18_000)
 
     expect(resendWaitSeconds(sentAt, NOW)).toBe(42)
     expect(resendWaitSeconds(NOW, NOW)).toBe(RESEND_COOLDOWN_SECONDS)
   })
 
-  it('rounds up, so it never says 0 while the wait is not over', () => {
+  it('arredonda para cima, para nunca dizer 0 enquanto a espera não acabou', () => {
     const sentAt = new Date(NOW.getTime() - 59_500)
 
     expect(resendWaitSeconds(sentAt, NOW)).toBe(1)
   })
 
-  it('allows a new token after 60 seconds', () => {
+  it('libera um novo token depois de 60 segundos', () => {
     expect(resendWaitSeconds(new Date(NOW.getTime() - 60_000), NOW)).toBe(0)
     expect(resendWaitSeconds(new Date(NOW.getTime() - 3_600_000), NOW)).toBe(0)
   })
