@@ -1,0 +1,83 @@
+{
+  "year": 2026,
+  "cityIbge": "2304400",
+  "items": [
+    {
+      "date": "2026-01-01",
+      "name": "Ano Novo",
+      "scope": "national"
+    },
+    {
+      "date": "2026-03-19",
+      "name": "Dia de São José (Padroeiro)",
+      "scope": "municipal"
+    },
+    {
+      "date": "2026-03-25",
+      "name": "Data Magna do Ceará",
+      "scope": "state"
+    },
+    {
+      "date": "2026-04-03",
+      "name": "Sexta-feira Santa",
+      "scope": "national"
+    },
+    {
+      "date": "2026-04-13",
+      "name": "Aniversário de Fortaleza",
+      "scope": "municipal"
+    },
+    {
+      "date": "2026-04-21",
+      "name": "Dia de Tiradentes",
+      "scope": "national"
+    },
+    {
+      "date": "2026-05-01",
+      "name": "Dia Mundial do Trabalho",
+      "scope": "national"
+    },
+    {
+      "date": "2026-06-04",
+      "name": "Corpus Christi",
+      "scope": "municipal"
+    },
+    {
+      "date": "2026-08-15",
+      "name": "Nossa Senhora da Assunção",
+      "scope": "municipal"
+    },
+    {
+      "date": "2026-09-07",
+      "name": "Independência do Brasil",
+      "scope": "national"
+    },
+    {
+      "date": "2026-10-12",
+      "name": "Nossa Senhora Aparecida",
+      "scope": "national"
+    },
+    {
+      "date": "2026-11-02",
+      "name": "Dia de Finados",
+      "scope": "national"
+    },
+    {
+      "date": "2026-11-15",
+      "name": "Proclamação da República",
+      "scope": "national"
+    },
+    {
+      "date": "2026-11-20",
+      "name": "Dia Nacional de Zumbi e da Consciência Negra",
+      "scope": "national"
+    },
+    {
+      "date": "2026-12-25",
+      "name": "Natal",
+      "scope": "national"
+    }
+  ],
+  "fetchedAt": "2026-10-19T01:26:55.219Z",
+  "source": "FeriadosAPI"
+}

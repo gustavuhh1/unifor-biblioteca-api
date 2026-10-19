@@ -732,7 +732,7 @@ service cloud.firestore {
 
 ## 6. Dados de demonstração
 
-Seguem a linha do tempo das telas: **hoje é quinta, 15/10/2026**, e o teste usa `settings/library.simulatedNow = 2026-10-15T12:00:00-03:00`. 12/10 é feriado.
+Seguem a linha do tempo das telas: **hoje é quinta, 15/10/2026**, e 12/10 é feriado. Desde 19/10 o seed desloca essas datas para o dia em que roda (nota da seção 6.5) e não grava `simulatedNow`.
 
 As telas mostram momentos diferentes da mesma história. A carga usa **um único momento**: Lucas **já confirmou** a vez em Código Limpo (pedido RET-4821, 4 de 10) e Marina **ainda não devolveu** Cálculo, Vol. 1 (multa contando). As telas de antes ("É a sua vez") e de depois (devolução da Marina) são demonstradas fazendo essas ações ao vivo.
 
@@ -916,6 +916,46 @@ Campos sem valor na tabela (ISBN, editora) podem ser preenchidos pelo script com
 
 Nos JSONs, as datas aparecem como texto ISO só para leitura; no banco são `timestamp`.
 
+### 6.5 Dados complementares do seed (decididos em 18/10)
+
+> **Datas relativas (decidido em 19/10):** o seed monta todas as datas a partir do dia em que roda ("hoje"), mantendo as mesmas situações das seções 6.1 a 6.5 (ex.: a Marina com cerca de 3 dias úteis de atraso, o pedido do Lucas para retirar em até 2 dias úteis, a Beatriz no último dia). As datas exatas das tabelas valem como exemplo do dia 15/10. Não precisa ser perfeito: se um prazo cair num feriado, tudo bem. Os valores das multas em aberto (já congeladas) continuam fixos. O seed serve só para ter dados de teste e de navegação.
+
+Completam as seções 6.1 a 6.3 para o script de carga. Os valores marcados como exemplo são fictícios.
+
+**Exemplares.** Onde a 6.2 diz "1+", o livro tem **exatamente 1 exemplar**. Registros que faltam (exemplo): Arquitetura Limpa 80101; O Codificador Limpo 80111 e 80112; Cálculo, Vol. 1 80121; Cálculo, Vol. 2 80131; Engenharia de Software 80141; Redes de Computadores 80151; Estruturas de Dados e Algoritmos 80161; Code Complete 80171.
+
+**Cutter (exemplo) e assuntos.** Arquitetura Limpa M386a; O Codificador Limpo M386co; Padrões de Projeto G192p; Cálculo, Vol. 1 e Vol. 2 S849c; Engenharia de Software S697e; Redes de Computadores T164r; Estruturas de Dados e Algoritmos G655e; Code Complete M478c; Algoritmos 4ª ed. C811a. `subjects`: livros de 005.1 → ["Desenvolvimento de software", "Programação"]; Cálculo → ["Matemática", "Cálculo"]; Redes → ["Redes de computadores"]. `coverTone` em ciclo de 1 a 6, na ordem da tabela 6.2.
+
+**Empréstimos ativos que faltavam** (todos `active`, `dueAt` às 21:55, ou 14:10 no sábado; `pickedUpAt` = vencimento menos 14 dias, salvo renovação):
+- Código Limpo 223223 → Júlia Martins: retirado 30/09, renovado 07/10 (`renewalCount` 1), vence 28/10.
+- Código Limpo 223323 → Camila Rocha: retirado 06/10, renovado 08/10 (`renewalCount` 1), vence 03/11.
+- Refatoração 51736 → Diego Alves: retirado 08/10, vence 22/10.
+- Code Complete 80171 → Marina Castro: retirado 05/10, vence 19/10.
+- Algoritmos 60411 (3ª ed.) → Marina Castro: retirado 03/10, vence sáb 17/10 14:10.
+- Algoritmos 60412 (3ª ed.) → Pedro Henrique Lima: retirado 13/10, vence 27/10.
+- Algoritmos 71880 (4ª ed.) → Ana Beatriz Lima: retirado 07/10, vence 21/10.
+- Algoritmos 71881 (4ª ed.) → Rafael Teixeira: retirado 09/10, vence 23/10.
+
+Com isso Marina fica com 3 de 10 (Cálculo, Vol. 1, Code Complete e Algoritmos), como na 6.1. Todo exemplar `on_loan` tem `currentLoanId`. Algoritmos fica com os 4 exemplares emprestados e sem fila, para a demonstração de entrar na fila em 2 edições ao vivo.
+
+**Multas em aberto: livros e empréstimos devolvidos.** Quatro livros novos, só com o essencial (título, autor, 1 exemplar `available`): Física Básica, Vol. 2; Contabilidade Introdutória; Direito Civil: Parte Geral; Anatomia Humana. Empréstimos `returned` (dias úteis de atraso = dias de semana após o vencimento até a devolução, inclusive, sem 12/10):
+- Pedro Henrique Lima · Física Básica, Vol. 2: retirado 21/09, venceu 05/10, devolvido 13/10 → 5 dias, 1000 centavos.
+- Júlia Martins · Contabilidade Introdutória: retirado 23/09, venceu 07/10, devolvido 09/10 → 2 dias, 400 centavos.
+- Camila Rocha · Direito Civil: Parte Geral: retirado 14/09, venceu 28/09, devolvido 02/10 → 4 dias, 800 centavos.
+- Diego Alves · Anatomia Humana: retirado 11/09, venceu 25/09, devolvido 30/09 → 3 dias, 600 centavos.
+
+**Filas.** Engenharia de Software: 1ª Beatriz Nogueira (desde 05/10), 2º Diego Alves (desde 13/10), `waiting`, `order` 1000 e 2000. Código Limpo: Lucas entrou em 09/10 e Carlos Eduardo Sá em 10/10.
+
+**Contadores.** Todos calculados pelos dados, com uma exceção documentada: `booksReadByYear` do Lucas é o literal `{"2026": 17}` da 6.4 (o histórico dele não é carregado). Os demais alunos contam só as devoluções carregadas.
+
+**Datas derivadas.** `requestedAt` de Beatriz em 13/10 e de Rafael em 14/10, às 12:00 (-03:00). `pickedUpAt` de Pedro Martins = vencimento menos 14 dias.
+
+**Avisos e salvos.** Avisos do Lucas: "É a sua vez: Código Limpo", "Engenharia de Software vence em 2 dias" e o pedido RET-4821 pronto para retirada. Salvos do Lucas: Refatoração, O Codificador Limpo e Algoritmos na primeira pasta; as outras pastas vazias.
+
+**Feriados e recessos.** `holidays/2026` vem da FeriadosAPI (nacionais, Ceará e Fortaleza) e é guardado também em `scripts/data/holidays-2026.json`, como reserva sem rede. `recesses` fica vazio até a Unifor divulgar as datas.
+
+**Busca "código" com 24 resultados (tela A09).** Fica para depois: não entra neste seed.
+
 ---
 
 ## 7. O que fica fora do banco
@@ -936,7 +976,7 @@ O script fica no repositório `unifor-biblioteca-api` (ex.: `scripts/seed.ts`), 
 
 1. **Escolhe o ambiente:** por padrão o Firebase Emulator Suite (`FIRESTORE_EMULATOR_HOST` e `FIREBASE_AUTH_EMULATOR_HOST`). Produção só com a opção explícita `--prod` e uma confirmação digitada, para nunca apagar dados reais sem querer (RNF-SEG-08).
 2. **Limpa** as coleções da seção 1 (só no emulador, ou em produção com `--reset` confirmado).
-3. **Grava as configurações:** `settings/library` (com `simulatedNow` só no emulador), `recesses` e `holidays/2026` (buscado na FeriadosAPI, ou um arquivo local se a chave não estiver no `.env`).
+3. **Grava as configurações:** `settings/library` (sem `simulatedNow`: as datas do seed já são relativas ao dia em que roda), `recesses` e `holidays/2026` (buscado na FeriadosAPI, ou um arquivo local se a chave não estiver no `.env`).
 4. **Cria as contas no Firebase Authentication:** cada usuário da seção 6.1 com `authEmail` e uma senha de teste lida do `.env` (nunca escrita no código), já ativas, e grava `users`, `matriculaIndex` e `emailIndex` com o mesmo `uid`.
 5. **Grava o acervo:** `works`, `books` e `copies` da seção 6.2; com a chave do Google Books, completa capa, sinopse e editora pelo ISBN (RF-ACE-04, RF-ACE-05).
 6. **Grava a circulação:** `loans`, `queueEntries` e `fines` da seção 6.3, com contadores (`activeLoanCount`, `activeQueueCount`, `copiesAvailable`, `queueLength`, `openFineTotalCents`, `booksReadByYear`) calculados a partir dos próprios dados, nunca digitados à mão.
