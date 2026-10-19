@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+package-lock.json
+
+# Documentos oficiais e instruções: não reformatar
+docs
+CLAUDE.md
+PROMPT-INICIAL.md
