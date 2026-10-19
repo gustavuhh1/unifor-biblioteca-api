@@ -30,11 +30,13 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/express": "^5.0.6",
     "@types/node": "^24.19.2",
     "@types/swagger-ui-express": "^4.1.8",
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
+    "firebase-tools": "^15.34.0",
     "prettier": "^3.9.10",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
