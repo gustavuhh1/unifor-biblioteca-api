@@ -22,14 +22,21 @@ import type {
 
 // --- Inferidos dos schemas das requisições e das respostas -------------------
 
+// Corpo de POST /auth/signup/start.
 export type SignupStartBody = z.infer<typeof signupStartBodySchema>
+// Corpo de POST /auth/signup/confirm.
 export type SignupConfirmBody = z.infer<typeof signupConfirmBodySchema>
+// Corpo de POST /auth/password/reset.
 export type PasswordResetBody = z.infer<typeof passwordResetBodySchema>
+// Corpo de POST /auth/passkey/register.
 export type PasskeyRegisterBody = z.infer<typeof passkeyRegisterBodySchema>
+// Corpo de POST /auth/passkey/login/verify.
 export type PasskeyLoginVerifyBody = z.infer<
   typeof passkeyLoginVerifyBodySchema
 >
+// Resposta de GET /me e PATCH /me.
 export type MeResponse = z.infer<typeof meResponseSchema>
+// Um passkey na tela Meus passkeys (nunca traz a chave).
 export type PasskeySummary = z.infer<typeof passkeySummarySchema>
 
 // --- Token de e-mail ---------------------------------------------------------

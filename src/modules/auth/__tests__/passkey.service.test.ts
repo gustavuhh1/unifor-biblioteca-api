@@ -220,7 +220,7 @@ describe('verifyLogin', () => {
     })
     expect(h.db.read('passkeyChallenges', 'ch-c1')!.usedAt).toEqual(START)
 
-    // The same challenge cannot be tried again.
+    // O mesmo desafio não pode ser tentado de novo.
     await expect(verifyLogin(loginBody('c1'))).rejects.toMatchObject({
       code: 'passkey_login_failed',
     })

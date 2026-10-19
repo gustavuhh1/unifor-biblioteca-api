@@ -15,14 +15,17 @@ export const MATRICULA = /^\d{7}$/
 // limite de 128 serve só para limitar a entrada.
 export const PASSWORD = /^\d{8,128}$/
 
+// O token de e-mail tem 6 dígitos.
 export const TOKEN_CODE = /^\d{6}$/
 
+// Matrícula de 7 dígitos (RF-AUT-01).
 export const matriculaSchema = z
   .string('Informe a matrícula.')
   .trim()
   .regex(MATRICULA, 'A matrícula deve ter exatamente 7 dígitos.')
   .meta({ example: '2412858' })
 
+// E-mail institucional @edu.unifor.br, guardado em minúsculas (RF-AUT-02).
 export const institutionalEmailSchema = z
   .string('Informe o e-mail.')
   .trim()
@@ -33,11 +36,13 @@ export const institutionalEmailSchema = z
   .transform((email) => email.toLowerCase())
   .meta({ example: 'lucas@edu.unifor.br' })
 
+// Senha só de números, com no mínimo 8 dígitos.
 export const passwordSchema = z
   .string('Informe a senha.')
   .regex(PASSWORD, 'A senha deve ter somente números, com no mínimo 8 dígitos.')
   .meta({ example: '12345678' })
 
+// Token de e-mail digitado pelo aluno (RF-AUT-03).
 export const tokenCodeSchema = z
   .string('Informe o token.')
   .trim()
@@ -72,6 +77,7 @@ export const fullNameSchema = z
 
 // --- Corpos das requisições ----------------------------------------------------
 
+// Corpo de POST /auth/signup/start: e-mail, matrícula, senha e confirmação.
 export const signupStartBodySchema = z
   .object({
     email: institutionalEmailSchema,
@@ -82,14 +88,17 @@ export const signupStartBodySchema = z
   .refine(passwordsMatch, passwordsDoNotMatch)
   .meta({ id: 'SignupStartBody' })
 
+// Corpo de POST /auth/signup/confirm: matrícula e token.
 export const signupConfirmBodySchema = z
   .object({ matricula: matriculaSchema, token: tokenCodeSchema })
   .meta({ id: 'SignupConfirmBody' })
 
+// Corpo das rotas que só precisam da matrícula.
 export const matriculaBodySchema = z
   .object({ matricula: matriculaSchema })
   .meta({ id: 'MatriculaBody' })
 
+// Corpo de POST /auth/password/reset: matrícula, token e nova senha.
 export const passwordResetBodySchema = z
   .object({
     matricula: matriculaSchema,
@@ -104,6 +113,7 @@ export const passwordResetBodySchema = z
 // @simplewebauthn/server confere o resto.
 const clientExtensionResults = z.record(z.string(), z.unknown()).default({})
 
+// Resposta do celular ao criar um passkey.
 export const registrationResponseSchema = z
   .looseObject({
     id: z.string().min(1),
@@ -117,6 +127,7 @@ export const registrationResponseSchema = z
   })
   .meta({ id: 'RegistrationResponse' })
 
+// Resposta do celular ao assinar o desafio do login.
 export const authenticationResponseSchema = z
   .looseObject({
     id: z.string().min(1),
@@ -131,6 +142,7 @@ export const authenticationResponseSchema = z
   })
   .meta({ id: 'AuthenticationResponse' })
 
+// Corpo de POST /auth/passkey/register: a resposta do celular e o nome do aparelho.
 export const passkeyRegisterBodySchema = z
   .object({
     response: registrationResponseSchema,
@@ -143,14 +155,17 @@ export const passkeyRegisterBodySchema = z
   })
   .meta({ id: 'PasskeyRegisterBody' })
 
+// Corpo de POST /auth/passkey/login/verify.
 export const passkeyLoginVerifyBodySchema = z
   .object({ response: authenticationResponseSchema })
   .meta({ id: 'PasskeyLoginVerifyBody' })
 
+// Parâmetro :id (credentialId) das rotas de passkey.
 export const passkeyParamsSchema = z.object({
   id: z.string().min(1).max(1024),
 })
 
+// Corpo de PATCH /me: o nome completo.
 export const updateMeBodySchema = z
   .object({ fullName: fullNameSchema })
   .meta({ id: 'UpdateMeBody' })

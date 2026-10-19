@@ -1,3 +1,3 @@
-// Business rules (deadlines, business days, fines) are computed in this time zone
-// (UTC-3, no daylight saving). Timestamps are stored in UTC.
+// Fuso em que as regras de negócio (prazos, dias úteis, multas) são calculadas
+// (UTC-3, sem horário de verão). Os timestamps são gravados em UTC.
 export const LIBRARY_TIMEZONE = 'America/Fortaleza'

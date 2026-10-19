@@ -1,7 +1,7 @@
-// A small in-memory stand-in for the part of the Firestore Admin SDK the access
-// module uses, so the services can be tested without the emulator. It keeps
-// `Date` values as they are and runs a transaction by buffering its writes and
-// applying them only if the callback finishes.
+// Um Firestore em memória, pequeno, que imita a parte do Admin SDK que o módulo
+// de acesso usa, para testar os serviços sem o emulador. Guarda os valores
+// `Date` como estão e executa uma transação guardando as escritas e aplicando-as
+// só se a função terminar sem erro.
 
 type Data = Record<string, unknown>
 type Op =
@@ -9,6 +9,7 @@ type Op =
   | { kind: 'update'; path: string; data: Data }
   | { kind: 'delete'; path: string }
 
+// Documento lido, como o DocumentSnapshot do Firestore.
 export class FakeSnapshot {
   constructor(
     readonly ref: FakeDocRef,
@@ -28,6 +29,7 @@ export class FakeSnapshot {
   }
 }
 
+// Referência a um documento, como o DocumentReference do Firestore.
 export class FakeDocRef {
   constructor(
     private readonly store: FakeFirestore,
@@ -53,6 +55,7 @@ export class FakeDocRef {
 
 type Filter = { field: string; value: unknown }
 
+// Consulta com where, orderBy e limit, como a Query do Firestore.
 export class FakeQuery {
   constructor(
     private readonly store: FakeFirestore,
@@ -144,6 +147,7 @@ class FakeTransaction {
   }
 }
 
+// O banco em memória; use os métodos "apoio para os testes" para montar e ler dados.
 export class FakeFirestore {
   private readonly docs = new Map<string, Data>()
   private counter = 0
@@ -183,7 +187,7 @@ export class FakeFirestore {
     return result
   }
 
-  // --- helpers for the tests ---
+  // --- apoio para os testes ---
   put(collectionName: string, id: string, data: Data) {
     this.docs.set(`${collectionName}/${id}`, { ...data })
   }

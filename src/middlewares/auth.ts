@@ -4,6 +4,7 @@ import { AppError, unauthorized } from '../shared/errors.js'
 import { userRoleSchema } from '../shared/user-role.js'
 import type { UserRole } from '../shared/types/index.js'
 
+// Quem está logado: o uid do Firebase e o perfil lido em users/{uid}.
 export interface AuthenticatedUser {
   uid: string
   role: UserRole
@@ -17,9 +18,9 @@ declare module 'express-serve-static-core' {
 
 const BEARER_HEADER = /^Bearer\s+(\S+)$/i
 
-// Errors the Admin SDK raises about the token itself (expired, revoked,
-// malformed, account disabled). Anything else (network, credentials) is not the
-// client's fault and must surface as a 500, not as a logout.
+// Erros que o Admin SDK levanta sobre o próprio token (vencido, revogado,
+// malformado, conta desativada). Qualquer outro (rede, credenciais) não é culpa
+// do cliente e deve aparecer como 500, não como logout.
 function isSessionError(error: unknown): boolean {
   if (typeof error !== 'object' || error === null || !('code' in error)) {
     return false
@@ -32,9 +33,9 @@ function isSessionError(error: unknown): boolean {
   )
 }
 
-// Checks the Firebase ID token (including revocation) and loads the role from
-// users/{uid}. No token or an invalid one is a 401; an account whose status is
-// not "active" is a 403.
+// Exige sessão (RF-AUT-12): confere o ID token do Firebase, inclusive a
+// revogação, e lê o perfil em users/{uid}. Sem token ou com token inválido a
+// resposta é 401; conta cujo status não é "active" recebe 403.
 export const authenticate: RequestHandler = async (req, _res, next) => {
   const token = BEARER_HEADER.exec(req.header('authorization') ?? '')?.[1]
   if (!token) throw unauthorized()
@@ -56,7 +57,7 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
     )
   }
 
-  // pending_email (e-mail not confirmed yet) and disabled accounts cannot use the API.
+  // Conta pending_email (e-mail ainda não confirmado) ou desativada não usa a API.
   if (profile.get('status') !== 'active') {
     throw new AppError(403, 'account_disabled', 'Sua conta não está ativa.')
   }

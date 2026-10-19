@@ -2,8 +2,8 @@ import type { RequestHandler } from 'express'
 import { forbidden, unauthorized } from '../shared/errors.js'
 import type { UserRole } from '../shared/types/index.js'
 
-// Use after `authenticate`: lets the route through only for the given roles.
-// Wrong role is a 403.
+// Libera a rota só para os perfis informados (RF-AUT-12). Use depois do
+// `authenticate`. Perfil errado recebe 403.
 export function requireRole(
   ...roles: [UserRole, ...UserRole[]]
 ): RequestHandler {

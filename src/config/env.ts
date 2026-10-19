@@ -1,14 +1,16 @@
 import { z } from 'zod'
 
-// A blank line copied from .env.example arrives as "", which means "not set".
+// Uma linha em branco copiada do .env.example chega como "", que quer dizer
+// "não definida".
 const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value)
 
 const optionalString = z.preprocess(emptyToUndefined, z.string().optional())
 
-// Origin the Android app reports in a passkey response (WebAuthn).
+// Formato da origem que o app Android informa na resposta do passkey
+// (WebAuthn): android:apk-key-hash:<SHA-256 do certificado, em base64url>.
 export const ANDROID_ORIGIN = /^android:apk-key-hash:[A-Za-z0-9_-]+$/
 
-// Comma separated list; blank items are ignored.
+// Lista separada por vírgula; itens em branco são ignorados.
 const androidOrigins = z.preprocess(
   (value) =>
     typeof value === 'string'
@@ -26,20 +28,21 @@ const androidOrigins = z.preprocess(
     .default([]),
 )
 
-// Without these two the access module cannot work: the passkey would be tied
-// to the wrong RP ID (which invalidates the passkeys already created) and the
-// Firebase accounts would get a wrong internal e-mail.
+// Sem estas duas o módulo de acesso não funciona: o passkey ficaria ligado ao
+// RP ID errado (o que invalida os passkeys já criados) e as contas do Firebase
+// ganhariam um e-mail interno errado.
 const REQUIRED_IN_PRODUCTION = ['PASSKEY_RP_ID', 'AUTH_EMAIL_DOMAIN'] as const
 
-// Names follow docs/infra.md. Secrets and module settings are optional: the API
-// must start without the key of a module that is not implemented yet.
+// Variáveis de ambiente validadas com o Zod. Os nomes seguem docs/infra.md.
+// Segredos e configurações de módulos são opcionais: a API precisa subir sem a
+// chave de um módulo que ainda não foi implementado.
 export const envSchema = z
   .object({
     NODE_ENV: z.preprocess(
       emptyToUndefined,
       z.enum(['development', 'test', 'production']).default('development'),
     ),
-    // 8080 is the port Cloud Run expects.
+    // 8080 é a porta que o Cloud Run espera.
     PORT: z.preprocess(
       emptyToUndefined,
       z.coerce.number().int().min(1).max(65535).default(8080),
@@ -49,7 +52,8 @@ export const envSchema = z
       emptyToUndefined,
       z.string().default('estoque-pay'),
     ),
-    // Read by the Firebase Admin SDK itself; when set, it talks to the emulators.
+    // Lidas pelo próprio Firebase Admin SDK; quando definidas, ele fala com os
+    // emuladores.
     FIRESTORE_EMULATOR_HOST: optionalString,
     FIREBASE_AUTH_EMULATOR_HOST: optionalString,
 
@@ -60,7 +64,7 @@ export const envSchema = z
     EMAIL_FROM: optionalString,
     GEMINI_MODEL: optionalString,
 
-    // Secrets: Secret Manager in production, local .env in development.
+    // Segredos: Secret Manager em produção e .env local no desenvolvimento.
     RESEND_API_KEY: optionalString,
     FERIADOS_API_KEY: optionalString,
     GEMINI_API_KEY: optionalString,
@@ -79,8 +83,11 @@ export const envSchema = z
     }
   })
 
+// Variáveis de ambiente já validadas.
 export type Env = z.infer<typeof envSchema>
 
+// Valida as variáveis de ambiente e devolve o resultado; lança um erro claro
+// se alguma estiver inválida ou faltando.
 export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const result = envSchema.safeParse(source)
   if (!result.success) {
@@ -91,4 +98,5 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
   return result.data
 }
 
+// As variáveis do processo, validadas uma vez ao carregar o módulo.
 export const env = parseEnv()

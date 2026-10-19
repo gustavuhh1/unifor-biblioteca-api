@@ -51,7 +51,7 @@ function tokensOf(purpose = 'email_confirmation') {
   return h.db.all('emailTokens').filter((token) => token.purpose === purpose)
 }
 
-// A student that signed up and has not confirmed yet.
+// Um aluno que se cadastrou e ainda não confirmou o e-mail.
 async function signUp() {
   await startSignup(form)
   return h.db.read('matriculaIndex', form.matricula)!.uid as string
@@ -126,7 +126,7 @@ describe('startSignup', () => {
       ...h.db.all('emailIndex'),
     ]
 
-    // No field holds the code or the password, and none is named after them.
+    // Nenhum campo guarda o código nem a senha, e nenhum tem o nome deles.
     for (const document of documents) {
       expect(Object.values(document)).not.toContain(lastCode())
       expect(Object.values(document)).not.toContain(form.password)
@@ -273,7 +273,7 @@ describe('startSignup', () => {
       expect(tokens).toHaveLength(2)
       expect(tokens.filter((token) => !token.invalidatedAt)).toHaveLength(1)
 
-      // The first code no longer works.
+      // O primeiro código não vale mais.
       await expect(
         confirmSignup({ matricula: form.matricula, token: firstCode }),
       ).rejects.toMatchObject({ code: 'token_invalid' })
@@ -412,7 +412,7 @@ describe('confirmSignup', () => {
     }
     expect(tokensOf()[0]!.attempts).toBe(5)
 
-    // Even the right code is refused now.
+    // Agora até o código certo é recusado.
     await expect(
       confirmSignup({ matricula: form.matricula, token: right }),
     ).rejects.toMatchObject({ code: 'token_attempts_exceeded' })

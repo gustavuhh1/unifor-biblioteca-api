@@ -22,6 +22,7 @@ export const passkeyCreationOptionsSchema = z
   })
   .meta({ id: 'PasskeyCreationOptions' })
 
+// Opções do login com passkey (desafio e passkeys da matrícula).
 export const passkeyRequestOptionsSchema = z
   .looseObject({
     challenge: z.string(),
@@ -31,6 +32,7 @@ export const passkeyRequestOptionsSchema = z
   })
   .meta({ id: 'PasskeyRequestOptions' })
 
+// Cadastro aguardando confirmação, com o tempo até poder reenviar o token.
 export const signupPendingResponseSchema = z
   .object({
     status: z.literal('pending_email'),
@@ -38,14 +40,17 @@ export const signupPendingResponseSchema = z
   })
   .meta({ id: 'SignupPendingResponse' })
 
+// Resposta da confirmação do e-mail: as opções para criar o passkey.
 export const signupConfirmResponseSchema = z
   .object({ passkeyOptions: passkeyCreationOptionsSchema })
   .meta({ id: 'SignupConfirmResponse' })
 
+// Resposta que traz só uma mensagem.
 export const messageResponseSchema = z
   .object({ message: z.string() })
   .meta({ id: 'MessageResponse' })
 
+// Um passkey na tela Meus passkeys.
 export const passkeySummarySchema = z
   .object({
     id: z.string().meta({ description: 'credentialId em base64url' }),
@@ -55,10 +60,12 @@ export const passkeySummarySchema = z
   })
   .meta({ id: 'PasskeySummary' })
 
+// Lista de passkeys do aluno.
 export const passkeyListResponseSchema = z
   .object({ passkeys: z.array(passkeySummarySchema) })
   .meta({ id: 'PasskeyListResponse' })
 
+// Custom token do Firebase devolvido pelo login com passkey.
 export const customTokenResponseSchema = z
   .object({
     customToken: z.string().meta({
@@ -67,6 +74,7 @@ export const customTokenResponseSchema = z
   })
   .meta({ id: 'CustomTokenResponse' })
 
+// Dados de quem está logado (GET /me).
 export const meResponseSchema = z
   .object({
     uid: z.string(),

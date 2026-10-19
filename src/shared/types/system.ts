@@ -41,6 +41,7 @@ export interface OpeningPeriod {
   close: string
 }
 
+// Horário de funcionamento por dia da semana.
 export interface OpeningHours {
   mon: OpeningPeriod | null
   tue: OpeningPeriod | null

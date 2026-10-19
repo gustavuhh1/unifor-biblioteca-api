@@ -28,6 +28,7 @@ type UserCounters = Pick<
   | 'booksReadByYear'
 >
 
+// Dados para montar um documento users novo.
 export interface NewUserInput {
   role: UserRole
   matricula: string

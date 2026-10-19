@@ -16,6 +16,7 @@ registry.registerPath({
   },
 })
 
+// Gera o documento OpenAPI 3.1 com todas as rotas registradas até aqui.
 export function buildOpenApiDocument() {
   return new OpenApiGeneratorV31(registry.definitions).generateDocument({
     openapi: '3.1.0',

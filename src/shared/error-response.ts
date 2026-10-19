@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-// Body of every error the API answers (see middlewares/error-handler.ts).
+// Corpo de todo erro que a API responde (veja middlewares/error-handler.ts).
 export const errorResponseSchema = z
   .object({
     code: z.string().meta({ description: 'Identificador estável, em inglês.' }),

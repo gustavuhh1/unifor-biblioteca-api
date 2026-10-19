@@ -8,6 +8,7 @@ import * as controller from './auth.controller.js'
 const session: RequestHandler[] = [authenticate]
 const studentSession: RequestHandler[] = [authenticate, requireRole('student')]
 
+// Router do módulo de acesso.
 export const authRouter = Router()
 
 // Cadastro (RF-AUT-01 a RF-AUT-04).

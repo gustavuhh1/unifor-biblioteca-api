@@ -1,5 +1,5 @@
-// Lower case, no accents: the format of the `*Normalized` fields and of the
-// text the API searches (docs/modelo-de-dados-firestore.md, 4.2).
+// Põe o texto em minúsculas e sem acento: é o formato dos campos `*Normalized`
+// e do texto que a API busca (docs/modelo-de-dados-firestore.md, seção 4.2).
 export function normalizeText(text: string): string {
   return text
     .normalize('NFD')
@@ -7,7 +7,8 @@ export function normalizeText(text: string): string {
     .toLowerCase()
 }
 
-// First letter of the first and of the last name, upper case ("LA").
+// Iniciais do aluno: primeira letra do primeiro e do último nome, em maiúscula
+// ("Lucas Almeida" vira "LA").
 export function initialsOf(fullName: string): string {
   const words = fullName.trim().split(/\s+/)
   const first = Array.from(words[0] ?? '')[0] ?? ''

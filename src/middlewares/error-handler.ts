@@ -7,6 +7,7 @@ interface ErrorBody extends ErrorExtra {
   message: string
 }
 
+// Responde 404 em JSON para rota que não existe.
 export const notFoundHandler: RequestHandler = (_req, res) => {
   res.status(404).json({
     code: 'not_found',
@@ -14,7 +15,7 @@ export const notFoundHandler: RequestHandler = (_req, res) => {
   } satisfies ErrorBody)
 }
 
-// Errors raised by express.json() carry a `type` (see body-parser).
+// Os erros levantados pelo express.json() trazem um `type` (veja o body-parser).
 function bodyParserErrorType(error: unknown): unknown {
   return typeof error === 'object' && error !== null && 'type' in error
     ? error.type
@@ -29,7 +30,7 @@ function toErrorResponse(error: unknown): { status: number; body: ErrorBody } {
     }
   }
   if (error instanceof ZodError) {
-    // The messages come from the schemas, which are written in Portuguese.
+    // As mensagens vêm dos schemas, que são escritos em português.
     return {
       status: 400,
       body: {
@@ -73,7 +74,9 @@ function toErrorResponse(error: unknown): { status: number; body: ErrorBody } {
   }
 }
 
-// Express recognizes an error handler by its four parameters.
+// Transforma qualquer erro na resposta JSON { code, message } com o status
+// certo; erro inesperado vira 500 sem detalhes. O Express reconhece um handler
+// de erros pelos quatro parâmetros.
 export const errorHandler: ErrorRequestHandler = (error, _req, res, next) => {
   if (res.headersSent) {
     next(error)

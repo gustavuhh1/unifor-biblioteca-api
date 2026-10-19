@@ -46,7 +46,7 @@ const tooSoon = error(
   'Novo token pedido antes de 60 segundos (`token_resend_too_soon`, com `retryAfterSeconds`).',
 )
 
-// --- Sign-up -----------------------------------------------------------------
+// --- Cadastro -----------------------------------------------------------------
 
 registry.registerPath({
   method: 'post',
@@ -110,7 +110,7 @@ registry.registerPath({
   },
 })
 
-// --- Password -----------------------------------------------------------------
+// --- Senha --------------------------------------------------------------------
 
 registry.registerPath({
   method: 'post',
@@ -251,7 +251,7 @@ registry.registerPath({
   },
 })
 
-// --- Session -------------------------------------------------------------------
+// --- Sessão -------------------------------------------------------------------
 
 registry.registerPath({
   method: 'get',

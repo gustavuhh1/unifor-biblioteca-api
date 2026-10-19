@@ -44,6 +44,7 @@ export const MATRICULA_TAKEN: FieldError = {
   message: 'Esta matrícula já tem cadastro.',
 }
 
+// Mesmo caso, para o e-mail.
 export const EMAIL_TAKEN: FieldError = {
   field: 'email',
   message: 'Este e-mail já tem cadastro.',
