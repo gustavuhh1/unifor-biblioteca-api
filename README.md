@@ -66,7 +66,9 @@ The seed fills the database with the demo data of `docs/modelo-de-dados-firestor
    npm run seed
    ```
 
-It can be run again at any time and always reaches the same state. Options (pass them after `--`):
+All dates are built from the day the seed runs ("today" in America/Fortaleza), keeping the same situations as the documents: a late loan with a fine accruing, an order with a pickup deadline, a book due soon, and so on. The exact dates in `docs/` are only the example of 15/10. The frozen amounts of the open fines stay fixed.
+
+It can be run again at any time and always reaches the same state for the same day. Options (pass them after `--`):
 
 | Option              | What it does                                                                                  |
 | ------------------- | --------------------------------------------------------------------------------------------- |

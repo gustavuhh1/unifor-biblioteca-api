@@ -918,6 +918,8 @@ Nos JSONs, as datas aparecem como texto ISO só para leitura; no banco são `tim
 
 ### 6.5 Dados complementares do seed (decididos em 18/10)
 
+> **Datas relativas (decidido em 19/10):** o seed monta todas as datas a partir do dia em que roda ("hoje"), mantendo as mesmas situações das seções 6.1 a 6.5 (ex.: a Marina com cerca de 3 dias úteis de atraso, o pedido do Lucas para retirar em até 2 dias úteis, a Beatriz no último dia). As datas exatas das tabelas valem como exemplo do dia 15/10. Não precisa ser perfeito: se um prazo cair num feriado, tudo bem. Os valores das multas em aberto (já congeladas) continuam fixos. O seed serve só para ter dados de teste e de navegação.
+
 Completam as seções 6.1 a 6.3 para o script de carga. Os valores marcados como exemplo são fictícios.
 
 **Exemplares.** Onde a 6.2 diz "1+", o livro tem **exatamente 1 exemplar**. Registros que faltam (exemplo): Arquitetura Limpa 80101; O Codificador Limpo 80111 e 80112; Cálculo, Vol. 1 80121; Cálculo, Vol. 2 80131; Engenharia de Software 80141; Redes de Computadores 80151; Estruturas de Dados e Algoritmos 80161; Code Complete 80171.
