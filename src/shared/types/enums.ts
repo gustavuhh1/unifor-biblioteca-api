@@ -16,15 +16,37 @@ export interface Timestamps {
   updatedAt: Date
 }
 
+// Nome de constante (camelCase) de um valor em snake_case: on_loan -> onLoan.
+type CamelCase<S extends string> = S extends `${infer Head}_${infer Tail}`
+  ? `${Head}${Capitalize<CamelCase<Tail>>}`
+  : S
+
+// Monta o objeto de constantes de uma lista de valores: cada valor é escrito uma
+// vez só (na lista) e ganha um nome em camelCase, ex.: USER_STATUS.pendingEmail.
+function constantsOf<const T extends readonly string[]>(
+  values: T,
+): { readonly [V in T[number] as CamelCase<V>]: V } {
+  return Object.fromEntries(
+    values.map((value) => [
+      value.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase()),
+      value,
+    ]),
+  ) as { readonly [V in T[number] as CamelCase<V>]: V }
+}
+
 // --- Usuários e acesso -------------------------------------------------------
 
 // Perfil do usuário (users.role).
 export const USER_ROLES = ['student', 'librarian'] as const
 export type UserRole = (typeof USER_ROLES)[number]
+// Valores com nome (cada texto escrito uma vez só): USER_ROLE.student, USER_ROLE.librarian.
+export const USER_ROLE = constantsOf(USER_ROLES)
 
 // Situação da conta: pending_email até confirmar o token (users.status).
 export const USER_STATUSES = ['pending_email', 'active', 'disabled'] as const
 export type UserStatus = (typeof USER_STATUSES)[number]
+// Valores com nome (cada texto escrito uma vez só): USER_STATUS.pendingEmail, USER_STATUS.active.
+export const USER_STATUS = constantsOf(USER_STATUSES)
 
 // Finalidade do token de e-mail (emailTokens.purpose).
 export const EMAIL_TOKEN_PURPOSES = [
@@ -32,10 +54,14 @@ export const EMAIL_TOKEN_PURPOSES = [
   'password_reset',
 ] as const
 export type EmailTokenPurpose = (typeof EMAIL_TOKEN_PURPOSES)[number]
+// Valores com nome (cada texto escrito uma vez só): EMAIL_TOKEN_PURPOSE.emailConfirmation, EMAIL_TOKEN_PURPOSE.passwordReset.
+export const EMAIL_TOKEN_PURPOSE = constantsOf(EMAIL_TOKEN_PURPOSES)
 
 // Finalidade do desafio do passkey (passkeyChallenges.purpose).
 export const CHALLENGE_PURPOSES = ['registration', 'authentication'] as const
 export type ChallengePurpose = (typeof CHALLENGE_PURPOSES)[number]
+// Valores com nome (cada texto escrito uma vez só): CHALLENGE_PURPOSE.registration, CHALLENGE_PURPOSE.authentication.
+export const CHALLENGE_PURPOSE = constantsOf(CHALLENGE_PURPOSES)
 
 // --- Acervo ------------------------------------------------------------------
 
@@ -47,14 +73,20 @@ export const COPY_STATUSES = [
   'withdrawn',
 ] as const
 export type CopyStatus = (typeof COPY_STATUSES)[number]
+// Valores com nome (cada texto escrito uma vez só): COPY_STATUS.available, COPY_STATUS.reserved.
+export const COPY_STATUS = constantsOf(COPY_STATUSES)
 
 // Situação da edição no acervo (books.status).
 export const BOOK_STATUSES = ['active', 'removed'] as const
 export type BookStatus = (typeof BOOK_STATUSES)[number]
+// Valores com nome (cada texto escrito uma vez só): BOOK_STATUS.active, BOOK_STATUS.removed.
+export const BOOK_STATUS = constantsOf(BOOK_STATUSES)
 
 // De onde vieram os dados da edição (books.dataSource).
 export const DATA_SOURCES = ['google_books', 'manual', 'mixed'] as const
 export type DataSource = (typeof DATA_SOURCES)[number]
+// Valores com nome (cada texto escrito uma vez só): DATA_SOURCE.googleBooks, DATA_SOURCE.manual.
+export const DATA_SOURCE = constantsOf(DATA_SOURCES)
 
 // --- Circulação --------------------------------------------------------------
 
@@ -67,10 +99,14 @@ export const LOAN_STATUSES = [
   'cancelled',
 ] as const
 export type LoanStatus = (typeof LOAN_STATUSES)[number]
+// Valores com nome (cada texto escrito uma vez só): LOAN_STATUS.awaitingPickup, LOAN_STATUS.active.
+export const LOAN_STATUS = constantsOf(LOAN_STATUSES)
 
 // Como o pedido nasceu (loans.origin).
 export const LOAN_ORIGINS = ['request', 'queue', 'assistant'] as const
 export type LoanOrigin = (typeof LOAN_ORIGINS)[number]
+// Valores com nome (cada texto escrito uma vez só): LOAN_ORIGIN.request, LOAN_ORIGIN.queue.
+export const LOAN_ORIGIN = constantsOf(LOAN_ORIGINS)
 
 // Lugar na fila (queueEntries.status). "Filas ativas" = waiting + your_turn.
 export const QUEUE_ENTRY_STATUSES = [
@@ -84,14 +120,20 @@ export const QUEUE_ENTRY_STATUSES = [
   'cancelled_book_removed',
 ] as const
 export type QueueEntryStatus = (typeof QUEUE_ENTRY_STATUSES)[number]
+// Valores com nome (cada texto escrito uma vez só): QUEUE_ENTRY_STATUS.waiting, QUEUE_ENTRY_STATUS.yourTurn.
+export const QUEUE_ENTRY_STATUS = constantsOf(QUEUE_ENTRY_STATUSES)
 
 // Quem colocou o aluno na fila (queueEntries.origin).
 export const QUEUE_ORIGINS = ['student', 'assistant', 'librarian'] as const
 export type QueueOrigin = (typeof QUEUE_ORIGINS)[number]
+// Valores com nome (cada texto escrito uma vez só): QUEUE_ORIGIN.student, QUEUE_ORIGIN.assistant.
+export const QUEUE_ORIGIN = constantsOf(QUEUE_ORIGINS)
 
 // Multa (fines.status).
 export const FINE_STATUSES = ['accruing', 'open', 'paid'] as const
 export type FineStatus = (typeof FINE_STATUSES)[number]
+// Valores com nome (cada texto escrito uma vez só): FINE_STATUS.accruing, FINE_STATUS.open.
+export const FINE_STATUS = constantsOf(FINE_STATUSES)
 
 // --- Avisos, aparelhos e Assistente -------------------------------------------
 
@@ -116,6 +158,8 @@ export const NOTIFICATION_TYPES = [
   'renewal_done',
 ] as const
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
+// Valores com nome (cada texto escrito uma vez só): NOTIFICATION_TYPE.queueTurn, NOTIFICATION_TYPE.queueTurnMissed.
+export const NOTIFICATION_TYPE = constantsOf(NOTIFICATION_TYPES)
 
 // Botões do aviso (notifications.action).
 export const NOTIFICATION_ACTIONS = [
@@ -126,6 +170,8 @@ export const NOTIFICATION_ACTIONS = [
   'none',
 ] as const
 export type NotificationAction = (typeof NOTIFICATION_ACTIONS)[number]
+// Valores com nome (cada texto escrito uma vez só): NOTIFICATION_ACTION.confirmTurn, NOTIFICATION_ACTION.showQr.
+export const NOTIFICATION_ACTION = constantsOf(NOTIFICATION_ACTIONS)
 
 // Resultado da entrega do aviso em cada canal (notifications.delivery).
 export const DELIVERY_STATUSES = [
@@ -136,18 +182,26 @@ export const DELIVERY_STATUSES = [
   'skipped',
 ] as const
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number]
+// Valores com nome (cada texto escrito uma vez só): DELIVERY_STATUS.sent, DELIVERY_STATUS.failed.
+export const DELIVERY_STATUS = constantsOf(DELIVERY_STATUSES)
 
 // Sistema do aparelho (devices.platform).
 export const DEVICE_PLATFORMS = ['android', 'ios'] as const
 export type DevicePlatform = (typeof DEVICE_PLATFORMS)[number]
+// Valores com nome (cada texto escrito uma vez só): DEVICE_PLATFORM.android, DEVICE_PLATFORM.ios.
+export const DEVICE_PLATFORM = constantsOf(DEVICE_PLATFORMS)
 
 // Quem escreveu a mensagem do Assistente (assistantMessages.sender).
 export const ASSISTANT_SENDERS = ['student', 'assistant'] as const
 export type AssistantSender = (typeof ASSISTANT_SENDERS)[number]
+// Valores com nome (cada texto escrito uma vez só): ASSISTANT_SENDER.student, ASSISTANT_SENDER.assistant.
+export const ASSISTANT_SENDER = constantsOf(ASSISTANT_SENDERS)
 
 // Ação que o Assistente pode propor (assistantActions.type).
 export const ASSISTANT_ACTION_TYPES = ['request_loan', 'join_queue'] as const
 export type AssistantActionType = (typeof ASSISTANT_ACTION_TYPES)[number]
+// Valores com nome (cada texto escrito uma vez só): ASSISTANT_ACTION_TYPE.requestLoan, ASSISTANT_ACTION_TYPE.joinQueue.
+export const ASSISTANT_ACTION_TYPE = constantsOf(ASSISTANT_ACTION_TYPES)
 
 // Situação da ação do Assistente (assistantActions.status).
 export const ASSISTANT_ACTION_STATUSES = [
@@ -159,6 +213,8 @@ export const ASSISTANT_ACTION_STATUSES = [
   'failed',
 ] as const
 export type AssistantActionStatus = (typeof ASSISTANT_ACTION_STATUSES)[number]
+// Valores com nome (cada texto escrito uma vez só): ASSISTANT_ACTION_STATUS.proposed, ASSISTANT_ACTION_STATUS.confirmed.
+export const ASSISTANT_ACTION_STATUS = constantsOf(ASSISTANT_ACTION_STATUSES)
 
 // Motivo de uma ação bloqueada (assistantActions.blockedReason).
 export const ASSISTANT_BLOCKED_REASONS = [
@@ -170,16 +226,22 @@ export const ASSISTANT_BLOCKED_REASONS = [
   'not_queueable',
 ] as const
 export type AssistantBlockedReason = (typeof ASSISTANT_BLOCKED_REASONS)[number]
+// Valores com nome (cada texto escrito uma vez só): ASSISTANT_BLOCKED_REASON.overdue, ASSISTANT_BLOCKED_REASON.loanLimit.
+export const ASSISTANT_BLOCKED_REASON = constantsOf(ASSISTANT_BLOCKED_REASONS)
 
 // --- Sistema -----------------------------------------------------------------
 
 // Abrangência do feriado (holidays.items.scope).
 export const HOLIDAY_SCOPES = ['national', 'state', 'municipal'] as const
 export type HolidayScope = (typeof HOLIDAY_SCOPES)[number]
+// Valores com nome (cada texto escrito uma vez só): HOLIDAY_SCOPE.national, HOLIDAY_SCOPE.state.
+export const HOLIDAY_SCOPE = constantsOf(HOLIDAY_SCOPES)
 
 // Quem fez a ação registrada (auditLog.actorRole).
 export const AUDIT_ACTOR_ROLES = ['student', 'librarian', 'system'] as const
 export type AuditActorRole = (typeof AUDIT_ACTOR_ROLES)[number]
+// Valores com nome (cada texto escrito uma vez só): AUDIT_ACTOR_ROLE.student, AUDIT_ACTOR_ROLE.librarian.
+export const AUDIT_ACTOR_ROLE = constantsOf(AUDIT_ACTOR_ROLES)
 
 // Ações registradas no log de auditoria (auditLog.action).
 export const AUDIT_ACTIONS = [
@@ -200,6 +262,8 @@ export const AUDIT_ACTIONS = [
   'password_reset',
 ] as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
+// Valores com nome (cada texto escrito uma vez só): AUDIT_ACTION.queueAdd, AUDIT_ACTION.queueMove.
+export const AUDIT_ACTION = constantsOf(AUDIT_ACTIONS)
 
 // Rotinas agendadas (jobRuns.job).
 export const JOB_NAMES = [
@@ -210,7 +274,11 @@ export const JOB_NAMES = [
   'refresh_holidays',
 ] as const
 export type JobName = (typeof JOB_NAMES)[number]
+// Valores com nome (cada texto escrito uma vez só): JOB_NAME.expirePickups, JOB_NAME.advanceQueues.
+export const JOB_NAME = constantsOf(JOB_NAMES)
 
 // Situação de uma execução da rotina (jobRuns.status).
 export const JOB_STATUSES = ['running', 'ok', 'error'] as const
 export type JobStatus = (typeof JOB_STATUSES)[number]
+// Valores com nome (cada texto escrito uma vez só): JOB_STATUS.running, JOB_STATUS.ok.
+export const JOB_STATUS = constantsOf(JOB_STATUSES)

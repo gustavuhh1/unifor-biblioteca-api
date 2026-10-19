@@ -1,9 +1,10 @@
 import { initialsOf, normalizeText } from '../text.js'
-import type {
-  NotificationPrefs,
-  User,
-  UserRole,
-  UserStatus,
+import {
+  USER_ROLE,
+  type NotificationPrefs,
+  type User,
+  type UserRole,
+  type UserStatus,
 } from '../types/index.js'
 
 // Preferências de aviso de um usuário novo: tudo ligado. "Sua vez na fila" e
@@ -68,7 +69,7 @@ export function buildUserDocument(input: NewUserInput): User {
       ? { emailVerifiedAt: input.emailVerifiedAt }
       : {}),
     ...(input.course ? { course: input.course } : {}),
-    ...(input.role === 'student'
+    ...(input.role === USER_ROLE.student
       ? { entryYear: 2000 + Number(input.matricula.slice(0, 2)) }
       : {}),
     ...(input.deskLabel ? { deskLabel: input.deskLabel } : {}),

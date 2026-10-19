@@ -1,12 +1,16 @@
 import { env } from '../../../config/env.js'
 import { getAdminAuth, getDb } from '../../../config/firebase.js'
 import type { FieldError } from '../../../shared/errors.js'
+import {
+  EMAIL_TOKEN_PURPOSE,
+  USER_ROLE,
+  USER_STATUS,
+} from '../../../shared/types/index.js'
 import { buildUserDocument } from '../../../shared/domain/user.js'
 import {
   EMAIL_TAKEN,
   MATRICULA_TAKEN,
   RESEND_COOLDOWN_SECONDS,
-  TOKEN_PURPOSE,
 } from '../auth.constants.js'
 import {
   configMissing,
@@ -25,12 +29,12 @@ import {
 } from './email-token.service.js'
 import { createRegistrationOptions } from './passkey.service.js'
 
-const PURPOSE = TOKEN_PURPOSE.emailConfirmation
+const PURPOSE = EMAIL_TOKEN_PURPOSE.emailConfirmation
 
 // Resposta de quem tem um cadastro aguardando confirmação: o app usa o tempo
 // para o contador "Reenviar em".
 const signupPending = () => ({
-  status: 'pending_email' as const,
+  status: USER_STATUS.pendingEmail,
   resendAvailableInSeconds: RESEND_COOLDOWN_SECONDS,
 })
 
@@ -95,11 +99,11 @@ export async function startSignup(input: SignupStartBody) {
         tx,
         uid,
         buildUserDocument({
-          role: 'student',
+          role: USER_ROLE.student,
           matricula: input.matricula,
           email: input.email,
           authEmail,
-          status: 'pending_email',
+          status: USER_STATUS.pendingEmail,
           createdAt: now,
         }),
         now,
@@ -224,7 +228,7 @@ export async function confirmSignup(input: SignupConfirmBody) {
   const checked = await db.runTransaction(async (tx) => {
     const account = await usersRepository.findByMatricula(input.matricula, tx)
     // Mesma resposta de um token antigo: não diz que a matrícula é desconhecida.
-    if (!account || account.status !== 'pending_email') {
+    if (!account || account.status !== USER_STATUS.pendingEmail) {
       throw tokenError({ result: 'expired_or_used' })
     }
     const recent = await emailTokensRepository.findRecent(

@@ -1,6 +1,9 @@
 import { readFile } from 'node:fs/promises'
 import { z } from 'zod'
-import type { HolidayItem } from '../../src/shared/types/index.js'
+import {
+  HOLIDAY_SCOPE,
+  type HolidayItem,
+} from '../../src/shared/types/index.js'
 
 // Código IBGE de Fortaleza. Uma chamada por ano traz os feriados nacionais,
 // estaduais (Ceará) e municipais (docs/infra.md, seção 3).
@@ -19,9 +22,9 @@ export interface HolidaysDocument {
 }
 
 const scopeByType: Record<string, HolidayItem['scope']> = {
-  NACIONAL: 'national',
-  ESTADUAL: 'state',
-  MUNICIPAL: 'municipal',
+  NACIONAL: HOLIDAY_SCOPE.national,
+  ESTADUAL: HOLIDAY_SCOPE.state,
+  MUNICIPAL: HOLIDAY_SCOPE.municipal,
 }
 
 const responseSchema = z.object({

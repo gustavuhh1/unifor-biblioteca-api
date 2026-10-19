@@ -5,6 +5,12 @@ import {
   SUBCOLLECTIONS,
 } from '../../src/shared/firestore/collections.js'
 import { optionalDate } from '../../src/shared/firestore/converters.js'
+import {
+  COPY_STATUS,
+  FINE_STATUS,
+  LOAN_STATUS,
+  QUEUE_ENTRY_STATUS,
+} from '../../src/shared/types/index.js'
 import { bookIdOf, uidOf } from './build.js'
 import { lateBusinessDays } from './business-days.js'
 import { holidayDates, type HolidaysDocument } from './holidays.js'
@@ -78,8 +84,8 @@ export async function runChecks(
   const rate = (marinaFine?.ratePerBusinessDayCents as number | undefined) ?? 0
   check(
     'Marina com empréstimo atrasado e multa contando',
-    marinaLoan?.status === 'active' &&
-      marinaFine?.status === 'accruing' &&
+    marinaLoan?.status === LOAN_STATUS.active &&
+      marinaFine?.status === FINE_STATUS.accruing &&
       marinaDue !== undefined &&
       localDate(marinaDue) < today &&
       marinaDays >= 1,
@@ -90,7 +96,7 @@ export async function runChecks(
   const ret4821Deadline = toDate(ret4821?.pickupDeadline)
   check(
     'Pedido RET-4821 do Lucas dentro do prazo de retirada',
-    ret4821?.status === 'awaiting_pickup' &&
+    ret4821?.status === LOAN_STATUS.awaitingPickup &&
       ret4821Deadline !== undefined &&
       ret4821Deadline.getTime() > Date.now(),
     `retirar até ${ret4821Deadline ? localDate(ret4821Deadline) : '?'}`,
@@ -120,7 +126,7 @@ export async function runChecks(
   const engenhariaQueue = await db
     .collection(COLLECTIONS.queueEntries)
     .where('bookId', '==', bookIdOf('engenharia_de_software'))
-    .where('status', '==', 'waiting')
+    .where('status', '==', QUEUE_ENTRY_STATUS.waiting)
     .get()
   const dueDay = engenhariaDue ? localDate(engenhariaDue) : undefined
   check(
@@ -135,7 +141,7 @@ export async function runChecks(
   const queue = await db
     .collection(COLLECTIONS.queueEntries)
     .where('bookId', '==', bookIdOf('arquitetura_limpa'))
-    .where('status', '==', 'waiting')
+    .where('status', '==', QUEUE_ENTRY_STATUS.waiting)
     .get()
   check(
     'Arquitetura Limpa com 4 na fila',
@@ -145,7 +151,7 @@ export async function runChecks(
 
   const openFines = await db
     .collection(COLLECTIONS.fines)
-    .where('status', '==', 'open')
+    .where('status', '==', FINE_STATUS.open)
     .get()
   const amounts = openFines.docs
     .map((doc) => doc.data().amountCents as number)
@@ -159,7 +165,7 @@ export async function runChecks(
 
   const onLoan = await db
     .collection(COLLECTIONS.copies)
-    .where('status', '==', 'on_loan')
+    .where('status', '==', COPY_STATUS.onLoan)
     .get()
   const orphans = onLoan.docs.filter((doc) => !doc.data().currentLoanId)
   check(

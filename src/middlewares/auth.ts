@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express'
 import { getAdminAuth, getDb } from '../config/firebase.js'
 import { AppError, unauthorized } from '../shared/errors.js'
 import { userRoleSchema } from '../shared/user-role.js'
-import type { UserRole } from '../shared/types/index.js'
+import { USER_STATUS, type UserRole } from '../shared/types/index.js'
 
 // Quem está logado: o uid do Firebase e o perfil lido em users/{uid}.
 export interface AuthenticatedUser {
@@ -58,7 +58,7 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
   }
 
   // Conta pending_email (e-mail ainda não confirmado) ou desativada não usa a API.
-  if (profile.get('status') !== 'active') {
+  if (profile.get('status') !== USER_STATUS.active) {
     throw new AppError(403, 'account_disabled', 'Sua conta não está ativa.')
   }
 

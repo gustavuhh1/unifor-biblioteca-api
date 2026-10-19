@@ -6,10 +6,12 @@ import type {
 import { getDb } from '../../../config/firebase.js'
 import { COLLECTIONS } from '../../../shared/firestore/collections.js'
 import { toDate } from '../../../shared/firestore/converters.js'
-import type {
-  MatriculaIndex,
-  User,
-  EmailIndex,
+import {
+  USER_ROLE,
+  USER_STATUS,
+  type MatriculaIndex,
+  type User,
+  type EmailIndex,
 } from '../../../shared/types/index.js'
 import type { IndexOwners, PendingStudent, UserAccount } from '../auth.types.js'
 
@@ -97,7 +99,8 @@ export async function findPendingByMatricula(
   matricula: string,
 ): Promise<PendingStudent | undefined> {
   const account = await findByMatricula(matricula, tx)
-  return account?.role === 'student' && account.status === 'pending_email'
+  return account?.role === USER_ROLE.student &&
+    account.status === USER_STATUS.pendingEmail
     ? { uid: account.uid, email: account.email }
     : undefined
 }
@@ -160,7 +163,7 @@ export function deletePendingStudent(
 // Ativa a conta depois do token confirmado (RF-AUT-03).
 export function activate(tx: Transaction, uid: string, now: Date): void {
   tx.update(usersRef(uid), {
-    status: 'active',
+    status: USER_STATUS.active,
     emailVerifiedAt: now,
     updatedAt: now,
   })

@@ -12,6 +12,13 @@ import { env } from '../../../config/env.js'
 import { getAdminAuth, getDb } from '../../../config/firebase.js'
 import { writeAuditLog } from '../../../shared/audit-log.js'
 import {
+  AUDIT_ACTION,
+  AUDIT_ACTOR_ROLE,
+  CHALLENGE_PURPOSE,
+  USER_ROLE,
+  USER_STATUS,
+} from '../../../shared/types/index.js'
+import {
   alreadyRegistered,
   challengeInvalid,
   configMissing,
@@ -91,7 +98,11 @@ export async function createRegistrationOptions(
     }),
   )
   await passkeysRepository.storeChallenge(
-    { challenge: options.challenge, purpose: 'registration', uid },
+    {
+      challenge: options.challenge,
+      purpose: CHALLENGE_PURPOSE.registration,
+      uid,
+    },
     now,
   )
   return options
@@ -109,7 +120,11 @@ export async function verifyRegistration(
 
   const challenge = challengeFromClientData(response.response.clientDataJSON)
   const owner = challenge
-    ? await passkeysRepository.consumeChallenge(challenge, 'registration', now)
+    ? await passkeysRepository.consumeChallenge(
+        challenge,
+        CHALLENGE_PURPOSE.registration,
+        now,
+      )
     : undefined
   if (!challenge || !owner?.uid) throw challengeInvalid()
   const uid = owner.uid
@@ -127,7 +142,10 @@ export async function verifyRegistration(
   await getDb().runTransaction(async (tx) => {
     const user = await usersRepository.findById(uid, tx)
     const existing = await passkeysRepository.findById(credential.id, tx)
-    if (user?.role !== 'student' || user.status !== 'active') {
+    if (
+      user?.role !== USER_ROLE.student ||
+      user.status !== USER_STATUS.active
+    ) {
       throw registrationFailed()
     }
     if (existing) throw alreadyRegistered()
@@ -147,8 +165,8 @@ export async function verifyRegistration(
       tx,
       {
         actorUid: uid,
-        actorRole: 'student',
-        action: 'passkey_create',
+        actorRole: AUDIT_ACTOR_ROLE.student,
+        action: AUDIT_ACTION.passkeyCreate,
         targetUid: uid,
         entityId: credential.id,
       },
@@ -175,7 +193,7 @@ export async function createLoginOptions(
 
   const account = await usersRepository.findByMatricula(matricula)
   const passkeys =
-    account?.role === 'student'
+    account?.role === USER_ROLE.student
       ? await passkeysRepository.listByUser(account.uid)
       : []
 
@@ -189,7 +207,7 @@ export async function createLoginOptions(
     await passkeysRepository.storeChallenge(
       {
         challenge: options.challenge,
-        purpose: 'authentication',
+        purpose: CHALLENGE_PURPOSE.authentication,
         uid: account.uid,
       },
       now,
@@ -210,7 +228,7 @@ export async function verifyLogin(input: PasskeyLoginVerifyBody) {
   const owner = challenge
     ? await passkeysRepository.consumeChallenge(
         challenge,
-        'authentication',
+        CHALLENGE_PURPOSE.authentication,
         now,
       )
     : undefined
@@ -280,7 +298,7 @@ export async function removePasskey(
       {
         actorUid: uid,
         actorRole: 'student',
-        action: 'passkey_remove',
+        action: AUDIT_ACTION.passkeyRemove,
         targetUid: uid,
         entityId: credentialId,
       },

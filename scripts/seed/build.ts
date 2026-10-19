@@ -19,23 +19,36 @@ import {
   userSubcollectionPath,
 } from '../../src/shared/firestore/collections.js'
 import { normalizeText } from '../../src/shared/text.js'
-import type {
-  Book,
-  Copy,
-  EmailIndex,
-  Fine,
-  Folder,
-  Holiday,
-  LibrarySettings,
-  Loan,
-  MatriculaIndex,
-  NotificationDelivery,
-  QueueEntry,
-  SavedBook,
-  Timestamps,
-  User,
-  UserNotification,
-  Work,
+import {
+  BOOK_STATUS,
+  COPY_STATUS,
+  DATA_SOURCE,
+  DELIVERY_STATUS,
+  FINE_STATUS,
+  LOAN_ORIGIN,
+  LOAN_STATUS,
+  NOTIFICATION_ACTION,
+  NOTIFICATION_TYPE,
+  QUEUE_ENTRY_STATUS,
+  QUEUE_ORIGIN,
+  USER_ROLE,
+  USER_STATUS,
+  type Book,
+  type Copy,
+  type EmailIndex,
+  type Fine,
+  type Folder,
+  type Holiday,
+  type LibrarySettings,
+  type Loan,
+  type MatriculaIndex,
+  type NotificationDelivery,
+  type QueueEntry,
+  type SavedBook,
+  type Timestamps,
+  type User,
+  type UserNotification,
+  type Work,
 } from '../../src/shared/types/index.js'
 import type { HolidaysDocument } from './holidays.js'
 import {
@@ -160,12 +173,12 @@ export function buildSeed(options: BuildOptions): SeedData {
       googleBooks: spec.isbn
         ? { volumeId: null, lastSyncedAt: null, found: true }
         : undefined,
-      dataSource: spec.isbn ? 'mixed' : 'manual',
+      dataSource: spec.isbn ? DATA_SOURCE.mixed : DATA_SOURCE.manual,
       copiesTotal: 0,
       copiesAvailable: 0,
       queueLength: 0,
       unavailableForNewRequests: spec.unavailableForNewRequests ?? false,
-      status: 'active',
+      status: BOOK_STATUS.active,
       searchText: searchTextOf(spec),
       ...stamps(),
     }
@@ -176,7 +189,7 @@ export function buildSeed(options: BuildOptions): SeedData {
         registration,
         format: 'Impresso',
         libraryCode: '1163 · Biblioteca · Livros',
-        status: 'available',
+        status: COPY_STATUS.available,
         ...stamps(),
       }
     }
@@ -212,7 +225,7 @@ export function buildSeed(options: BuildOptions): SeedData {
       bookTitle: book.title,
       bookShelf: book.cdu ? `Estante ${book.cdu}` : '',
       status: spec.status,
-      origin: spec.queueEntry ? 'queue' : 'request',
+      origin: spec.queueEntry ? LOAN_ORIGIN.queue : LOAN_ORIGIN.request,
       queueEntryId: spec.queueEntry,
       pickupCode: spec.pickupCode ?? nextPickupCode(),
       qrToken:
@@ -230,11 +243,11 @@ export function buildSeed(options: BuildOptions): SeedData {
         : {},
     }
 
-    if (spec.status === 'awaiting_pickup') {
+    if (spec.status === LOAN_STATUS.awaitingPickup) {
       const requestedAt = atShifted(required(spec.requestedAt, 'requestedAt'))
       return {
         ...common,
-        status: 'awaiting_pickup',
+        status: LOAN_STATUS.awaitingPickup,
         requestedAt,
         pickupDeadline: atShifted(
           required(spec.pickupDeadline, 'pickupDeadline'),
@@ -274,11 +287,11 @@ export function buildSeed(options: BuildOptions): SeedData {
   // o empresta.
   for (const [loanId, loan] of Object.entries(loans)) {
     const copy = required(copies[loan.copyId], `copy ${loan.copyId}`)
-    if (loan.status === 'awaiting_pickup') {
-      copy.status = 'reserved'
+    if (loan.status === LOAN_STATUS.awaitingPickup) {
+      copy.status = COPY_STATUS.reserved
       copy.currentLoanId = loanId
-    } else if (loan.status === 'active') {
-      copy.status = 'on_loan'
+    } else if (loan.status === LOAN_STATUS.active) {
+      copy.status = COPY_STATUS.onLoan
       copy.currentLoanId = loanId
       copy.dueAt = loan.dueAt
     }
@@ -294,7 +307,7 @@ export function buildSeed(options: BuildOptions): SeedData {
     )
     const book = required(bookSpecByKey.get(spec.book), `book ${spec.book}`)
     const joinedAt = at(shift(spec.joinedOn), '10:00')
-    const fulfilled = spec.status === 'fulfilled'
+    const fulfilled = spec.status === QUEUE_ENTRY_STATUS.fulfilled
     // Lucas foi chamado às 09:12 de hoje e confirmou às 09:30 (24 h para
     // confirmar).
     const turnStartedAt = fulfilled ? at(today, '09:12') : undefined
@@ -308,7 +321,7 @@ export function buildSeed(options: BuildOptions): SeedData {
       status: spec.status,
       order: spec.order,
       joinedAt,
-      origin: 'student',
+      origin: QUEUE_ORIGIN.student,
       turnStartedAt,
       confirmDeadline: turnStartedAt
         ? at(plusDays(today, 1), '09:12')
@@ -341,8 +354,8 @@ export function buildSeed(options: BuildOptions): SeedData {
       ratePerBusinessDayCents: FINE_RATE_CENTS,
       dueAt: required(loan.dueAt, 'dueAt'),
     }
-    if (spec.status === 'accruing') {
-      fines[spec.id] = { ...base, status: 'accruing', ...stamps() }
+    if (spec.status === FINE_STATUS.accruing) {
+      fines[spec.id] = { ...base, status: FINE_STATUS.accruing, ...stamps() }
     } else {
       const returnedAt = required(loan.returnedAt, 'returnedAt')
       // Congelada na devolução: os dias e os valores documentados não mudam com
@@ -353,7 +366,7 @@ export function buildSeed(options: BuildOptions): SeedData {
       )
       fines[spec.id] = {
         ...base,
-        status: 'open',
+        status: FINE_STATUS.open,
         businessDaysLate,
         amountCents: businessDaysLate * FINE_RATE_CENTS,
         frozenAt: returnedAt,
@@ -367,14 +380,14 @@ export function buildSeed(options: BuildOptions): SeedData {
   for (const [bookId, book] of Object.entries(books)) {
     const bookCopies = Object.values(copies).filter((c) => c.bookId === bookId)
     const onLoanDueDates = bookCopies
-      .filter((c) => c.status === 'on_loan')
+      .filter((c) => c.status === COPY_STATUS.onLoan)
       .map((c) => required(c.dueAt, 'copy dueAt').getTime())
     book.copiesTotal = bookCopies.length
     book.copiesAvailable = bookCopies.filter(
-      (c) => c.status === 'available',
+      (c) => c.status === COPY_STATUS.available,
     ).length
     book.queueLength = Object.values(queueEntries).filter(
-      (q) => q.bookId === bookId && q.status === 'waiting',
+      (q) => q.bookId === bookId && q.status === QUEUE_ENTRY_STATUS.waiting,
     ).length
     book.nextReturnAt = onLoanDueDates.length
       ? new Date(Math.min(...onLoanDueDates))
@@ -409,7 +422,9 @@ export function buildSeed(options: BuildOptions): SeedData {
 
     // O histórico de leitura do Lucas não é carregado: os 17 livros são um valor
     // fixo (6.4).
-    const returnedThisYear = mine(loans).filter((l) => l.status === 'returned')
+    const returnedThisYear = mine(loans).filter(
+      (l) => l.status === LOAN_STATUS.returned,
+    )
     const booksReadByYear: Record<string, number> =
       spec.key === 'lucas' ? { '2026': 17 } : {}
     if (spec.key !== 'lucas') {
@@ -428,26 +443,28 @@ export function buildSeed(options: BuildOptions): SeedData {
       fullName: spec.fullName,
       email: spec.email,
       authEmail: `${spec.matricula}@${AUTH_EMAIL_DOMAIN}`,
-      status: 'active',
+      status: USER_STATUS.active,
       // Todo aluno ativo confirmou o token de e-mail: o Lucas 10 minutos depois de
       // criado (seção 6.4), os outros 5. Bibliotecários não se cadastram pelo
       // app, então não têm confirmação.
       emailVerifiedAt: isLucas
         ? new Date(created.getTime() + 10 * 60_000)
-        : spec.role === 'student'
+        : spec.role === USER_ROLE.student
           ? new Date(created.getTime() + 5 * 60_000)
           : undefined,
       course: spec.course,
       deskLabel: spec.deskLabel,
       counters: {
         activeLoanCount: mine(loans).filter(
-          (l) => l.status === 'awaiting_pickup' || l.status === 'active',
+          (l) =>
+            l.status === LOAN_STATUS.awaitingPickup ||
+            l.status === LOAN_STATUS.active,
         ).length,
         activeQueueCount: mine(queueEntries).filter(
-          (q) => q.status === 'waiting',
+          (q) => q.status === QUEUE_ENTRY_STATUS.waiting,
         ).length,
         openFineTotalCents: mine(fines)
-          .filter((f) => f.status === 'open')
+          .filter((f) => f.status === FINE_STATUS.open)
           .reduce((sum, f) => sum + required(f.amountCents, 'amountCents'), 0),
         booksReadByYear,
       },
@@ -479,7 +496,10 @@ export function buildSeed(options: BuildOptions): SeedData {
     }
   }
 
-  const delivery: NotificationDelivery = { push: 'sent', email: 'sent' }
+  const delivery: NotificationDelivery = {
+    push: DELIVERY_STATUS.sent,
+    email: DELIVERY_STATUS.sent,
+  }
   const pickupDeadline = required(
     loans.loan_ret4821?.pickupDeadline,
     'pickupDeadline',
@@ -489,34 +509,34 @@ export function buildSeed(options: BuildOptions): SeedData {
   const codigoLimpoId = bookIdOf('codigo_limpo')
   const notifications: Record<string, UserNotification> = {
     notif_queue_turn: {
-      type: 'queue_turn',
+      type: NOTIFICATION_TYPE.queueTurn,
       title: 'É a sua vez: Código Limpo',
       body: 'Confirme até amanhã, 09:12, que vai retirar.',
       bookId: codigoLimpoId,
       loanId: 'loan_ret4821',
       queueEntryId: 'qe_lucas_codigo_limpo',
-      action: 'open_loan',
+      action: NOTIFICATION_ACTION.openLoan,
       readAt: at(today, '09:30'),
       delivery,
       ...stamps(at(today, '09:12'), at(today, '09:30')),
     },
     notif_pickup_ready: {
-      type: 'pickup_ready',
+      type: NOTIFICATION_TYPE.pickupReady,
       title: 'Pedido pronto: Código Limpo',
       body: `Retire até ${formatDayMonth(localDate(pickupDeadline))}. Código RET-4821.`,
       bookId: codigoLimpoId,
       loanId: 'loan_ret4821',
-      action: 'show_qr',
+      action: NOTIFICATION_ACTION.showQr,
       delivery,
       ...stamps(at(today, '09:30'), at(today, '09:30')),
     },
     notif_due_reminder: {
-      type: 'due_reminder',
+      type: NOTIFICATION_TYPE.dueReminder,
       title: 'Engenharia de Software vence em 2 dias',
       body: `Devolva até ${formatDayMonth(localDate(dueAt))}. Há ${waiting} pessoas na fila, então não dá para renovar.`,
       bookId: bookIdOf('engenharia_de_software'),
       loanId: 'loan_lucas_engenharia',
-      action: 'open_loan',
+      action: NOTIFICATION_ACTION.openLoan,
       delivery,
       ...stamps(
         at(shift('2026-10-14'), '09:00'),

@@ -1,6 +1,11 @@
 import { getAdminAuth, getDb } from '../../../config/firebase.js'
 import { writeAuditLog } from '../../../shared/audit-log.js'
-import { RECOVERY_MESSAGE, TOKEN_PURPOSE } from '../auth.constants.js'
+import {
+  AUDIT_ACTION,
+  EMAIL_TOKEN_PURPOSE,
+  USER_STATUS,
+} from '../../../shared/types/index.js'
+import { RECOVERY_MESSAGE } from '../auth.constants.js'
 import { tokenError } from '../auth.errors.js'
 import type { PasswordResetBody } from '../auth.types.js'
 import { sendTokenEmail } from '../mail/mailer.js'
@@ -12,7 +17,7 @@ import {
 } from '../rules/email-token.rules.js'
 import { verifyTokenAndRecordAttempt } from './email-token.service.js'
 
-const PURPOSE = TOKEN_PURPOSE.passwordReset
+const PURPOSE = EMAIL_TOKEN_PURPOSE.passwordReset
 
 // Pede o token de recuperação de senha pela matrícula (RF-AUT-08), para aluno e
 // bibliotecário. A API acha o e-mail da conta por dentro e nunca o devolve. A
@@ -26,7 +31,7 @@ export async function requestPasswordRecovery(matricula: string) {
 
   const sentTo = await db.runTransaction(async (tx) => {
     const account = await usersRepository.findByMatricula(matricula, tx)
-    if (!account || account.status !== 'active') return undefined
+    if (!account || account.status !== USER_STATUS.active) return undefined
 
     const previous = await emailTokensRepository.findRecent(
       tx,
@@ -79,7 +84,7 @@ export async function resetPassword(input: PasswordResetBody) {
 
   const result = await db.runTransaction(async (tx) => {
     const account = await usersRepository.findByMatricula(input.matricula, tx)
-    if (!account || account.status !== 'active') {
+    if (!account || account.status !== USER_STATUS.active) {
       throw tokenError({ result: 'expired_or_used' })
     }
     const recent = await emailTokensRepository.findRecent(
@@ -98,7 +103,7 @@ export async function resetPassword(input: PasswordResetBody) {
         {
           actorUid: account.uid,
           actorRole: account.role,
-          action: 'password_reset',
+          action: AUDIT_ACTION.passwordReset,
           targetUid: account.uid,
         },
         now,

@@ -1,14 +1,6 @@
 import { COSEALG } from '@simplewebauthn/server/helpers'
 import type { FieldError } from '../../shared/errors.js'
-import type { EmailTokenPurpose } from '../../shared/types/index.js'
 import type { TokenSettings } from './auth.types.js'
-
-// Finalidades do token de e-mail (seção 2.3). O código usa sempre estas
-// constantes, nunca o texto solto.
-export const TOKEN_PURPOSE = {
-  emailConfirmation: 'email_confirmation',
-  passwordReset: 'password_reset',
-} as const satisfies Record<string, EmailTokenPurpose>
 
 // Valores de settings/library (emailTokenMinutes e emailTokenMaxAttempts), usados
 // quando esse documento não existe.

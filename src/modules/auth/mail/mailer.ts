@@ -1,7 +1,9 @@
 import { Resend } from 'resend'
 import { env } from '../../../config/env.js'
-import type { EmailTokenPurpose } from '../../../shared/types/index.js'
-import { TOKEN_PURPOSE } from '../auth.constants.js'
+import {
+  EMAIL_TOKEN_PURPOSE,
+  type EmailTokenPurpose,
+} from '../../../shared/types/index.js'
 import { emailDeliveryFailed, emailNotConfigured } from '../auth.errors.js'
 import type { MailMode } from '../auth.types.js'
 
@@ -17,14 +19,16 @@ export function mailMode(config: {
 }
 
 const SUBJECTS: Record<EmailTokenPurpose, string> = {
-  [TOKEN_PURPOSE.emailConfirmation]: 'Confirme seu e-mail na Unifor Biblioteca',
-  [TOKEN_PURPOSE.passwordReset]: 'Recupere sua senha da Unifor Biblioteca',
+  [EMAIL_TOKEN_PURPOSE.emailConfirmation]:
+    'Confirme seu e-mail na Unifor Biblioteca',
+  [EMAIL_TOKEN_PURPOSE.passwordReset]:
+    'Recupere sua senha da Unifor Biblioteca',
 }
 
 const INTROS: Record<EmailTokenPurpose, string> = {
-  [TOKEN_PURPOSE.emailConfirmation]:
+  [EMAIL_TOKEN_PURPOSE.emailConfirmation]:
     'Use o token abaixo para confirmar seu e-mail no app.',
-  [TOKEN_PURPOSE.passwordReset]:
+  [EMAIL_TOKEN_PURPOSE.passwordReset]:
     'Use o token abaixo para criar uma nova senha no app.',
 }
 

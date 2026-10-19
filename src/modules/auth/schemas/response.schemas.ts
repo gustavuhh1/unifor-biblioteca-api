@@ -1,5 +1,9 @@
 import { z } from 'zod'
-import { USER_ROLES, USER_STATUSES } from '../../../shared/types/index.js'
+import {
+  USER_ROLES,
+  USER_STATUS,
+  USER_STATUSES,
+} from '../../../shared/types/index.js'
 
 // Schemas de saída do módulo de acesso. Também alimentam o Swagger.
 
@@ -35,7 +39,7 @@ export const passkeyRequestOptionsSchema = z
 // Cadastro aguardando confirmação, com o tempo até poder reenviar o token.
 export const signupPendingResponseSchema = z
   .object({
-    status: z.literal('pending_email'),
+    status: z.literal(USER_STATUS.pendingEmail),
     resendAvailableInSeconds: z.number().int().meta({ example: 60 }),
   })
   .meta({ id: 'SignupPendingResponse' })
