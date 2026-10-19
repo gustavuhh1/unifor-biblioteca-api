@@ -1,0 +1,172 @@
+// Database seed: docs/modelo-de-dados-firestore.md, section 8.
+//   npm run seed                      Emulator Suite only (default)
+//   npm run seed -- --prod            production, with a typed confirmation
+//   npm run seed -- --prod --reset    production, wiping the collections first
+//   npm run seed -- --no-google-books skip the Google Books requests
+//   npm run seed -- --offline         no external call (holidays from the local file)
+import { getAdminAuth, getDb } from '../src/config/firebase.js'
+import { env } from '../src/config/env.js'
+import { upsertAccounts } from './seed/accounts.js'
+import { buildSeed, toWrites, uidOf } from './seed/build.js'
+import {
+  checkEnvironment,
+  confirmByTyping,
+  parseCliArgs,
+  type CliOptions,
+} from './seed/cli.js'
+import { AUTH_EMAIL_DOMAIN, USERS } from './seed/data.js'
+import { publishFirestoreConfig } from './seed/deploy.js'
+import { clearDatabase, writeAll } from './seed/firestore.js'
+import { enrichFromGoogleBooks } from './seed/google-books.js'
+import {
+  fetchHolidays,
+  loadHolidaysFile,
+  type HolidaysDocument,
+} from './seed/holidays.js'
+import { countDocuments, runChecks } from './seed/verify.js'
+
+const YEAR = 2026
+
+async function loadHolidays(options: CliOptions): Promise<HolidaysDocument> {
+  const apiKey = process.env.FERIADOS_API_KEY
+  if (!options.offline && apiKey) {
+    try {
+      const document = await fetchHolidays(YEAR, apiKey)
+      console.log(
+        `  holidays/${YEAR}: ${document.items.length} feriados da FeriadosAPI`,
+      )
+      return document
+    } catch (error) {
+      const reason =
+        error instanceof Error ? error.message : 'erro desconhecido'
+      console.warn(`  FeriadosAPI falhou (${reason}); usando o arquivo local.`)
+    }
+  }
+  const document = await loadHolidaysFile(YEAR)
+  console.log(
+    `  holidays/${YEAR}: ${document.items.length} feriados do arquivo local`,
+  )
+  return document
+}
+
+async function confirmProduction(options: CliOptions): Promise<boolean> {
+  const project = env.GOOGLE_CLOUD_PROJECT
+  const confirmed = await confirmByTyping(
+    `ATENÇÃO: isto grava em PRODUÇÃO (projeto ${project}), inclusive as contas de teste no Firebase Authentication, com a senha de SEED_TEST_PASSWORD.\nDigite o ID do projeto para confirmar:`,
+    project,
+  )
+  if (!confirmed || !options.reset) return confirmed
+
+  return confirmByTyping(
+    '--reset vai APAGAR todas as coleções do banco de produção antes de gravar.\nDigite "apagar tudo" para confirmar:',
+    'apagar tudo',
+  )
+}
+
+async function main(): Promise<number> {
+  const options = parseCliArgs(process.argv.slice(2))
+
+  const problems = checkEnvironment(options, process.env)
+  if (problems.length) {
+    for (const problem of problems) console.error(`Erro: ${problem}`)
+    return 1
+  }
+  const password = process.env.SEED_TEST_PASSWORD!
+
+  console.log('1. Ambiente')
+  if (options.prod) {
+    if (!(await confirmProduction(options))) {
+      console.error('Cancelado: a confirmação não confere. Nada foi gravado.')
+      return 1
+    }
+    // The Admin SDK reads these on first use: without them it targets production.
+    delete process.env.FIRESTORE_EMULATOR_HOST
+    delete process.env.FIREBASE_AUTH_EMULATOR_HOST
+    console.log(`  PRODUÇÃO (projeto ${env.GOOGLE_CLOUD_PROJECT})`)
+  } else {
+    console.log(
+      `  Emulator Suite (Firestore ${process.env.FIRESTORE_EMULATOR_HOST}, Auth ${process.env.FIREBASE_AUTH_EMULATOR_HOST})`,
+    )
+  }
+
+  const db = getDb()
+
+  console.log('2. Limpeza das coleções')
+  if (!options.prod || options.reset) {
+    await clearDatabase(db)
+    console.log('  coleções apagadas')
+  } else {
+    console.log('  pulada em produção (use --reset para apagar)')
+  }
+
+  console.log('3. Configurações e feriados')
+  const holidays = await loadHolidays(options)
+
+  console.log('4. Contas do Firebase Authentication')
+  await upsertAccounts(
+    getAdminAuth(),
+    USERS.map((user) => ({
+      uid: uidOf(user.key),
+      email: `${user.matricula}@${AUTH_EMAIL_DOMAIN}`,
+      password,
+    })),
+    !options.prod,
+  )
+  console.log(`  ${USERS.length} contas prontas`)
+
+  console.log('5. a 7. Dados')
+  const data = buildSeed({
+    holidays,
+    tokenSecret: password,
+    simulatedNow: !options.prod,
+  })
+  if (options.googleBooks && process.env.GOOGLE_BOOKS_API_KEY) {
+    const result = await enrichFromGoogleBooks(
+      data.books,
+      process.env.GOOGLE_BOOKS_API_KEY,
+    )
+    console.log(
+      `  Google Books: ${result.enriched} completados, ${result.notFound} sem resultado, ${result.failed} com falha`,
+    )
+  } else {
+    console.log('  Google Books: pulado')
+  }
+  const writes = toWrites(data)
+  await writeAll(db, writes)
+  console.log(`  ${writes.length} documentos gravados`)
+
+  console.log('8. Índices, regras e TTL')
+  let failedCommands: string[] = []
+  if (options.prod) {
+    failedCommands = publishFirestoreConfig(env.GOOGLE_CLOUD_PROJECT)
+  } else {
+    console.log(
+      '  pulado no emulador (as regras vêm do firebase.json; índices e TTL só existem em produção)',
+    )
+  }
+
+  console.log('9. Conferência')
+  for (const line of await countDocuments(db)) console.log(`  ${line}`)
+  const checks = await runChecks(db, holidays)
+  for (const check of checks) {
+    console.log(
+      `  ${check.ok ? 'OK    ' : 'FALHOU'} ${check.label} (${check.detail})`,
+    )
+  }
+
+  if (failedCommands.length) {
+    console.error('\nEstes comandos falharam; rode-os à mão:')
+    for (const command of failedCommands) console.error(`  ${command}`)
+  }
+  return checks.every((check) => check.ok) && !failedCommands.length ? 0 : 1
+}
+
+main()
+  .then((code) => process.exit(code))
+  .catch((error: unknown) => {
+    console.error(
+      'O seed falhou:',
+      error instanceof Error ? error.message : error,
+    )
+    process.exit(1)
+  })
