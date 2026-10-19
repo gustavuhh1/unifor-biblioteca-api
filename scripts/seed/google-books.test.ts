@@ -32,8 +32,8 @@ function volumeResponse(url: string) {
   })
 }
 
-describe('enrichFromGoogleBooks', () => {
-  it('makes the two requests per ISBN and completes only what is missing', async () => {
+describe('complemento pelo Google Books (enrichFromGoogleBooks)', () => {
+  it('faz as duas requisições por ISBN e completa só o que falta', async () => {
     const books = await freshBooks()
     const fetchMock = vi.fn(async (url: string) => volumeResponse(url))
 
@@ -45,7 +45,7 @@ describe('enrichFromGoogleBooks', () => {
       noSleep,
     )
 
-    // Three books have an ISBN: Código Limpo, Refatoração and Algoritmos (3ª).
+    // Três livros têm ISBN: Código Limpo, Refatoração e Algoritmos (3ª).
     expect(result).toEqual({ enriched: 3, notFound: 0, failed: 0 })
     expect(fetchMock).toHaveBeenCalledTimes(6)
     expect(fetchMock.mock.calls[0]![0]).toBe(
@@ -55,7 +55,7 @@ describe('enrichFromGoogleBooks', () => {
       'https://www.googleapis.com/books/v1/volumes/vol-123?key=dummy-key',
     )
 
-    // Documented values stay; missing ones are completed; the cover becomes https.
+    // Os valores documentados ficam; os que faltam são completados; a capa vira https.
     expect(books.book_codigo_limpo).toMatchObject({
       publisher: 'Alta Books',
       synopsis: 'Mostra como escrever código fácil de ler e de manter...',
@@ -69,7 +69,7 @@ describe('enrichFromGoogleBooks', () => {
     expect(books.book_arquitetura_limpa!.coverUrl).toBeNull()
   })
 
-  it('retries a 503 with exponential backoff and then succeeds', async () => {
+  it('repete um 503 com espera exponencial e depois tem sucesso', async () => {
     const books = await freshBooks()
     const sleep = vi.fn(async () => {})
     let searchCalls = 0
@@ -92,7 +92,7 @@ describe('enrichFromGoogleBooks', () => {
     expect(sleep.mock.calls.slice(0, 2)).toEqual([[1000], [2000]])
   })
 
-  it('repeats an empty search and keeps the documented data if it stays empty', async () => {
+  it('repete uma busca vazia e mantém os dados documentados se continuar vazia', async () => {
     const books = await freshBooks()
     const before = structuredClone(books.book_codigo_limpo)
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -108,7 +108,7 @@ describe('enrichFromGoogleBooks', () => {
 
     expect(result).toEqual({ enriched: 0, notFound: 3, failed: 0 })
     expect(fetchMock).toHaveBeenCalledTimes(9)
-    // Not a failure of the book: googleBooks stays as documented (found: true).
+    // Não é falha do livro: googleBooks continua como documentado (found: true).
     expect(books.book_codigo_limpo).toEqual(before)
     expect(books.book_codigo_limpo!.googleBooks).toEqual({
       volumeId: null,
@@ -118,7 +118,7 @@ describe('enrichFromGoogleBooks', () => {
     expect(warn.mock.calls.flat().join(' ')).toMatch(/9788576082675/)
   })
 
-  it('gives up after 4 attempts on a persistent error, keeping the local data and hiding the key', async () => {
+  it('desiste depois de 4 tentativas num erro persistente, mantendo os dados locais e escondendo a chave', async () => {
     const books = await freshBooks()
     const before = structuredClone(books.book_codigo_limpo)
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -142,7 +142,7 @@ describe('enrichFromGoogleBooks', () => {
     expect(logged).not.toMatch(/dummy-key/)
   })
 
-  it('does not retry an error that retrying cannot fix', async () => {
+  it('não repete um erro que repetir não resolve', async () => {
     const books = await freshBooks()
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const fetchMock = vi.fn(async () => new Response('x', { status: 403 }))

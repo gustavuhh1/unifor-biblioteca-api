@@ -6,8 +6,8 @@ const EMULATORS = {
   FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099',
 }
 
-describe('parseCliArgs', () => {
-  it('defaults to the emulator, with Google Books', () => {
+describe('argumentos da linha de comando (parseCliArgs)', () => {
+  it('por padrão usa o emulador, com Google Books', () => {
     expect(parseCliArgs([])).toEqual({
       prod: false,
       reset: false,
@@ -16,7 +16,7 @@ describe('parseCliArgs', () => {
     })
   })
 
-  it('reads the flags', () => {
+  it('lê as opções', () => {
     expect(parseCliArgs(['--prod', '--reset', '--no-google-books'])).toEqual({
       prod: true,
       reset: true,
@@ -25,29 +25,29 @@ describe('parseCliArgs', () => {
     })
   })
 
-  it('--offline also skips Google Books', () => {
+  it('--offline também pula o Google Books', () => {
     expect(parseCliArgs(['--offline'])).toMatchObject({
       offline: true,
       googleBooks: false,
     })
   })
 
-  it('refuses an unknown flag', () => {
+  it('recusa uma opção desconhecida', () => {
     expect(() => parseCliArgs(['--production'])).toThrow()
   })
 })
 
-describe('checkEnvironment', () => {
+describe('conferência do ambiente (checkEnvironment)', () => {
   const emulatorRun = parseCliArgs([])
 
-  it('stops with a clear message when SEED_TEST_PASSWORD is missing', () => {
+  it('para com uma mensagem clara quando falta SEED_TEST_PASSWORD', () => {
     const problems = checkEnvironment(emulatorRun, { ...EMULATORS })
 
     expect(problems).toHaveLength(1)
     expect(problems[0]).toMatch(/SEED_TEST_PASSWORD não está definida/)
   })
 
-  it('treats a blank SEED_TEST_PASSWORD as missing', () => {
+  it('trata SEED_TEST_PASSWORD em branco como ausente', () => {
     const problems = checkEnvironment(emulatorRun, {
       ...EMULATORS,
       SEED_TEST_PASSWORD: '',
@@ -56,7 +56,7 @@ describe('checkEnvironment', () => {
     expect(problems[0]).toMatch(/SEED_TEST_PASSWORD/)
   })
 
-  it('refuses a password the Firebase would refuse', () => {
+  it('recusa uma senha que o Firebase recusaria', () => {
     const problems = checkEnvironment(emulatorRun, {
       ...EMULATORS,
       SEED_TEST_PASSWORD: '12345',
@@ -65,7 +65,7 @@ describe('checkEnvironment', () => {
     expect(problems[0]).toMatch(/pelo menos 6/)
   })
 
-  it('accepts a valid emulator setup', () => {
+  it('aceita uma configuração válida do emulador', () => {
     expect(
       checkEnvironment(emulatorRun, {
         ...EMULATORS,
@@ -74,7 +74,7 @@ describe('checkEnvironment', () => {
     ).toEqual([])
   })
 
-  it('never falls back to production when the emulator hosts are missing', () => {
+  it('nunca cai para a produção quando faltam os hosts do emulador', () => {
     const problems = checkEnvironment(emulatorRun, {
       SEED_TEST_PASSWORD: 'dummy-pass',
     })
@@ -84,7 +84,7 @@ describe('checkEnvironment', () => {
     expect(problems.join(' ')).toMatch(/FIREBASE_AUTH_EMULATOR_HOST/)
   })
 
-  it('does not need the emulator hosts with --prod', () => {
+  it('não precisa dos hosts do emulador com --prod', () => {
     expect(
       checkEnvironment(parseCliArgs(['--prod']), {
         SEED_TEST_PASSWORD: 'dummy-pass',
