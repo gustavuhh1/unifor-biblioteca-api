@@ -31,6 +31,7 @@ Responsáveis: **Gustavo** (contas, cartão, DNS, chaves) e **Claude** (pesquisa
 | `GOOGLE_BOOKS_API_KEY` | sim | Secret Manager `google-books-api-key` e `.env` | Google Books |
 | `GOOGLE_CLOUD_PROJECT` | não | `estoque-pay` | Firestore, Firebase Admin e Secret Manager |
 | `PASSKEY_RP_ID` | não | `uni-books.app` (não trocar: invalida os passkeys) | Passkey |
+| `SEED_TEST_PASSWORD` | sim | só no `.env` de quem roda o seed | Senha das contas de teste criadas pelo script de carga (seção 8 do modelo de dados). Nunca no código |
 | `AUTH_EMAIL_DOMAIN` | não | `contas.uni-books.app` (e-mail interno das contas no Firebase: `<matrícula>@contas.uni-books.app`; não recebe mensagens) | Firebase Authentication |
 | `EXPO_PUBLIC_FIREBASE_*` | não | configuração web do Firebase no app (apiKey, authDomain, projectId, appId). É pública por natureza; a proteção vem das regras e da API | App (SDK JavaScript do Firebase) |
 
