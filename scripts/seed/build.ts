@@ -49,25 +49,30 @@ import {
   plusDays,
 } from './time.js'
 
+// Documento como vai para o Firestore, com campos soltos.
 export type Doc = Record<string, unknown>
 
-// What every loan has, whatever its status.
+// O que todo empréstimo tem, qualquer que seja a situação.
 type LoanBase = Omit<Loan, 'requestedAt' | 'pickupDeadline' | keyof Timestamps>
 
+// Uma escrita da carga: o caminho do documento e os dados.
 export interface Write {
   path: string
   data: Doc
 }
 
+// Opções para montar a carga.
 export interface BuildOptions {
   holidays: HolidaysDocument
-  // Key of the HMAC that makes the QR tokens stable between runs but unguessable.
+  // Chave do HMAC que deixa os tokens do QR estáveis entre execuções, mas
+  // impossíveis de adivinhar.
   tokenSecret: string
-  // "Today" ("AAAA-MM-DD", America/Fortaleza). Every date of the data is shifted
-  // from the example day (15/10) to this day, keeping the same situations.
+  // "Hoje" ("AAAA-MM-DD", America/Fortaleza). Toda data dos dados é deslocada do
+  // dia de exemplo (15/10) para este dia, mantendo as mesmas situações.
   today: string
 }
 
+// Todos os documentos da carga, por coleção e por id.
 export interface SeedData {
   settings: LibrarySettings
   holidays: Holiday
@@ -80,18 +85,22 @@ export interface SeedData {
   loans: Record<string, Loan>
   queueEntries: Record<string, QueueEntry>
   fines: Record<string, Fine>
-  // Lucas's subcollections.
+  // Subcoleções do Lucas.
   folders: Record<string, Folder>
   savedBooks: Record<string, SavedBook>
   notifications: Record<string, UserNotification>
 }
 
+// Valor da multa por dia útil de atraso, em centavos (R$ 2,00).
 export const FINE_RATE_CENTS = 200
-// Section 6.4: the only qrToken the document gives.
+// Seção 6.4: o único qrToken que o documento informa.
 const RET_4821_QR_TOKEN = 'q9Zr0bH6v3S1kT8xY2mW4pLc'
 
+// Uid fixo da conta de cada usuário do seed: uid_<chave>.
 export const uidOf = (userKey: string) => `uid_${userKey}`
+// Id fixo de cada livro do seed: book_<chave>.
 export const bookIdOf = (bookKey: string) => `book_${bookKey}`
+// Id fixo de cada exemplar do seed: copy_<registro>.
 export const copyIdOf = (registration: string) => `copy_${registration}`
 
 function required<T>(value: T | undefined, what: string): T {
@@ -99,10 +108,12 @@ function required<T>(value: T | undefined, what: string): T {
   return value
 }
 
+// Monta todos os documentos da carga (seção 8), com as datas deslocadas para
+// o dia em que o seed roda.
 export function buildSeed(options: BuildOptions): SeedData {
   const today = options.today
-  // The documented dates are the example of 15/10: each one is an offset from
-  // that day, applied to today (e.g. picked up 02/10 = today - 13 days).
+  // As datas documentadas são o exemplo de 15/10: cada uma é um deslocamento a
+  // partir desse dia, aplicado a hoje (ex.: retirado em 02/10 = hoje - 13 dias).
   const dayShift = daysBetween(BASE_DATE, today)
   const shift = (date: string) => plusDays(date, dayShift)
   const atShifted = ([date, time]: [string, string]) => at(shift(date), time)
@@ -117,7 +128,7 @@ export function buildSeed(options: BuildOptions): SeedData {
     updatedAt,
   })
 
-  // --- Books, copies and works ---------------------------------------------
+  // --- Livros, exemplares e obras ---------------------------------------------
 
   const books: Record<string, Book> = {}
   const copies: Record<string, Copy> = {}
@@ -171,7 +182,7 @@ export function buildSeed(options: BuildOptions): SeedData {
     }
   })
 
-  // --- Loans ----------------------------------------------------------------
+  // --- Empréstimos ----------------------------------------------------------------
 
   const documentedCodes = new Set(LOANS.map((loan) => loan.pickupCode))
   let nextCodeNumber = 4800
@@ -232,7 +243,8 @@ export function buildSeed(options: BuildOptions): SeedData {
       }
     }
 
-    // Already picked up: due date = pickup + 14 days (+14 if renewed), at closing time.
+    // Já retirado: vencimento = retirada + 14 dias (+14 se renovado), no horário
+    // de fechamento.
     const pickedUpOn = shift(required(spec.pickedUpOn, 'pickedUpOn'))
     const originalDueOn = plusDays(pickedUpOn, 14)
     const dueOn = spec.renewedOn ? plusDays(originalDueOn, 14) : originalDueOn
@@ -244,7 +256,7 @@ export function buildSeed(options: BuildOptions): SeedData {
     return {
       ...common,
       status: spec.status,
-      // The order and the pickup are the same moment for loans already picked up.
+      // O pedido e a retirada são o mesmo momento nos empréstimos já retirados.
       requestedAt: pickedUpAt,
       pickupDeadline: pickedUpAt,
       pickedUpAt,
@@ -258,7 +270,8 @@ export function buildSeed(options: BuildOptions): SeedData {
     }
   }
 
-  // Copies follow the loans: an order reserves the copy, a pickup lends it.
+  // Os exemplares seguem os empréstimos: o pedido reserva o exemplar e a retirada
+  // o empresta.
   for (const [loanId, loan] of Object.entries(loans)) {
     const copy = required(copies[loan.copyId], `copy ${loan.copyId}`)
     if (loan.status === 'awaiting_pickup') {
@@ -271,7 +284,7 @@ export function buildSeed(options: BuildOptions): SeedData {
     }
   }
 
-  // --- Queues ---------------------------------------------------------------
+  // --- Filas ---------------------------------------------------------------
 
   const queueEntries: Record<string, QueueEntry> = {}
   for (const spec of QUEUE_ENTRIES) {
@@ -282,7 +295,8 @@ export function buildSeed(options: BuildOptions): SeedData {
     const book = required(bookSpecByKey.get(spec.book), `book ${spec.book}`)
     const joinedAt = at(shift(spec.joinedOn), '10:00')
     const fulfilled = spec.status === 'fulfilled'
-    // Lucas was called at 09:12 today and confirmed at 09:30 (24 h to confirm).
+    // Lucas foi chamado às 09:12 de hoje e confirmou às 09:30 (24 h para
+    // confirmar).
     const turnStartedAt = fulfilled ? at(today, '09:12') : undefined
     queueEntries[spec.id] = {
       bookId: bookIdOf(book.key),
@@ -309,7 +323,7 @@ export function buildSeed(options: BuildOptions): SeedData {
     }
   }
 
-  // --- Fines ----------------------------------------------------------------
+  // --- Multas ----------------------------------------------------------------
 
   const fines: Record<string, Fine> = {}
   for (const spec of FINES) {
@@ -331,8 +345,8 @@ export function buildSeed(options: BuildOptions): SeedData {
       fines[spec.id] = { ...base, status: 'accruing', ...stamps() }
     } else {
       const returnedAt = required(loan.returnedAt, 'returnedAt')
-      // Frozen at the return: the documented days and amounts do not move with
-      // the dates (section 6.5).
+      // Congelada na devolução: os dias e os valores documentados não mudam com
+      // as datas (seção 6.5).
       const businessDaysLate = required(
         spec.businessDaysLate,
         'businessDaysLate',
@@ -348,7 +362,7 @@ export function buildSeed(options: BuildOptions): SeedData {
     }
   }
 
-  // --- Counters, computed from the data above ------------------------------
+  // --- Contadores, calculados a partir dos dados acima ------------------------------
 
   for (const [bookId, book] of Object.entries(books)) {
     const bookCopies = Object.values(copies).filter((c) => c.bookId === bookId)
@@ -393,7 +407,8 @@ export function buildSeed(options: BuildOptions): SeedData {
     const mine = <T extends { studentUid: string }>(docs: Record<string, T>) =>
       Object.values(docs).filter((doc) => doc.studentUid === uid)
 
-    // Lucas's reading history is not loaded: his 17 books are a literal (6.4).
+    // O histórico de leitura do Lucas não é carregado: os 17 livros são um valor
+    // fixo (6.4).
     const returnedThisYear = mine(loans).filter((l) => l.status === 'returned')
     const booksReadByYear: Record<string, number> =
       spec.key === 'lucas' ? { '2026': 17 } : {}
@@ -414,9 +429,9 @@ export function buildSeed(options: BuildOptions): SeedData {
       email: spec.email,
       authEmail: `${spec.matricula}@${AUTH_EMAIL_DOMAIN}`,
       status: 'active',
-      // Every active student confirmed the e-mail token: Lucas 10 minutes after
-      // creation (section 6.4), the others 5. Librarians are not registered
-      // through the app, so they have none.
+      // Todo aluno ativo confirmou o token de e-mail: o Lucas 10 minutos depois de
+      // criado (seção 6.4), os outros 5. Bibliotecários não se cadastram pelo
+      // app, então não têm confirmação.
       emailVerifiedAt: isLucas
         ? new Date(created.getTime() + 10 * 60_000)
         : spec.role === 'student'
@@ -443,7 +458,7 @@ export function buildSeed(options: BuildOptions): SeedData {
     emailIndex[spec.email.toLowerCase()] = { uid, ...stamps() }
   }
 
-  // --- Lucas's folders, saved books and notifications ----------------------
+  // --- Pastas, livros salvos e avisos do Lucas ----------------------
 
   const folders: Record<string, Folder> = {}
   const savedBooks: Record<string, SavedBook> = {}
@@ -510,7 +525,7 @@ export function buildSeed(options: BuildOptions): SeedData {
     },
   }
 
-  // --- Settings and holidays ------------------------------------------------
+  // --- Configurações e feriados ------------------------------------------------
 
   const settings: LibrarySettings = {
     timezone: 'America/Fortaleza',
@@ -565,7 +580,7 @@ export function buildSeed(options: BuildOptions): SeedData {
   }
 }
 
-// `searchText`: title, subtitle, authors, subjects and ISBN (section 2.7, 6.4).
+// `searchText`: título, subtítulo, autores, assuntos e ISBN (seções 2.7 e 6.4).
 function searchTextOf(spec: BookSpec): string {
   return normalizeText(
     [spec.title, spec.subtitle, ...spec.authors, ...spec.subjects, spec.isbn]
@@ -574,7 +589,7 @@ function searchTextOf(spec: BookSpec): string {
   )
 }
 
-// Removes `undefined` fields (Firestore rejects them), keeping `null` and Dates.
+// Remove os campos `undefined` (o Firestore os recusa), mantendo `null` e datas.
 function clean(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(clean)
   if (value && typeof value === 'object' && !(value instanceof Date)) {
@@ -597,8 +612,8 @@ function inCollection(
   }))
 }
 
-// Writes in the order of section 8: settings and holidays, users, catalog,
-// circulation, then Lucas's notifications and saved books.
+// Monta as escritas na ordem da seção 8: configurações e feriados, usuários,
+// acervo, circulação e, por fim, os avisos e os livros salvos do Lucas.
 export function toWrites(data: SeedData): Write[] {
   const lucas = uidOf('lucas')
   return [

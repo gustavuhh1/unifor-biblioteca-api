@@ -2,7 +2,7 @@ import { TZDate } from '@date-fns/tz'
 import { addDays, differenceInCalendarDays, format, getDay } from 'date-fns'
 import { LIBRARY_TIMEZONE } from '../../src/shared/time.js'
 
-// Library hours (docs/modelo-de-dados-firestore.md, section 2.21).
+// Horário da biblioteca (docs/modelo-de-dados-firestore.md, seção 2.21).
 export const OPENING_HOURS = {
   mon: { open: '07:00', close: '21:55' },
   tue: { open: '07:00', close: '21:55' },
@@ -20,7 +20,8 @@ function parts(date: string): [number, number, number] {
   return [year!, month! - 1, day!]
 }
 
-// A wall-clock time in America/Fortaleza ("AAAA-MM-DD", "HH:mm") as an instant.
+// Converte um horário de parede em America/Fortaleza ("AAAA-MM-DD", "HH:mm")
+// num instante.
 export function at(date: string, time: string): Date {
   const [year, month, day] = parts(date)
   const [hours, minutes] = time.split(':').map(Number)
@@ -29,11 +30,12 @@ export function at(date: string, time: string): Date {
   )
 }
 
-// "AAAA-MM-DD" of an instant, as seen in America/Fortaleza.
+// "AAAA-MM-DD" de um instante, como visto em America/Fortaleza.
 export function localDate(instant: Date): string {
   return format(new TZDate(instant, LIBRARY_TIMEZONE), 'yyyy-MM-dd')
 }
 
+// Soma dias a uma data "AAAA-MM-DD".
 export function plusDays(date: string, days: number): string {
   const [year, month, day] = parts(date)
   return format(
@@ -42,7 +44,7 @@ export function plusDays(date: string, days: number): string {
   )
 }
 
-// Calendar days from one day to another (negative if `to` is earlier).
+// Dias corridos de um dia até outro (negativo se `to` for anterior).
 export function daysBetween(from: string, to: string): number {
   const [fromYear, fromMonth, fromDay] = parts(from)
   const [toYear, toMonth, toDay] = parts(to)
@@ -54,16 +56,17 @@ export function daysBetween(from: string, to: string): number {
 
 const WEEKDAY_NAMES = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
 
-// "seg, 19/10": how the app writes a deadline.
+// "seg, 19/10": como o app escreve um prazo.
 export function formatDayMonth(date: string): string {
   const [year, month, day] = parts(date)
   const weekday = getDay(new TZDate(year, month, day, LIBRARY_TIMEZONE))
   return `${WEEKDAY_NAMES[weekday]}, ${format(new TZDate(year, month, day, LIBRARY_TIMEZONE), 'dd/MM')}`
 }
 
-// Closing time of the library on that day: where deadlines and due dates land.
-// Sunday is closed; as the dates now follow the day the seed runs, a date that
-// lands on a Sunday just uses the weekday closing time (no further refinement).
+// Horário de fechamento da biblioteca naquele dia: onde caem prazos e
+// vencimentos. Domingo é fechado; como as datas agora seguem o dia em que o seed
+// roda, uma data que cai num domingo usa só o fechamento de dia de semana (sem
+// refinamento).
 export function closingTime(date: string): string {
   const [year, month, day] = parts(date)
   const key =
@@ -71,7 +74,7 @@ export function closingTime(date: string): string {
   return (OPENING_HOURS[key] ?? OPENING_HOURS.mon).close
 }
 
-// Instant at the closing time of the given day.
+// Instante do fechamento da biblioteca no dia informado.
 export function atClosing(date: string): Date {
   return at(date, closingTime(date))
 }

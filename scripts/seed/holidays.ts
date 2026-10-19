@@ -2,14 +2,14 @@ import { readFile } from 'node:fs/promises'
 import { z } from 'zod'
 import type { HolidayItem } from '../../src/shared/types/index.js'
 
-// Fortaleza, IBGE code. One call per year returns the national, state (Ceará)
-// and municipal holidays (docs/infra.md, section 3).
+// Código IBGE de Fortaleza. Uma chamada por ano traz os feriados nacionais,
+// estaduais (Ceará) e municipais (docs/infra.md, seção 3).
 export const FORTALEZA_IBGE = '2304400'
 
 const API_URL = 'https://feriadosapi.com/api/v1/feriados/cidade'
 
-// Shape of holidays/{year} (docs/modelo-de-dados-firestore.md, section 2.19),
-// with `fetchedAt` as ISO text so the same shape can live in a JSON file.
+// Formato de holidays/{year} (docs/modelo-de-dados-firestore.md, seção 2.19),
+// com `fetchedAt` em texto ISO, para o mesmo formato poder ficar num arquivo JSON.
 export interface HolidaysDocument {
   year: number
   cityIbge: string
@@ -35,6 +35,8 @@ const responseSchema = z.object({
   meta: z.object({ total_pages: z.number() }),
 })
 
+// Converte a resposta da FeriadosAPI nos feriados do formato do projeto, em
+// ordem de data.
 export function parseHolidaysResponse(
   body: unknown,
   year: number,
@@ -68,6 +70,7 @@ export function parseHolidaysResponse(
   }
 }
 
+// Busca na FeriadosAPI os feriados de Fortaleza de um ano.
 export async function fetchHolidays(
   year: number,
   apiKey: string,
@@ -82,6 +85,7 @@ export async function fetchHolidays(
   return parseHolidaysResponse(await response.json(), year, new Date())
 }
 
+// Lê os feriados do arquivo local de um ano (modo --offline).
 export async function loadHolidaysFile(
   year: number,
 ): Promise<HolidaysDocument> {
@@ -89,7 +93,7 @@ export async function loadHolidaysFile(
   return JSON.parse(await readFile(file, 'utf8')) as HolidaysDocument
 }
 
-// Dates ("AAAA-MM-DD") on which fines and deadlines do not count a day.
+// Datas ("AAAA-MM-DD") em que multas e prazos não contam um dia.
 export function holidayDates(document: HolidaysDocument): Set<string> {
   return new Set(document.items.map((item) => item.date))
 }

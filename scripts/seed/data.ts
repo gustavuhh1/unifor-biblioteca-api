@@ -1,16 +1,19 @@
 import type { UserRole } from '../../src/shared/types/index.js'
 
-// Static seed data: docs/modelo-de-dados-firestore.md, sections 6.1 to 6.5.
-// Dates are "AAAA-MM-DD" (America/Fortaleza) and are only the example of the
-// documented day: the builder turns each one into an offset from BASE_DATE and
-// applies it to the day the seed runs. Nothing here is computed.
+// Dados fixos do seed: docs/modelo-de-dados-firestore.md, seções 6.1 a 6.5.
+// As datas são "AAAA-MM-DD" (America/Fortaleza) e são só o exemplo do dia
+// documentado: o montador transforma cada uma em um deslocamento a partir de
+// BASE_DATE e o aplica ao dia em que o seed roda. Nada aqui é calculado.
 
-// The documented "today" (section 6): Thursday, 15/10/2026.
+// O "hoje" documentado (seção 6): quinta-feira, 15/10/2026.
 export const BASE_DATE = '2026-10-15'
+// Hora usada como "agora" nos dados.
 export const NOW_TIME = '12:00'
 
+// Domínio do e-mail interno das contas no Firebase (docs/infra.md).
 export const AUTH_EMAIL_DOMAIN = 'contas.uni-books.app'
 
+// Um usuário da seção 6.1.
 export interface UserSpec {
   key: string
   role: UserRole
@@ -21,7 +24,7 @@ export interface UserSpec {
   deskLabel?: string
 }
 
-// Section 6.1. The uid of each account is `uid_<key>` (section 6.4).
+// Seção 6.1. O uid de cada conta é `uid_<chave>` (seção 6.4).
 export const USERS: UserSpec[] = [
   {
     key: 'ana',
@@ -112,10 +115,12 @@ export const USERS: UserSpec[] = [
   },
 ]
 
+// Um exemplar de um livro.
 export interface CopySpec {
   registration: string
 }
 
+// Uma edição do acervo (seção 6.2) e os seus exemplares.
 export interface BookSpec {
   key: string
   workId: string
@@ -139,9 +144,9 @@ export interface BookSpec {
 
 const SOFTWARE = ['Desenvolvimento de software', 'Programação']
 
-// Sections 6.2 and 6.5, in the order of table 6.2 (the order sets `coverTone`).
-// The four books at the end exist only to carry the open fines (section 6.5):
-// "only the essentials", so no authors, CDU or Cutter were documented.
+// Seções 6.2 e 6.5, na ordem da tabela 6.2 (a ordem define o `coverTone`).
+// Os quatro livros do fim existem só para carregar as multas em aberto (seção
+// 6.5): "só o essencial", então não foram documentados autores, CDU nem Cutter.
 export const BOOKS: BookSpec[] = [
   {
     key: 'codigo_limpo',
@@ -346,27 +351,29 @@ export const BOOKS: BookSpec[] = [
   },
 ]
 
+// Um pedido ou empréstimo (seção 6.3).
 export interface LoanSpec {
   id: string
   student: string
   book: string
   copy: string
   status: 'awaiting_pickup' | 'active' | 'returned'
-  // awaiting_pickup: when the order was made and its pickup deadline.
+  // awaiting_pickup: quando o pedido foi feito e o prazo para retirar.
   requestedAt?: [date: string, time: string]
   pickupDeadline?: [date: string, time: string]
   pickupCode?: string
   queueEntry?: string
-  // active and returned: when it was picked up (due = +14 days, +14 if renewed).
+  // active e returned: quando foi retirado (vencimento = +14 dias, +14 se renovado).
   pickedUpOn?: string
   renewedOn?: string
   returnedAt?: [date: string, time: string]
   fine?: string
-  // Reminder already sent ("enviado ontem", docs/regras-e-decisoes.md).
+  // Lembrete já enviado ("enviado ontem", docs/regras-e-decisoes.md).
   due2DaysReminderAt?: [date: string, time: string]
 }
 
-// Sections 6.3 and 6.5. Pickup codes not documented are filled in by the builder.
+// Seções 6.3 e 6.5. Os códigos de retirada não documentados são preenchidos pelo
+// montador.
 export const LOANS: LoanSpec[] = [
   {
     id: 'loan_lucas_engenharia',
@@ -507,7 +514,7 @@ export const LOANS: LoanSpec[] = [
     status: 'active',
     pickedUpOn: '2026-10-09',
   },
-  // Returned loans behind the four open fines (section 6.5).
+  // Empréstimos devolvidos por trás das quatro multas em aberto (seção 6.5).
   {
     id: 'loan_pedrohenrique_fisica',
     student: 'pedrohenrique',
@@ -550,6 +557,7 @@ export const LOANS: LoanSpec[] = [
   },
 ]
 
+// Um lugar na fila (seção 6.3).
 export interface QueueSpec {
   id: string
   student: string
@@ -557,11 +565,12 @@ export interface QueueSpec {
   status: 'waiting' | 'fulfilled'
   order: number
   joinedOn: string
-  // Lucas's turn in Código Limpo: started at 09:12 today, confirmed at 09:30.
+  // Vez do Lucas em Código Limpo: começou às 09:12 de hoje e foi confirmada às
+  // 09:30.
   loan?: string
 }
 
-// Sections 6.3 and 6.5. `joinedAt` is at 10:00 (section 6.4 example).
+// Seções 6.3 e 6.5. `joinedAt` é às 10:00 (exemplo da seção 6.4).
 export const QUEUE_ENTRIES: QueueSpec[] = [
   {
     id: 'qe_anabeatriz_arquitetura',
@@ -630,14 +639,17 @@ export const QUEUE_ENTRIES: QueueSpec[] = [
   },
 ]
 
+// Uma multa (seção 6.5).
 export interface FineSpec {
   id: string
   loan: string
   status: 'accruing' | 'open'
-  // Open fines are frozen: their days (and amounts) stay fixed (section 6.5).
+  // Multas em aberto são congeladas: os dias (e os valores) ficam fixos (seção
+  // 6.5).
   businessDaysLate?: number
 }
 
+// Multas da seção 6.5.
 export const FINES: FineSpec[] = [
   {
     id: 'fine_marina_calculo1',
@@ -670,7 +682,7 @@ export const FINES: FineSpec[] = [
   },
 ]
 
-// Lucas's saved books and folders (section 6.5): the first folder holds three books.
+// Livros salvos e pastas do Lucas (seção 6.5): a primeira pasta tem três livros.
 export const LUCAS_FOLDERS = [
   {
     id: 'folder_ler_depois',

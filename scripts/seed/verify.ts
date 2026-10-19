@@ -10,6 +10,7 @@ import { lateBusinessDays } from './business-days.js'
 import { holidayDates, type HolidaysDocument } from './holidays.js'
 import { at, localDate, plusDays } from './time.js'
 
+// Resultado de uma conferência: o que foi conferido, se passou e o detalhe.
 export interface Check {
   label: string
   ok: boolean
@@ -21,7 +22,7 @@ async function count(db: Firestore, name: string, group: boolean) {
   return (await query.count().get()).data().count
 }
 
-// Document counts per collection, read back from the database.
+// Conta os documentos de cada coleção, lidos de volta do banco.
 export async function countDocuments(db: Firestore): Promise<string[]> {
   const lines: string[] = []
   for (const name of ROOT_COLLECTIONS) {
@@ -40,9 +41,9 @@ const formatMoney = (cents: number) =>
 
 const toDate = (value: unknown) => optionalDate(value) ?? undefined
 
-// Section 8, step 9. The dates follow the day the seed runs, so this checks the
-// situations of sections 6.1 to 6.5 (who is late, who has a deadline today...),
-// not the example dates.
+// Seção 8, passo 9. As datas seguem o dia em que o seed roda, então isto confere
+// as situações das seções 6.1 a 6.5 (quem está atrasado, quem tem prazo hoje...),
+// e não as datas de exemplo.
 export async function runChecks(
   db: Firestore,
   holidays: HolidaysDocument,
@@ -67,7 +68,7 @@ export async function runChecks(
     `${marina?.activeLoanCount} de 10`,
   )
 
-  // Marina: loan overdue and fine still accruing (amount computed on the fly).
+  // Marina: empréstimo atrasado e multa ainda contando (valor calculado na hora).
   const marinaLoan = await read(`${COLLECTIONS.loans}/loan_marina_calculo1`)
   const marinaFine = await read(`${COLLECTIONS.fines}/fine_marina_calculo1`)
   const marinaDue = toDate(marinaLoan?.dueAt)

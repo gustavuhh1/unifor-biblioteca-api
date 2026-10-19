@@ -2,10 +2,10 @@ import { TZDate } from '@date-fns/tz'
 import { addDays, format, isWeekend, startOfDay } from 'date-fns'
 import { LIBRARY_TIMEZONE } from '../../src/shared/time.js'
 
-// Simple helper used only by the seed (data and the final check). Business
-// days of delay = Monday-to-Friday days after the due date, up to and including
-// `until`, that are not holidays or recesses. The real business-day rule of the
-// API (deadlines, Saturdays) is a separate task in src/shared/.
+// Auxiliar simples usada só pelo seed (dados e conferência final). Dias úteis de
+// atraso = dias de segunda a sexta depois do vencimento, até `until` inclusive,
+// que não sejam feriado nem recesso. A regra real de dia útil da API (prazos,
+// sábados) é outra tarefa, em src/shared/.
 export function lateBusinessDays(
   dueAt: Date,
   until: Date,
