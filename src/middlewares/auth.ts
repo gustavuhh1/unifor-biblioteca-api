@@ -32,7 +32,8 @@ function isSessionError(error: unknown): boolean {
 }
 
 // Checks the Firebase ID token (including revocation) and loads the role from
-// users/{uid}. No token or an invalid one is a 401.
+// users/{uid}. No token or an invalid one is a 401; an account whose status is
+// not "active" is a 403.
 export const authenticate: RequestHandler = async (req, _res, next) => {
   const token = BEARER_HEADER.exec(req.header('authorization') ?? '')?.[1]
   if (!token) throw unauthorized()
@@ -52,6 +53,11 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
       'profile_not_found',
       'Perfil não encontrado para esta conta.',
     )
+  }
+
+  // pending_email (e-mail not confirmed yet) and disabled accounts cannot use the API.
+  if (profile.get('status') !== 'active') {
+    throw new AppError(403, 'account_disabled', 'Sua conta não está ativa.')
   }
 
   req.user = { uid, role: role.data }

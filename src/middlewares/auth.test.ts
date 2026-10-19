@@ -92,9 +92,29 @@ describe('authenticate', () => {
     expect(error).toMatchObject({ status: 403, code: 'profile_not_found' })
   })
 
+  it.each(['pending_email', 'disabled', undefined])(
+    'answers 403 account_disabled when the status is %s',
+    async (status) => {
+      firebase.verifyIdToken.mockResolvedValue({ uid: 'uid-1' })
+      firebase.getUserDoc.mockResolvedValue(
+        userDoc({ role: 'student', status }),
+      )
+      const next = vi.fn()
+
+      const error = await rejectionOf(
+        authenticate(fakeRequest('Bearer token-123'), {} as Response, next),
+      )
+
+      expect(error).toMatchObject({ status: 403, code: 'account_disabled' })
+      expect(next).not.toHaveBeenCalled()
+    },
+  )
+
   it('loads uid and role into the request', async () => {
     firebase.verifyIdToken.mockResolvedValue({ uid: 'uid-1' })
-    firebase.getUserDoc.mockResolvedValue(userDoc({ role: 'librarian' }))
+    firebase.getUserDoc.mockResolvedValue(
+      userDoc({ role: 'librarian', status: 'active' }),
+    )
     const req = fakeRequest('bearer token-123')
     const next = vi.fn()
 
