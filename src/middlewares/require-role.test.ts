@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
 import { describe, expect, it, vi } from 'vitest'
-import type { UserRole } from '../shared/user-role.js'
+import type { UserRole } from '../shared/types/index.js'
 import { requireRole } from './require-role.js'
 
 function run(allowed: UserRole, userRole?: UserRole) {

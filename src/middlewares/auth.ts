@@ -1,7 +1,8 @@
 import type { RequestHandler } from 'express'
 import { getAdminAuth, getDb } from '../config/firebase.js'
 import { AppError, unauthorized } from '../shared/errors.js'
-import { userRoleSchema, type UserRole } from '../shared/user-role.js'
+import { userRoleSchema } from '../shared/user-role.js'
+import type { UserRole } from '../shared/types/index.js'
 
 export interface AuthenticatedUser {
   uid: string

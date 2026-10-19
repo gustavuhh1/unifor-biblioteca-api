@@ -4,7 +4,7 @@ import type {
   Firestore,
   Transaction,
 } from 'firebase-admin/firestore'
-import type { UserRole } from '../../shared/user-role.js'
+import type { UserRole } from '../../shared/types/index.js'
 
 // Collection names, as in docs/modelo-de-dados-firestore.md.
 export const USERS = 'users'
