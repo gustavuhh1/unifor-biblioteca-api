@@ -180,6 +180,13 @@ Aprovadas pelo aluno depois da auditoria design × escopo. Aplicadas no Figma e 
 - Autoria, Assuntos, Fila (se emprestado), Sinopse, Disponibilidade, Onde encontrar (localização + CDU e Cutter).
 - Registro completo (Material, Idioma, ISBN, CDU e Cutter, Edição, Publicação, Série quando houver), Exemplares, Do mesmo autor. Botão fixo: Solicitar empréstimo ou Entrar na fila.
 
+## Decisões do módulo de acesso (19/10/2026)
+- **Senha:** só números, com no mínimo 8 dígitos (padrão da Unifor). Vale no cadastro e na redefinição, para aluno e bibliotecário.
+- **Nome:** fica fora do cadastro. O aluno o informa depois, no Perfil, e enquanto não houver nome as telas mostram a matrícula no lugar dele.
+- **Corrigir o e-mail:** repetir o cadastro com a mesma matrícula enquanto ela está pendente (e-mail ainda não confirmado) troca o e-mail e a senha e invalida o token anterior.
+- **Recuperação de senha pela matrícula:** o aluno ou o bibliotecário informa a matrícula, e a API acha o e-mail da conta por dentro. A resposta é sempre a mesma mensagem genérica, exista a conta ou não.
+- **Espera entre reenvios:** 60 segundos entre dois envios de token (reenviar do cadastro e pedir recuperação), igual ao contador "Reenviar em" da tela A58.
+
 ## Pendente
 - README da API e do app: só quando a definição do projeto estiver 100% (decisão do aluno em 18/10).
 - **Datas de exemplo (decidido em 16/10):** vale a linha do tempo do Figma. Hoje é quinta 15/10/2026. Marina Castro retirou Cálculo, Vol. 1 no sábado 26/09, o livro venceu no sábado 10/10 e ela deve R$ 6,00 (3 dias úteis: 13, 14 e 15/10; 12/10 é feriado). O balcão abre aos sábados, então as duas datas são válidas. Lucas Almeida está em dia: Engenharia de Software vence amanhã (retirado 02/10, devolver até 16/10), Redes de Computadores vence 20/10 (5 dias restantes) e Estruturas de Dados vence 23/10 (8 dias restantes). Pedido feito hoje: retirar até seg 19/10.
