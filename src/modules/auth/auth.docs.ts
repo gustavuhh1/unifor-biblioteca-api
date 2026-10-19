@@ -2,24 +2,26 @@ import type { ZodType } from 'zod'
 import { bearerAuth, registry } from '../../docs/registry.js'
 import { errorResponseSchema } from '../../shared/error-response.js'
 import {
-  customTokenResponseSchema,
   matriculaBodySchema,
+  passkeyLoginVerifyBodySchema,
+  passkeyParamsSchema,
+  passkeyRegisterBodySchema,
+  passwordResetBodySchema,
+  signupConfirmBodySchema,
+  signupStartBodySchema,
+  updateMeBodySchema,
+} from './schemas/request.schemas.js'
+import {
+  customTokenResponseSchema,
   meResponseSchema,
   messageResponseSchema,
   passkeyCreationOptionsSchema,
   passkeyListResponseSchema,
-  passkeyLoginVerifyBodySchema,
-  passkeyParamsSchema,
-  passkeyRegisterBodySchema,
   passkeyRequestOptionsSchema,
   passkeySummarySchema,
-  passwordResetBodySchema,
-  signupConfirmBodySchema,
   signupConfirmResponseSchema,
   signupPendingResponseSchema,
-  signupStartBodySchema,
-  updateMeBodySchema,
-} from './auth.schemas.js'
+} from './schemas/response.schemas.js'
 
 const json = (schema: ZodType) => ({ 'application/json': { schema } })
 const body = (schema: ZodType) => ({ required: true, content: json(schema) })

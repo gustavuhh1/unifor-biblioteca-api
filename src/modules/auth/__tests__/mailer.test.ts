@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTokenEmail, mailMode } from './mailer.js'
+import { buildTokenEmail, mailMode } from '../mail/mailer.js'
 
 describe('mailMode', () => {
   it('sends through Resend when there is a key', () => {

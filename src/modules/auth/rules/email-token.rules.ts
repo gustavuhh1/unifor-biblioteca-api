@@ -4,71 +4,41 @@ import {
   randomInt,
   timingSafeEqual,
 } from 'node:crypto'
+import { RESEND_COOLDOWN_SECONDS } from '../auth.constants.js'
+import type { StoredToken, TokenCheck, TokenSecret } from '../auth.types.js'
 
-// Rules of the e-mail token (docs/modelo-de-dados-firestore.md, 2.3). Pure
-// functions: no Firestore here, so every rule can be tested alone.
+// Regras do token de e-mail (docs/modelo-de-dados-firestore.md, seção 2.3).
+// Funções puras: sem Firestore, para cada regra poder ser testada sozinha.
 
-export type TokenPurpose = 'email_confirmation' | 'password_reset'
-
-// Values of settings/library (`emailTokenMinutes`, `emailTokenMaxAttempts`);
-// these are used when that document does not exist.
-export const DEFAULT_TOKEN_SETTINGS = { ttlMinutes: 20, maxAttempts: 5 }
-
-export interface TokenSettings {
-  ttlMinutes: number
-  maxAttempts: number
-}
-
-// Two sends of a token must be at least this far apart ("Reenviar em", A58).
-export const RESEND_COOLDOWN_SECONDS = 60
-
-export interface TokenSecret {
-  code: string
-  salt: string
-  codeHash: string
-}
-
+// Calcula o hash do código com o salt do token (SHA-256 do salt seguido do
+// código). RNF-SEG-05.
 export function hashTokenCode(code: string, salt: string): string {
   return createHash('sha256').update(`${salt}${code}`).digest('hex')
 }
 
-// Six digits, with leading zeros. The code leaves this function only to be
-// e-mailed; the database gets `codeHash` and `salt`.
+// Gera o código de 6 dígitos (com zeros à esquerda), o salt e o hash. O código
+// só sai daqui para ser enviado por e-mail; o banco recebe codeHash e salt.
 export function createTokenSecret(): TokenSecret {
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0')
   const salt = randomBytes(16).toString('hex')
   return { code, salt, codeHash: hashTokenCode(code, salt) }
 }
 
+// Calcula quando o token vence: criação mais a validade em minutos (RF-AUT-03).
 export function tokenExpiresAt(createdAt: Date, ttlMinutes: number): Date {
   return new Date(createdAt.getTime() + ttlMinutes * 60_000)
 }
 
-export interface StoredToken {
-  codeHash: string
-  salt: string
-  expiresAt: Date
-  usedAt: Date | null
-  invalidatedAt: Date | null
-  attempts: number
-}
-
-export type TokenCheck =
-  | { result: 'valid' }
-  // Already used, replaced by a newer token, or past `expiresAt`.
-  | { result: 'expired_or_used' }
-  | { result: 'locked' }
-  // `attemptsLeft` counts the wrong guess that was just made.
-  | { result: 'wrong_code'; attemptsLeft: number }
-
+// Compara dois hashes em tempo constante.
 function sameHash(a: string, b: string): boolean {
   const left = Buffer.from(a)
   const right = Buffer.from(b)
   return left.length === right.length && timingSafeEqual(left, right)
 }
 
-// Decides what a typed code means for a stored token. Whoever calls it must
-// save `attempts + 1` on 'wrong_code' and `usedAt` when it is used.
+// Decide o que um código digitado significa para o token guardado: vencido ou
+// já usado, bloqueado pelas tentativas, errado ou válido. Quem chama grava
+// attempts + 1 em 'wrong_code' e usedAt quando o token for consumido.
 export function checkToken(
   token: StoredToken,
   code: string,
@@ -88,7 +58,8 @@ export function checkToken(
   }
 }
 
-// Seconds left before another token may be sent; 0 means it may be sent now.
+// Segundos que faltam para poder enviar outro token; 0 quer dizer que já pode
+// (espera de 60 segundos entre envios).
 export function resendWaitSeconds(
   lastSentAt: Date | undefined,
   now: Date,

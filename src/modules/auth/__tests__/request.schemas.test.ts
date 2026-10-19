@@ -8,7 +8,7 @@ import {
   passwordSchema,
   signupStartBodySchema,
   tokenCodeSchema,
-} from './auth.schemas.js'
+} from '../schemas/request.schemas.js'
 
 describe('institutionalEmailSchema', () => {
   it('accepts an @edu.unifor.br e-mail and lower-cases it', () => {

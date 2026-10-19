@@ -1,12 +1,12 @@
 import { generateRegistrationOptions } from '@simplewebauthn/server'
 import { describe, expect, it } from 'vitest'
+import { RP_NAME } from '../auth.constants.js'
 import {
-  RP_NAME,
   buildAuthenticationOptionsInput,
   buildExpectedOrigins,
   buildRegistrationOptionsInput,
   challengeFromClientData,
-} from './passkey-options.js'
+} from '../rules/passkey-options.rules.js'
 
 const ANDROID = 'android:apk-key-hash:AbC-_123'
 

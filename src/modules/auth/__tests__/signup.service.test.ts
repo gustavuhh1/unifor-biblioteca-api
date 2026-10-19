@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FakeFirestore } from '../../test-support/fake-firestore.js'
+import type { FakeFirestore } from '../../../test-support/fake-firestore.js'
 
 const h = vi.hoisted(() => ({
   db: undefined as unknown as FakeFirestore,
@@ -11,27 +11,27 @@ const h = vi.hoisted(() => ({
   sent: [] as { to: string; purpose: string; code: string }[],
 }))
 
-vi.mock('../../config/firebase.js', () => ({
+vi.mock('../../../config/firebase.js', () => ({
   getDb: () => h.db,
   getAdminAuth: () => h.auth,
 }))
-vi.mock('./mailer.js', () => ({
+vi.mock('../mail/mailer.js', () => ({
   sendTokenEmail: vi.fn(async (input: (typeof h.sent)[number]) => {
     h.sent.push(input)
   }),
 }))
-vi.mock('./auth-config.js', () => ({
-  authEmailOf: (matricula: string) => `${matricula}@contas.uni-books.app`,
-  getPasskeyConfig: () => ({
-    rpId: 'uni-books.app',
-    origins: ['https://uni-books.app'],
-  }),
+vi.mock('../../../config/env.js', () => ({
+  env: {
+    AUTH_EMAIL_DOMAIN: 'contas.uni-books.app',
+    PASSKEY_RP_ID: 'uni-books.app',
+    PASSKEY_ANDROID_ORIGINS: [],
+  },
 }))
 
 const { FakeFirestore: Fake } =
-  await import('../../test-support/fake-firestore.js')
+  await import('../../../test-support/fake-firestore.js')
 const { confirmSignup, resendSignupToken, startSignup } =
-  await import('./signup.service.js')
+  await import('../services/signup.service.js')
 
 const START = new Date('2026-10-19T12:00:00Z')
 const after = (seconds: number) => new Date(START.getTime() + seconds * 1000)

@@ -1,19 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FakeFirestore } from '../../test-support/fake-firestore.js'
+import type { FakeFirestore } from '../../../test-support/fake-firestore.js'
 
 const h = vi.hoisted(() => ({
   db: undefined as unknown as FakeFirestore,
   auth: { revokeRefreshTokens: vi.fn() },
 }))
 
-vi.mock('../../config/firebase.js', () => ({
+vi.mock('../../../config/firebase.js', () => ({
   getDb: () => h.db,
   getAdminAuth: () => h.auth,
 }))
 
 const { FakeFirestore: Fake } =
-  await import('../../test-support/fake-firestore.js')
-const { getMe, logout, updateFullName } = await import('./session.service.js')
+  await import('../../../test-support/fake-firestore.js')
+const { getMe, logout, updateFullName } =
+  await import('../services/session.service.js')
 
 const START = new Date('2026-10-19T12:00:00Z')
 

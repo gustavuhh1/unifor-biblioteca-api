@@ -1,13 +1,13 @@
 import { Resend } from 'resend'
-import { env } from '../../config/env.js'
-import { AppError } from '../../shared/errors.js'
-import type { TokenPurpose } from './email-token.js'
+import { env } from '../../../config/env.js'
+import type { EmailTokenPurpose } from '../../../shared/types/index.js'
+import { TOKEN_PURPOSE } from '../auth.constants.js'
+import { emailDeliveryFailed, emailNotConfigured } from '../auth.errors.js'
+import type { MailMode } from '../auth.types.js'
 
-export type MailMode = 'resend' | 'console' | 'unavailable'
-
-// With a key the e-mail goes through Resend. Without one, only when talking to
-// the emulators the token is written to the server console, so nobody can
-// read it in a log of the real project.
+// Decide como o token chega ao aluno. Com chave, o e-mail sai pelo Resend. Sem
+// chave, só quando a API conversa com os emuladores o token é escrito no
+// console do servidor, para ninguém ler o token num log do projeto real.
 export function mailMode(config: {
   RESEND_API_KEY?: string | undefined
   FIRESTORE_EMULATOR_HOST?: string | undefined
@@ -16,18 +16,21 @@ export function mailMode(config: {
   return config.FIRESTORE_EMULATOR_HOST ? 'console' : 'unavailable'
 }
 
-const SUBJECTS: Record<TokenPurpose, string> = {
-  email_confirmation: 'Confirme seu e-mail na Unifor Biblioteca',
-  password_reset: 'Recupere sua senha da Unifor Biblioteca',
+const SUBJECTS: Record<EmailTokenPurpose, string> = {
+  [TOKEN_PURPOSE.emailConfirmation]: 'Confirme seu e-mail na Unifor Biblioteca',
+  [TOKEN_PURPOSE.passwordReset]: 'Recupere sua senha da Unifor Biblioteca',
 }
 
-const INTROS: Record<TokenPurpose, string> = {
-  email_confirmation: 'Use o token abaixo para confirmar seu e-mail no app.',
-  password_reset: 'Use o token abaixo para criar uma nova senha no app.',
+const INTROS: Record<EmailTokenPurpose, string> = {
+  [TOKEN_PURPOSE.emailConfirmation]:
+    'Use o token abaixo para confirmar seu e-mail no app.',
+  [TOKEN_PURPOSE.passwordReset]:
+    'Use o token abaixo para criar uma nova senha no app.',
 }
 
+// Monta o assunto, o texto e o HTML do e-mail do token (RF-AUT-03).
 export function buildTokenEmail(
-  purpose: TokenPurpose,
+  purpose: EmailTokenPurpose,
   code: string,
   ttlMinutes: number,
 ) {
@@ -43,9 +46,12 @@ export function buildTokenEmail(
   }
 }
 
+// Envia o token ao e-mail real do aluno pelo Resend. No emulador, sem chave,
+// escreve o token no console do servidor (só para desenvolvimento). Falha com
+// 502 se o Resend recusar e com 500 se o envio não estiver configurado.
 export async function sendTokenEmail(input: {
   to: string
-  purpose: TokenPurpose
+  purpose: EmailTokenPurpose
   code: string
   ttlMinutes: number
 }): Promise<void> {
@@ -65,12 +71,10 @@ export async function sendTokenEmail(input: {
   }
 
   if (mode === 'unavailable' || !env.EMAIL_FROM) {
-    console.error('E-mail not configured: set RESEND_API_KEY and EMAIL_FROM.')
-    throw new AppError(
-      500,
-      'email_not_configured',
-      'O envio de e-mail não está configurado.',
+    console.error(
+      'E-mail sem configuração: defina RESEND_API_KEY e EMAIL_FROM.',
     )
+    throw emailNotConfigured()
   }
 
   const { subject, text, html } = buildTokenEmail(
@@ -87,12 +91,8 @@ export async function sendTokenEmail(input: {
     html,
   })
   if (error) {
-    // The error never carries the token, but log only its name anyway.
-    console.error('Resend failed to send an e-mail:', error.name)
-    throw new AppError(
-      502,
-      'email_delivery_failed',
-      'Não foi possível enviar o e-mail agora. Tente novamente em instantes.',
-    )
+    // O erro não traz o token, mas só o nome vai para o log.
+    console.error('O Resend não conseguiu enviar o e-mail:', error.name)
+    throw emailDeliveryFailed()
   }
 }

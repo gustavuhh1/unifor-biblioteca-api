@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
+import { RESEND_COOLDOWN_SECONDS } from '../auth.constants.js'
+import type { StoredToken } from '../auth.types.js'
 import {
-  RESEND_COOLDOWN_SECONDS,
   checkToken,
   createTokenSecret,
   hashTokenCode,
   resendWaitSeconds,
   tokenExpiresAt,
-  type StoredToken,
-} from './email-token.js'
+} from '../rules/email-token.rules.js'
 
 const NOW = new Date('2026-10-19T12:00:00Z')
 

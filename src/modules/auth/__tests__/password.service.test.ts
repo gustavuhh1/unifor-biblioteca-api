@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FakeFirestore } from '../../test-support/fake-firestore.js'
+import type { FakeFirestore } from '../../../test-support/fake-firestore.js'
 
 const h = vi.hoisted(() => ({
   db: undefined as unknown as FakeFirestore,
@@ -12,16 +12,17 @@ const h = vi.hoisted(() => ({
   sent: [] as { to: string; purpose: string; code: string }[],
 }))
 
-vi.mock('../../config/firebase.js', () => ({
+vi.mock('../../../config/firebase.js', () => ({
   getDb: () => h.db,
   getAdminAuth: () => h.auth,
 }))
-vi.mock('./mailer.js', () => ({ sendTokenEmail: h.sendEmail }))
+vi.mock('../mail/mailer.js', () => ({ sendTokenEmail: h.sendEmail }))
 
 const { FakeFirestore: Fake } =
-  await import('../../test-support/fake-firestore.js')
-const { RECOVERY_MESSAGE, requestPasswordRecovery, resetPassword } =
-  await import('./password.service.js')
+  await import('../../../test-support/fake-firestore.js')
+const { RECOVERY_MESSAGE } = await import('../auth.constants.js')
+const { requestPasswordRecovery, resetPassword } =
+  await import('../services/password.service.js')
 
 const START = new Date('2026-10-19T12:00:00Z')
 const after = (seconds: number) => new Date(START.getTime() + seconds * 1000)

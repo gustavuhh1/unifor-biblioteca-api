@@ -2,31 +2,14 @@ import type {
   GenerateAuthenticationOptionsOpts,
   GenerateRegistrationOptionsOpts,
 } from '@simplewebauthn/server'
-import { COSEALG } from '@simplewebauthn/server/helpers'
+import { RP_NAME, SUPPORTED_ALGORITHMS } from '../auth.constants.js'
+import type { CredentialRef } from '../auth.types.js'
 
-// What goes into the passkey options, kept apart from the library calls so the
-// rules can be tested without running WebAuthn.
+// O que entra nas opções do passkey, separado das chamadas da biblioteca para as
+// regras poderem ser testadas sem rodar o WebAuthn. Funções puras.
 
-export const RP_NAME = 'Unifor Biblioteca'
-
-// How long a challenge lives (docs/modelo-de-dados-firestore.md, 2.5).
-export const CHALLENGE_TTL_MINUTES = 5
-
-// Fixed instead of the library default, which also offers the experimental
-// ML-DSA whenever the Node version supports it.
-export const SUPPORTED_ALGORITHMS = [
-  COSEALG.ES256,
-  COSEALG.RS256,
-  COSEALG.EdDSA,
-]
-
-export interface CredentialRef {
-  id: string
-  transports?: string[]
-}
-
-// The web origin of the RP ID plus the origins of the Android app
-// (android:apk-key-hash:...), which is what the phone reports there.
+// Monta as origens aceitas: a origem web do RP ID mais as do app Android
+// (android:apk-key-hash:...), que é o que o celular informa nesse caso.
 export function buildExpectedOrigins(
   rpId: string,
   androidOrigins: readonly string[],
@@ -34,8 +17,9 @@ export function buildExpectedOrigins(
   return [`https://${rpId}`, ...androidOrigins]
 }
 
-// Passkeys are for the phone's biometrics or PIN, so user verification is
-// required and the key must be discoverable (a real passkey).
+// Passkey é biometria ou PIN do celular, então a verificação do usuário é
+// obrigatória e a chave tem de ser descobrível (RF-AUT-04, RNF-SEG-03).
+// Monta as opções de criação do passkey, sem usar o e-mail do aluno.
 export function buildRegistrationOptionsInput(input: {
   rpId: string
   uid: string
@@ -46,14 +30,14 @@ export function buildRegistrationOptionsInput(input: {
   return {
     rpName: RP_NAME,
     rpID: input.rpId,
-    // Never the e-mail: the matrícula is what the phone shows.
+    // Nunca o e-mail: o celular mostra a matrícula.
     userName: input.matricula,
     userDisplayName: input.fullName ?? input.matricula,
     userID: new TextEncoder().encode(input.uid),
     attestationType: 'none',
     supportedAlgorithmIDs: SUPPORTED_ALGORITHMS,
-    // A device that already has a passkey of the account refuses to make
-    // another one (RF-AUT-10).
+    // O aparelho que já tem um passkey da conta se recusa a criar outro
+    // (RF-AUT-10).
     excludeCredentials: input.existingCredentials.map(toDescriptor),
     authenticatorSelection: {
       residentKey: 'required',
@@ -62,6 +46,8 @@ export function buildRegistrationOptionsInput(input: {
   }
 }
 
+// Monta as opções do login com passkey (RF-AUT-05): lista os passkeys da
+// matrícula e exige a verificação do usuário.
 export function buildAuthenticationOptionsInput(input: {
   rpId: string
   credentials: readonly CredentialRef[]
@@ -73,13 +59,16 @@ export function buildAuthenticationOptionsInput(input: {
   }
 }
 
+// Copia só os campos que existem, porque o Firestore e a biblioteca recusam
+// undefined.
 function toDescriptor(credential: CredentialRef): CredentialRef {
   return credential.transports
     ? { id: credential.id, transports: credential.transports }
     : { id: credential.id }
 }
 
-// The challenge the phone signed is inside `clientDataJSON` (base64url JSON).
+// Lê o desafio que o celular assinou, que vai dentro do clientDataJSON (JSON em
+// base64url). Devolve undefined se o dado não for um clientDataJSON.
 export function challengeFromClientData(
   clientDataJSON: string,
 ): string | undefined {
@@ -97,7 +86,7 @@ export function challengeFromClientData(
       return clientData.challenge
     }
   } catch {
-    // Not valid base64url or JSON: treated as no challenge.
+    // Não é base64url nem JSON válido: vale como "sem desafio".
   }
   return undefined
 }

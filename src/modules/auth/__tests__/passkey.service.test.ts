@@ -1,24 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FakeFirestore } from '../../test-support/fake-firestore.js'
+import type { FakeFirestore } from '../../../test-support/fake-firestore.js'
 
 const h = vi.hoisted(() => ({
   db: undefined as unknown as FakeFirestore,
   auth: { createCustomToken: vi.fn() },
 }))
 
-vi.mock('../../config/firebase.js', () => ({
+vi.mock('../../../config/firebase.js', () => ({
   getDb: () => h.db,
   getAdminAuth: () => h.auth,
 }))
-vi.mock('./auth-config.js', () => ({
-  getPasskeyConfig: () => ({
-    rpId: 'uni-books.app',
-    origins: ['https://uni-books.app', 'android:apk-key-hash:AbC-_123'],
-  }),
+vi.mock('../../../config/env.js', () => ({
+  env: {
+    PASSKEY_RP_ID: 'uni-books.app',
+    PASSKEY_ANDROID_ORIGINS: ['android:apk-key-hash:AbC-_123'],
+  },
 }))
 
 const { FakeFirestore: Fake } =
-  await import('../../test-support/fake-firestore.js')
+  await import('../../../test-support/fake-firestore.js')
 const {
   createLoginOptions,
   createRegistrationOptions,
@@ -26,7 +26,7 @@ const {
   removePasskey,
   verifyLogin,
   verifyRegistration,
-} = await import('./passkey.service.js')
+} = await import('../services/passkey.service.js')
 
 const START = new Date('2026-10-19T12:00:00Z')
 const after = (seconds: number) => new Date(START.getTime() + seconds * 1000)
