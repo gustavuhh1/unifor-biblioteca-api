@@ -1,0 +1,18 @@
+# Never send secrets or local state to the build context
+.env
+.env.*
+.git
+.gitignore
+node_modules
+dist
+coverage
+*.log
+*.zip
+
+# Not needed in the image
+docs
+scripts
+.vscode
+Dockerfile
+.dockerignore
+*.md
