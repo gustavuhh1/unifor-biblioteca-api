@@ -1,4 +1,4 @@
-// `code` is a stable English identifier the app can rely on;
+// `code` is a stable English identifier the app can rely on.
 // `message` is Portuguese and shown to the user as is.
 export class AppError extends Error {
   constructor(
