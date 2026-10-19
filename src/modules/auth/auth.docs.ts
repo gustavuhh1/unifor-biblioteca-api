@@ -116,7 +116,7 @@ registry.registerPath({
   tags: ['Acesso'],
   summary: 'Pede o token de recuperação de senha',
   description:
-    'Para aluno e bibliotecário. A API acha o e-mail da conta pela matrícula e responde sempre a mesma mensagem, exista a conta ou não.',
+    'Para aluno e bibliotecário. A API acha o e-mail da conta pela matrícula e responde sempre a mesma mensagem (200), exista a conta ou não e mesmo dentro dos 60 segundos desde o último token. Nesse caso só não envia outro e-mail.',
   request: { body: body(matriculaBodySchema) },
   responses: {
     200: {
@@ -124,7 +124,6 @@ registry.registerPath({
       content: json(messageResponseSchema),
     },
     400: invalidData,
-    429: tooSoon,
   },
 })
 

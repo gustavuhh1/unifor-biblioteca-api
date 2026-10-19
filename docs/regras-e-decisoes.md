@@ -185,7 +185,7 @@ Aprovadas pelo aluno depois da auditoria design × escopo. Aplicadas no Figma e 
 - **Nome:** fica fora do cadastro. O aluno o informa depois, no Perfil, e enquanto não houver nome as telas mostram a matrícula no lugar dele.
 - **Corrigir o e-mail:** repetir o cadastro com a mesma matrícula enquanto ela está pendente (e-mail ainda não confirmado) troca o e-mail e a senha e invalida o token anterior.
 - **Recuperação de senha pela matrícula:** o aluno ou o bibliotecário informa a matrícula, e a API acha o e-mail da conta por dentro. A resposta é sempre a mesma mensagem genérica, exista a conta ou não.
-- **Espera entre reenvios:** 60 segundos entre dois envios de token (reenviar do cadastro e pedir recuperação), igual ao contador "Reenviar em" da tela A58.
+- **Espera entre reenvios:** 60 segundos entre dois envios de token (reenviar do cadastro e pedir recuperação), igual ao contador "Reenviar em" da tela A58. No cadastro, antes disso a API responde 429 (`token_resend_too_soon`, com os segundos restantes). Na recuperação a resposta continua sendo a mensagem genérica, e a API só não envia outro e-mail (decidido em 19/10, na revisão).
 
 ## Pendente
 - README da API e do app: só quando a definição do projeto estiver 100% (decisão do aluno em 18/10).

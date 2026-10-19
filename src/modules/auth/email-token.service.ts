@@ -64,16 +64,21 @@ function tooSoon(waitSeconds: number): AppError {
   )
 }
 
+// Seconds left before another token may be sent; 0 when it may be sent now.
+export function sendWaitSeconds(recent: DocumentSnapshot[], now: Date): number {
+  const last = recent[0]
+  return resendWaitSeconds(
+    last ? toDate(last.get('createdAt')) : undefined,
+    now,
+  )
+}
+
 // 429 when the last token was sent less than 60 seconds ago.
 export function assertCanSendToken(
   recent: DocumentSnapshot[],
   now: Date,
 ): void {
-  const last = recent[0]
-  const wait = resendWaitSeconds(
-    last ? toDate(last.get('createdAt')) : undefined,
-    now,
-  )
+  const wait = sendWaitSeconds(recent, now)
   if (wait > 0) throw tooSoon(wait)
 }
 

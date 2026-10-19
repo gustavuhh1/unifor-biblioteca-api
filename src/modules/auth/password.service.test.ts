@@ -114,20 +114,30 @@ describe('requestPasswordRecovery', () => {
     expect(h.sent).toEqual([])
   })
 
-  it('waits 60 seconds between two tokens', async () => {
-    await requestPasswordRecovery('2412858')
+  it('sends no second e-mail within 60 seconds, but answers the same', async () => {
+    const first = await requestPasswordRecovery('2412858')
     vi.setSystemTime(after(25))
 
-    await expect(requestPasswordRecovery('2412858')).rejects.toMatchObject({
-      status: 429,
-      code: 'token_resend_too_soon',
-      extra: { retryAfterSeconds: 35 },
-    })
+    const tooSoon = await requestPasswordRecovery('2412858')
+
+    expect(tooSoon).toEqual(first)
+    expect(tooSoon).toEqual({ message: RECOVERY_MESSAGE })
     expect(h.sent).toHaveLength(1)
+    expect(tokens()).toHaveLength(1)
+    expect(tokens()[0]!.invalidatedAt).toBeUndefined()
 
     vi.setSystemTime(after(60))
-    await expect(requestPasswordRecovery('2412858')).resolves.toBeDefined()
+    await expect(requestPasswordRecovery('2412858')).resolves.toEqual(first)
     expect(h.sent).toHaveLength(2)
+  })
+
+  it('answers exactly the same for an account, an unknown matrícula and a request too soon', async () => {
+    const unknown = await requestPasswordRecovery('2999999')
+    const known = await requestPasswordRecovery('2412858')
+    const tooSoon = await requestPasswordRecovery('2412858')
+
+    expect(JSON.stringify(known)).toBe(JSON.stringify(unknown))
+    expect(JSON.stringify(tooSoon)).toBe(JSON.stringify(unknown))
   })
 
   it('keeps the generic answer when the e-mail cannot be sent', async () => {

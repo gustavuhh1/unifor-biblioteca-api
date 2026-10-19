@@ -7,11 +7,11 @@ import {
 import type { PasswordResetBody } from './auth.schemas.js'
 import { createTokenSecret } from './email-token.js'
 import {
-  assertCanSendToken,
   evaluateToken,
   issueToken,
   loadTokenSettings,
   readRecentTokens,
+  sendWaitSeconds,
   tokenError,
 } from './email-token.service.js'
 import { sendTokenEmail } from './mailer.js'
@@ -41,7 +41,9 @@ export async function requestPasswordRecovery(matricula: string) {
     if (!account || account.user.get('status') !== 'active') return undefined
 
     const recent = await readRecentTokens(tx, db, account.uid, PURPOSE)
-    assertCanSendToken(recent, now)
+    // Inside the 60 seconds nothing is sent, and the answer stays the same:
+    // an error here would show that the account exists.
+    if (sendWaitSeconds(recent, now) > 0) return undefined
 
     const to = account.user.get('email') as string
     issueToken(
