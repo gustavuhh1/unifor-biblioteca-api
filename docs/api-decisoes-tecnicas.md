@@ -11,6 +11,7 @@ Anotação temporária. Ainda sem código: vira o README e a estrutura do `unifo
 - **date-fns** (v4) com **@date-fns/tz** para datas: somar dias e horas, comparar prazos e formatar em pt-BR, sempre no fuso `America/Fortaleza` (`TZDate`). A regra de dia útil (fins de semana, feriados, recessos, sábado com balcão aberto, vencimento no fechamento) é uma função nossa em `src/shared/`, feita com as peças do date-fns e coberta por testes unitários. O `addBusinessDays` do date-fns não serve sozinho: ele não conhece feriados nem recessos.
 - **@simplewebauthn/server** para o passkey no lado da API: gera as opções e o desafio de cadastro e de login e confere a resposta do celular (RP ID `uni-books.app`).
 - **Ferramentas de desenvolvimento:** **tsx** para rodar o TypeScript sem compilar e reiniciar ao salvar (`npm run dev`); **ESLint + Prettier** para padronizar o código, com Prettier **sem ponto e vírgula** (`"semi": false`). O build de produção continua com `tsc`.
+- **morgan** (middleware da equipe do Express) para o log de requisições: formato `dev` no desenvolvimento e `short` em produção; nunca registra corpo nem cabeçalhos; `/health` fica fora do log.
 - **Vitest** só para **testes unitários** (regras de negócio e validações). Sem teste de ponta a ponta, por causa do prazo curto.
 - Já definido antes: Firestore pelo Firebase Admin, Firebase Emulator Suite para teste, deploy no Cloud Run, variáveis em `infra-contas-e-chaves.md`, seed em `scripts/seed.ts` (seção 8 de `modelo-de-dados-firestore.md`).
 

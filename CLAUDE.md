@@ -38,6 +38,7 @@ Se dois documentos se contradizem, ou se uma tarefa exige algo que não está ne
 - **firebase-admin** (Firestore e Firebase Authentication) e **Firebase Emulator Suite** para teste local.
 - **@simplewebauthn/server** para o passkey (RP ID `uni-books.app`; não trocar, invalida os passkeys).
 - **date-fns** + **@date-fns/tz**: datas sempre no fuso `America/Fortaleza` (`TZDate`). A regra de dia útil (fins de semana, feriados, recessos, sábado com balcão aberto, vencimento no fechamento) é função própria em `src/shared/`, com testes.
+- **morgan** (middleware da equipe do Express) para o log de requisições: formato `dev` no desenvolvimento e `short` em produção; nunca registra corpo nem cabeçalhos; `/health` fica fora do log.
 - **Vitest** só com **testes unitários** (regras de negócio, validações, datas). **Sem testes de ponta a ponta.**
 - **tsx** para desenvolvimento; build de produção com `tsc`; deploy no **Cloud Run** (região `southamerica-east1`) com Dockerfile.
 - **ESLint + Prettier**, Prettier com `"semi": false` (**sem ponto e vírgula**).
