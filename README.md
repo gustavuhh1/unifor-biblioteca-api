@@ -27,7 +27,7 @@ REST API for Unifor Biblioteca, a university library app. Node + TypeScript + Ex
 
    The defaults already point to the local emulators. Secrets (Resend, FeriadosAPI, Gemini, Google Books) can stay blank until the module that uses them exists.
 
-3. Start the Firebase emulators (Firestore on `8081`, Auth on `9099`, UI on `4000`):
+3. Start the Firebase emulators (Firestore on `8085`, Auth on `9099`, UI on `4000`):
 
    ```sh
    npm run emulators
@@ -54,6 +54,10 @@ REST API for Unifor Biblioteca, a university library app. Node + TypeScript + Ex
 | `npm run build`      | Compile to `dist/`                |
 | `npm start`          | Run the compiled server           |
 | `npm run seed`       | Load the demo data (see below)    |
+
+## Firebase Hosting
+
+`hosting/public` is the Hosting site of `uni-books.app`. It serves `/.well-known/assetlinks.json`, which links the Android app to the passkey RP ID (`uni-books.app`). The `ignore` list in `firebase.json` must not hide dotfiles, or `.well-known` is left out of the deploy. Deploy only this part with `firebase deploy --only hosting`.
 
 ## Loading the demo data
 
