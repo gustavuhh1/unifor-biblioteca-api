@@ -122,9 +122,9 @@ ID = `uid` do Firebase Authentication. A conta do Firebase usa o e-mail interno 
 |---|---|---|---|
 | `role` | enum `student` \| `librarian` | S | Define a área que abre após o login (RF-AUT-13) e as permissões (RF-AUT-12) |
 | `matricula` | string | S | Exatamente 7 dígitos (`^\d{7}$`); os 2 primeiros = ano de ingresso. Única (ver `matriculaIndex`) |
-| `fullName` | string | S | Ex.: "Lucas Almeida" |
-| `fullNameNormalized` | string | S | Minúsculas, sem acento, para busca por nome (aba Multas, fila) |
-| `initials` | string | S | Ex.: "LA" (avatar) |
+| `fullName` | string | N | Ex.: "Lucas Almeida". Não vem no cadastro (decidido em 19/10): o aluno preenche no Perfil. Sem nome, as telas mostram a matrícula |
+| `fullNameNormalized` | string | N | Minúsculas, sem acento, para busca por nome (aba Multas, fila). Só existe com `fullName` |
+| `initials` | string | N | Ex.: "LA" (avatar). Só existe com `fullName` |
 | `email` | string | S | E-mail real. Aluno: termina em `@edu.unifor.br` (RF-AUT-02, `^[^\s@]+@edu\.unifor\.br$`, sem diferenciar maiúsculas). Bibliotecário: e-mail cadastrado da conta. Único (ver `emailIndex`) |
 | `authEmail` | string | S | `<matricula>@contas.uni-books.app` (nunca recebe mensagens) |
 | `status` | enum `pending_email` \| `active` \| `disabled` | S | Aluno nasce `pending_email` (conta no Firebase desativada) e vira `active` ao confirmar o token. Bibliotecário já nasce `active` |

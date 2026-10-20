@@ -1,6 +1,7 @@
 import { OpenApiGeneratorV31 } from '@asteasolutions/zod-to-openapi'
+import '../modules/auth/auth.docs.js'
 import { healthResponseSchema } from '../shared/health.js'
-import { registry } from './registry.js'
+import { jsonContent, registry } from './registry.js'
 
 registry.registerPath({
   method: 'get',
@@ -10,11 +11,12 @@ registry.registerPath({
   responses: {
     200: {
       description: 'A API está funcionando.',
-      content: { 'application/json': { schema: healthResponseSchema } },
+      content: jsonContent(healthResponseSchema),
     },
   },
 })
 
+// Gera o documento OpenAPI 3.1 com todas as rotas registradas até aqui.
 export function buildOpenApiDocument() {
   return new OpenApiGeneratorV31(registry.definitions).generateDocument({
     openapi: '3.1.0',

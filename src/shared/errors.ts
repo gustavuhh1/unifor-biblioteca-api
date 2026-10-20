@@ -1,16 +1,31 @@
-// `code` is a stable English identifier the app can rely on.
-// `message` is Portuguese and shown to the user as is.
+// Campo que o app pode marcar como errado. A `message` é em português.
+export interface FieldError {
+  field: string
+  message: string
+}
+
+// Partes opcionais do corpo do erro, junto de `code` e `message`.
+export interface ErrorExtra {
+  fields?: FieldError[]
+  retryAfterSeconds?: number
+}
+
+// Erro da API com status HTTP. O `code` é um identificador estável, em inglês,
+// em que o app pode confiar; a `message` é em português e é mostrada ao usuário
+// do jeito que está.
 export class AppError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
     message: string,
+    readonly extra: ErrorExtra = {},
   ) {
     super(message)
     this.name = 'AppError'
   }
 }
 
+// 401: sem sessão, sessão expirada ou token inválido (RF-AUT-12).
 export const unauthorized = () =>
   new AppError(
     401,
@@ -18,6 +33,7 @@ export const unauthorized = () =>
     'Sua sessão expirou ou é inválida. Entre novamente.',
   )
 
+// 403: perfil sem permissão para a rota (RF-AUT-12).
 export const forbidden = () =>
   new AppError(
     403,

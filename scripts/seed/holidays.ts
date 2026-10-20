@@ -1,32 +1,35 @@
 import { readFile } from 'node:fs/promises'
 import { z } from 'zod'
+import {
+  HOLIDAY_SCOPE,
+  type Holiday,
+  type HolidayItem,
+  type Timestamps,
+} from '../../src/shared/types/index.js'
 
-// Fortaleza, IBGE code. One call per year returns the national, state (Ceará)
-// and municipal holidays (docs/infra.md, section 3).
+// Nome da fonte gravado em holidays/{year}.source.
+const HOLIDAYS_SOURCE = 'FeriadosAPI'
+
+// Código IBGE de Fortaleza. Uma chamada por ano traz os feriados nacionais,
+// estaduais (Ceará) e municipais (docs/infra.md, seção 3).
 export const FORTALEZA_IBGE = '2304400'
 
 const API_URL = 'https://feriadosapi.com/api/v1/feriados/cidade'
 
-export interface HolidayItem {
-  date: string
-  name: string
-  scope: 'national' | 'state' | 'municipal'
-}
-
-// Shape of holidays/{year} (docs/modelo-de-dados-firestore.md, section 2.19),
-// with `fetchedAt` as ISO text so the same shape can live in a JSON file.
-export interface HolidaysDocument {
-  year: number
-  cityIbge: string
-  items: HolidayItem[]
+// Formato de holidays/{year} (docs/modelo-de-dados-firestore.md, seção 2.19),
+// com `fetchedAt` em texto ISO, para o mesmo formato poder ficar num arquivo JSON.
+export type HolidaysDocument = Omit<
+  Holiday,
+  keyof Timestamps | 'fetchedAt' | 'source'
+> & {
   fetchedAt: string
-  source: 'FeriadosAPI'
+  source: typeof HOLIDAYS_SOURCE
 }
 
 const scopeByType: Record<string, HolidayItem['scope']> = {
-  NACIONAL: 'national',
-  ESTADUAL: 'state',
-  MUNICIPAL: 'municipal',
+  NACIONAL: HOLIDAY_SCOPE.national,
+  ESTADUAL: HOLIDAY_SCOPE.state,
+  MUNICIPAL: HOLIDAY_SCOPE.municipal,
 }
 
 const responseSchema = z.object({
@@ -40,6 +43,8 @@ const responseSchema = z.object({
   meta: z.object({ total_pages: z.number() }),
 })
 
+// Converte a resposta da FeriadosAPI nos feriados do formato do projeto, em
+// ordem de data.
 export function parseHolidaysResponse(
   body: unknown,
   year: number,
@@ -69,10 +74,11 @@ export function parseHolidaysResponse(
     cityIbge: FORTALEZA_IBGE,
     items,
     fetchedAt: fetchedAt.toISOString(),
-    source: 'FeriadosAPI',
+    source: HOLIDAYS_SOURCE,
   }
 }
 
+// Busca na FeriadosAPI os feriados de Fortaleza de um ano.
 export async function fetchHolidays(
   year: number,
   apiKey: string,
@@ -87,6 +93,7 @@ export async function fetchHolidays(
   return parseHolidaysResponse(await response.json(), year, new Date())
 }
 
+// Lê os feriados do arquivo local de um ano (modo --offline).
 export async function loadHolidaysFile(
   year: number,
 ): Promise<HolidaysDocument> {
@@ -94,7 +101,7 @@ export async function loadHolidaysFile(
   return JSON.parse(await readFile(file, 'utf8')) as HolidaysDocument
 }
 
-// Dates ("AAAA-MM-DD") on which fines and deadlines do not count a day.
+// Datas ("AAAA-MM-DD") em que multas e prazos não contam um dia.
 export function holidayDates(document: HolidaysDocument): Set<string> {
   return new Set(document.items.map((item) => item.date))
 }

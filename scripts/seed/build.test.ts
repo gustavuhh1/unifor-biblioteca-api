@@ -15,13 +15,13 @@ let holidays: HolidaysDocument
 
 beforeAll(async () => {
   holidays = await loadHolidaysFile(2026)
-  // The example day of the documents (15/10): the shift is zero, so the tables
-  // of sections 6.1 to 6.5 can be checked date by date.
+  // O dia de exemplo dos documentos (15/10): o deslocamento é zero, então as
+  // tabelas das seções 6.1 a 6.5 podem ser conferidas data por data.
   data = buildSeed({ holidays, tokenSecret: 'test-secret', today: BASE_DAY })
 })
 
-describe('counters (section 8, step 6)', () => {
-  it('Lucas has 4 of 10 loans, 1 queue and the literal 17 books read', () => {
+describe('contadores (seção 8, passo 6)', () => {
+  it('Lucas tem 4 de 10 empréstimos, 1 fila e os 17 livros lidos fixos', () => {
     expect(data.users.uid_lucas).toMatchObject({
       activeLoanCount: 4,
       activeQueueCount: 1,
@@ -30,14 +30,14 @@ describe('counters (section 8, step 6)', () => {
     })
   })
 
-  it('Marina has 3 of 10 loans and 1 queue', () => {
+  it('Marina tem 3 de 10 empréstimos e 1 fila', () => {
     expect(data.users.uid_marina).toMatchObject({
       activeLoanCount: 3,
       activeQueueCount: 1,
     })
   })
 
-  it('counts open fines and returned books from the loaded data only', () => {
+  it('conta multas em aberto e livros devolvidos só a partir dos dados carregados', () => {
     expect(data.users.uid_pedrohenrique).toMatchObject({
       openFineTotalCents: 1000,
       booksReadByYear: { '2026': 1 },
@@ -49,14 +49,14 @@ describe('counters (section 8, step 6)', () => {
     })
   })
 
-  it('open fines add up to R$ 28,00 in 4 students', () => {
+  it('as multas em aberto somam R$ 28,00 em 4 alunos', () => {
     const open = Object.values(data.fines).filter((f) => f.status === 'open')
 
     expect(open).toHaveLength(4)
     expect(open.reduce((sum, f) => sum + (f.amountCents ?? 0), 0)).toBe(2800)
   })
 
-  it('Código Limpo: 3 copies, none available, 1 in the queue, next return 28/10', () => {
+  it('Código Limpo: 3 exemplares, nenhum disponível, 1 na fila, próxima devolução 28/10', () => {
     expect(data.books.book_codigo_limpo).toMatchObject({
       copiesTotal: 3,
       copiesAvailable: 0,
@@ -65,14 +65,14 @@ describe('counters (section 8, step 6)', () => {
     })
   })
 
-  it('Arquitetura Limpa has 4 waiting and is unavailable for new requests', () => {
+  it('Arquitetura Limpa tem 4 na fila e está indisponível para novos pedidos', () => {
     expect(data.books.book_arquitetura_limpa).toMatchObject({
       queueLength: 4,
       unavailableForNewRequests: true,
     })
   })
 
-  it('Refatoração has 2 on the shelf; Algoritmos has 4 on loan in 2 editions, no queue', () => {
+  it('Refatoração tem 2 na estante; Algoritmos tem 4 emprestados em 2 edições, sem fila', () => {
     expect(data.books.book_refatoracao).toMatchObject({
       copiesTotal: 3,
       copiesAvailable: 2,
@@ -87,7 +87,7 @@ describe('counters (section 8, step 6)', () => {
     }
   })
 
-  it('Engenharia de Software has 2 waiting, in order', () => {
+  it('Engenharia de Software tem 2 na fila, em ordem', () => {
     const waiting = Object.values(data.queueEntries)
       .filter((q) => q.bookId === 'book_engenharia_de_software')
       .sort((a, b) => (a.order as number) - (b.order as number))
@@ -99,8 +99,8 @@ describe('counters (section 8, step 6)', () => {
   })
 })
 
-describe('consistency', () => {
-  it('every copy on loan or reserved points to a loan of that copy', () => {
+describe('consistência dos dados', () => {
+  it('todo exemplar emprestado ou reservado aponta para um empréstimo desse exemplar', () => {
     const lent = Object.entries(data.copies).filter(
       ([, copy]) => copy.status !== 'available',
     )
@@ -119,7 +119,7 @@ describe('consistency', () => {
     }
   })
 
-  it('never gives a student two active or pending loans of the same title', () => {
+  it('nunca dá a um aluno dois empréstimos ativos ou pendentes do mesmo título', () => {
     const seen = new Set<string>()
     for (const loan of Object.values(data.loans)) {
       if (loan.status === 'returned') continue
@@ -129,7 +129,7 @@ describe('consistency', () => {
     }
   })
 
-  it('has unique copy registrations and unique pickup codes', () => {
+  it('tem registros de exemplar e códigos de retirada únicos', () => {
     const registrations = Object.values(data.copies).map((c) => c.registration)
     const codes = Object.values(data.loans).map((l) => l.pickupCode as string)
 
@@ -140,9 +140,9 @@ describe('consistency', () => {
     expect(data.loans.loan_rafael_calculo2!.pickupCode).toBe('RET-4809')
   })
 
-  it('gives the loans the documented due dates', () => {
+  it('dá aos empréstimos os vencimentos documentados', () => {
     const due = (id: string) => data.loans[id]!.dueAt
-    // Sections 6.3 and 6.5.
+    // Seções 6.3 e 6.5.
     expect(due('loan_lucas_engenharia')).toEqual(at('2026-10-16', '21:55'))
     expect(due('loan_lucas_redes')).toEqual(at('2026-10-20', '21:55'))
     expect(due('loan_lucas_estruturas')).toEqual(at('2026-10-23', '21:55'))
@@ -162,7 +162,7 @@ describe('consistency', () => {
     expect(due('loan_rafael_algoritmos')).toEqual(at('2026-10-23', '21:55'))
   })
 
-  it('renews only the two documented loans, and picks up 14 days before the due date', () => {
+  it('renova só os dois empréstimos documentados e retira 14 dias antes do vencimento', () => {
     const renewed = Object.entries(data.loans)
       .filter(([, l]) => l.renewalCount === 1)
       .map(([id]) => id)
@@ -181,7 +181,7 @@ describe('consistency', () => {
     )
   })
 
-  it('RET-4821 follows section 6.4 and links the fulfilled queue entry', () => {
+  it('RET-4821 segue a seção 6.4 e liga a vez cumprida da fila', () => {
     expect(data.loans.loan_ret4821).toMatchObject({
       status: 'awaiting_pickup',
       origin: 'queue',
@@ -196,7 +196,7 @@ describe('consistency', () => {
     })
   })
 
-  it('makes QR tokens stable for the same secret, different otherwise, 24 chars', () => {
+  it('deixa os tokens do QR estáveis para o mesmo segredo, diferentes para outro, com 24 caracteres', () => {
     const tokens = Object.values(data.loans).map((l) => l.qrToken as string)
 
     expect(new Set(tokens).size).toBe(tokens.length)
@@ -221,8 +221,8 @@ describe('consistency', () => {
   })
 })
 
-describe('documents', () => {
-  it('gives every user the documented identity fields', () => {
+describe('documentos', () => {
+  it('dá a todo usuário os campos de identidade documentados', () => {
     expect(Object.keys(data.users)).toHaveLength(12)
     expect(data.users.uid_lucas).toMatchObject({
       role: 'student',
@@ -244,7 +244,7 @@ describe('documents', () => {
     }
   })
 
-  it('gives every active student a confirmed e-mail, and the librarian none', () => {
+  it('dá a todo aluno ativo um e-mail confirmado e ao bibliotecário nenhum', () => {
     const students = Object.values(data.users).filter(
       (u) => u.role === 'student',
     )
@@ -255,7 +255,7 @@ describe('documents', () => {
       const createdAt = student.createdAt as Date
       const verifiedAt = student.emailVerifiedAt as Date
       const minutes = (verifiedAt.getTime() - createdAt.getTime()) / 60_000
-      // Lucas's time is the literal of section 6.4 (10:00); the others, +5 min.
+      // O horário do Lucas é o valor fixo da seção 6.4 (10:00); os outros, +5 min.
       expect(minutes, String(student.matricula)).toBe(
         student.matricula === '2412858' ? 10 : 5,
       )
@@ -265,7 +265,7 @@ describe('documents', () => {
     expect(written!.data).not.toHaveProperty('emailVerifiedAt')
   })
 
-  it('indexes every matrícula and e-mail to its user', () => {
+  it('indexa toda matrícula e e-mail ao seu usuário', () => {
     expect(data.matriculaIndex['2412858']).toMatchObject({
       uid: 'uid_lucas',
       role: 'student',
@@ -277,7 +277,7 @@ describe('documents', () => {
     expect(Object.keys(data.emailIndex)).toHaveLength(12)
   })
 
-  it('builds the searchText of Código Limpo exactly as section 6.4', () => {
+  it('monta o searchText de Código Limpo exatamente como a seção 6.4', () => {
     expect(data.books.book_codigo_limpo).toMatchObject({
       coverTone: 1,
       shelf: 'Estante 005.1',
@@ -288,17 +288,17 @@ describe('documents', () => {
     })
   })
 
-  it('cycles coverTone from 1 to 6 in the order of table 6.2', () => {
+  it('alterna o coverTone de 1 a 6 na ordem da tabela 6.2', () => {
     const tones = Object.values(data.books).map((b) => b.coverTone)
 
     expect(tones.slice(0, 8)).toEqual([1, 2, 3, 4, 5, 6, 1, 2])
   })
 
-  it('has no simulated "today" in the settings: the dates are real', () => {
+  it('não tem "hoje" simulado nas configurações: as datas são reais', () => {
     expect(data.settings).not.toHaveProperty('simulatedNow')
   })
 
-  it("creates Lucas's three folders and three saved books", () => {
+  it('cria as três pastas e os três livros salvos do Lucas', () => {
     expect(data.folders.folder_ler_depois).toMatchObject({
       name: 'Ler depois',
       bookCount: 3,
@@ -320,7 +320,7 @@ describe('documents', () => {
     ).toEqual(['due_reminder', 'pickup_ready', 'queue_turn'])
   })
 
-  it('writes unique paths and no undefined values', () => {
+  it('grava caminhos únicos e nenhum valor undefined', () => {
     const writes = toWrites(data)
     const paths = writes.map((w) => w.path)
 
@@ -339,7 +339,7 @@ describe('documents', () => {
       expect(hasUndefined(write.data), write.path).toBe(false)
   })
 
-  it('does not create collections nobody documented', () => {
+  it('não cria coleções que ninguém documentou', () => {
     const collections = new Set(toWrites(data).map((w) => w.path.split('/')[0]))
 
     expect(collections).not.toContain('recesses')
@@ -348,8 +348,8 @@ describe('documents', () => {
   })
 })
 
-// The seed follows the day it runs: whichever day that is, the situations of
-// sections 6.1 to 6.5 must hold (not the example dates).
+// O seed segue o dia em que roda: seja qual for esse dia, as situações das
+// seções 6.1 a 6.5 precisam valer (e não as datas de exemplo).
 describe.each([
   ['the example day (Thursday)', '2026-10-15'],
   ['a Monday', '2026-10-19'],
@@ -358,7 +358,7 @@ describe.each([
   ['a Sunday', '2026-10-25'],
   ['another month', '2026-12-09'],
   ['next year', '2027-02-17'],
-])('situations when the seed runs on %s', (_label, today) => {
+])('situações quando o seed roda em %s', (_label, today) => {
   let run: SeedData
 
   beforeAll(() => {
@@ -367,7 +367,7 @@ describe.each([
 
   const day = (date: Date | undefined) => localDate(date!)
 
-  it('keeps Lucas with 4 of 10 and the RET-4821 order inside its pickup deadline', () => {
+  it('mantém o Lucas com 4 de 10 e o pedido RET-4821 dentro do prazo de retirada', () => {
     expect(run.users.uid_lucas).toMatchObject({ activeLoanCount: 4 })
     const order = run.loans.loan_ret4821!
     expect(order.status).toBe('awaiting_pickup')
@@ -378,7 +378,7 @@ describe.each([
     )
   })
 
-  it('keeps Marina with an overdue loan and an accruing fine', () => {
+  it('mantém a Marina com um empréstimo atrasado e uma multa contando', () => {
     expect(run.users.uid_marina).toMatchObject({ activeLoanCount: 3 })
     const loan = run.loans.loan_marina_calculo1!
     expect(loan.status).toBe('active')
@@ -387,13 +387,13 @@ describe.each([
       status: 'accruing',
       loanId: 'loan_marina_calculo1',
     })
-    // About 3 business days (a holiday or a weekend may change it by a little).
+    // Cerca de 3 dias úteis (um feriado ou um fim de semana pode mudar um pouco).
     expect(
       lateBusinessDays(loan.dueAt!, at(today, '12:00'), holidayDates(holidays)),
     ).toBeGreaterThanOrEqual(1)
   })
 
-  it('keeps Beatriz on her last pickup day and Rafael with a deadline until tomorrow', () => {
+  it('mantém a Beatriz no último dia de retirada e o Rafael com prazo até amanhã', () => {
     expect(day(run.loans.loan_beatriz_padroes!.pickupDeadline as Date)).toBe(
       today,
     )
@@ -402,20 +402,20 @@ describe.each([
     )
   })
 
-  it("keeps Lucas's Engenharia de Software due soon, with 2 people in the queue", () => {
+  it('mantém Engenharia de Software do Lucas perto de vencer, com 2 pessoas na fila', () => {
     expect(day(run.loans.loan_lucas_engenharia!.dueAt)).toBe(plusDays(today, 1))
     expect(run.books.book_engenharia_de_software).toMatchObject({
       queueLength: 2,
     })
   })
 
-  it('keeps Arquitetura Limpa with 4 in the queue and the open fines fixed', () => {
+  it('mantém Arquitetura Limpa com 4 na fila e as multas em aberto fixas', () => {
     expect(run.books.book_arquitetura_limpa).toMatchObject({ queueLength: 4 })
     const open = Object.values(run.fines).filter((f) => f.status === 'open')
     expect(open.map((f) => f.amountCents).sort()).toEqual([1000, 400, 600, 800])
   })
 
-  it('keeps the dates in order: nothing is due or returned before it is ordered, and returns are in the past', () => {
+  it('mantém as datas em ordem: nada vence ou é devolvido antes de ser pedido, e as devoluções estão no passado', () => {
     for (const [id, loan] of Object.entries(run.loans)) {
       const requested = (loan.requestedAt as Date).getTime()
       if (loan.dueAt)
@@ -427,7 +427,7 @@ describe.each([
     }
   })
 
-  it('keeps the notification texts in line with the deadlines', () => {
+  it('mantém os textos dos avisos de acordo com os prazos', () => {
     const pickup = run.notifications.notif_pickup_ready!.body as string
     const reminder = run.notifications.notif_due_reminder!.body as string
 

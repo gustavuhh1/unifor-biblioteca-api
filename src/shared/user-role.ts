@@ -1,6 +1,6 @@
 import { z } from 'zod'
+import { USER_ROLES } from './types/index.js'
 
-// Field `role` of users/{uid} (docs/modelo-de-dados-firestore.md, section 2.1).
-export const userRoleSchema = z.enum(['student', 'librarian'])
-
-export type UserRole = z.infer<typeof userRoleSchema>
+// Schema do Zod para o perfil do usuário (users.role, seção 2.1 do modelo de
+// dados). O tipo UserRole vem de shared/types.
+export const userRoleSchema = z.enum(USER_ROLES)

@@ -1,19 +1,18 @@
 import type { Auth } from 'firebase-admin/auth'
+import { errorCodeOf } from '../../src/shared/error-property.js'
 
+// Conta a criar no Firebase Authentication: uid, e-mail interno e senha de teste.
 export interface Account {
   uid: string
   email: string
   password: string
 }
 
-function errorCode(error: unknown): string | undefined {
-  return typeof error === 'object' && error !== null && 'code' in error
-    ? String(error.code)
-    : undefined
-}
+// Código do erro do Firebase para usuário inexistente.
+const USER_NOT_FOUND = 'auth/user-not-found'
 
-// Creates (or updates) the Firebase Authentication account of each user, already
-// active. The uid is fixed, so running the seed again reaches the same state.
+// Cria (ou atualiza) a conta do Firebase Authentication de cada usuário, já
+// ativa. O uid é fixo, então rodar o seed de novo chega ao mesmo estado.
 export async function upsertAccounts(
   auth: Auth,
   accounts: Account[],
@@ -24,12 +23,12 @@ export async function upsertAccounts(
       await auth.updateUser(uid, { email, password, disabled: false })
       continue
     } catch (error) {
-      if (errorCode(error) !== 'auth/user-not-found') throw error
+      if (errorCodeOf(error) !== USER_NOT_FOUND) throw error
     }
 
-    // Another account already owns this e-mail (left over from manual tests).
+    // Outra conta já usa este e-mail (sobra de testes manuais).
     const holder = await auth.getUserByEmail(email).catch((error: unknown) => {
-      if (errorCode(error) === 'auth/user-not-found') return undefined
+      if (errorCodeOf(error) === USER_NOT_FOUND) return undefined
       throw error
     })
     if (holder) {

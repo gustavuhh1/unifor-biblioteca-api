@@ -35,13 +35,13 @@ async function rejectionOf(promise: unknown): Promise<unknown> {
   return undefined
 }
 
-describe('authenticate', () => {
+describe('autenticação por ID token do Firebase (authenticate)', () => {
   beforeEach(() => {
     firebase.verifyIdToken.mockReset()
     firebase.getUserDoc.mockReset()
   })
 
-  it('answers 401 when there is no Authorization header', async () => {
+  it('responde 401 quando não há cabeçalho Authorization', async () => {
     const error = await rejectionOf(
       authenticate(fakeRequest(), {} as Response, vi.fn()),
     )
@@ -50,7 +50,7 @@ describe('authenticate', () => {
     expect(firebase.verifyIdToken).not.toHaveBeenCalled()
   })
 
-  it('answers 401 when the header is not a Bearer token', async () => {
+  it('responde 401 quando o cabeçalho não é um Bearer token', async () => {
     const error = await rejectionOf(
       authenticate(fakeRequest('Basic abc'), {} as Response, vi.fn()),
     )
@@ -59,7 +59,7 @@ describe('authenticate', () => {
     expect(firebase.verifyIdToken).not.toHaveBeenCalled()
   })
 
-  it('answers 401 when Firebase rejects the token, checking revocation', async () => {
+  it('responde 401 quando o Firebase rejeita o token, conferindo a revogação', async () => {
     firebase.verifyIdToken.mockRejectedValue({ code: 'auth/id-token-revoked' })
 
     const error = await rejectionOf(
@@ -70,7 +70,7 @@ describe('authenticate', () => {
     expect(firebase.verifyIdToken).toHaveBeenCalledWith('token-123', true)
   })
 
-  it('does not turn an infrastructure failure into a 401', async () => {
+  it('não transforma falha de infraestrutura em 401', async () => {
     const failure = new Error('network down')
     firebase.verifyIdToken.mockRejectedValue(failure)
 
@@ -81,7 +81,7 @@ describe('authenticate', () => {
     expect(error).toBe(failure)
   })
 
-  it('answers 403 when users/{uid} has no valid role', async () => {
+  it('responde 403 quando users/{uid} não tem um perfil válido', async () => {
     firebase.verifyIdToken.mockResolvedValue({ uid: 'uid-1' })
     firebase.getUserDoc.mockResolvedValue(userDoc(undefined))
 
@@ -93,7 +93,7 @@ describe('authenticate', () => {
   })
 
   it.each(['pending_email', 'disabled', undefined])(
-    'answers 403 account_disabled when the status is %s',
+    'responde 403 account_disabled quando o status é %s',
     async (status) => {
       firebase.verifyIdToken.mockResolvedValue({ uid: 'uid-1' })
       firebase.getUserDoc.mockResolvedValue(
@@ -110,7 +110,7 @@ describe('authenticate', () => {
     },
   )
 
-  it('loads uid and role into the request', async () => {
+  it('carrega uid e perfil na requisição', async () => {
     firebase.verifyIdToken.mockResolvedValue({ uid: 'uid-1' })
     firebase.getUserDoc.mockResolvedValue(
       userDoc({ role: 'librarian', status: 'active' }),

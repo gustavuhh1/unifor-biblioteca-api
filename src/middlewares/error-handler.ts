@@ -1,12 +1,14 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express'
 import { ZodError } from 'zod'
-import { AppError } from '../shared/errors.js'
+import { errorProperty } from '../shared/error-property.js'
+import { AppError, type ErrorExtra } from '../shared/errors.js'
 
-interface ErrorBody {
+interface ErrorBody extends ErrorExtra {
   code: string
   message: string
 }
 
+// Responde 404 em JSON para rota que não existe.
 export const notFoundHandler: RequestHandler = (_req, res) => {
   res.status(404).json({
     code: 'not_found',
@@ -14,28 +16,30 @@ export const notFoundHandler: RequestHandler = (_req, res) => {
   } satisfies ErrorBody)
 }
 
-// Errors raised by express.json() carry a `type` (see body-parser).
-function bodyParserErrorType(error: unknown): unknown {
-  return typeof error === 'object' && error !== null && 'type' in error
-    ? error.type
-    : undefined
-}
-
 function toErrorResponse(error: unknown): { status: number; body: ErrorBody } {
   if (error instanceof AppError) {
     return {
       status: error.status,
-      body: { code: error.code, message: error.message },
+      body: { code: error.code, message: error.message, ...error.extra },
     }
   }
   if (error instanceof ZodError) {
+    // As mensagens vêm dos schemas, que são escritos em português.
     return {
       status: 400,
-      body: { code: 'validation_error', message: 'Dados inválidos.' },
+      body: {
+        code: 'validation_error',
+        message: 'Dados inválidos.',
+        fields: error.issues.map((issue) => ({
+          field: issue.path.join('.'),
+          message: issue.message,
+        })),
+      },
     }
   }
 
-  const type = bodyParserErrorType(error)
+  // Os erros levantados pelo express.json() trazem um `type` (veja o body-parser).
+  const type = errorProperty(error, 'type')
   if (type === 'entity.parse.failed') {
     return {
       status: 400,
@@ -65,12 +69,17 @@ function toErrorResponse(error: unknown): { status: number; body: ErrorBody } {
   }
 }
 
-// Express recognizes an error handler by its four parameters.
+// Transforma qualquer erro na resposta JSON { code, message } com o status
+// certo; erro inesperado vira 500 sem detalhes. O Express reconhece um handler
+// de erros pelos quatro parâmetros.
 export const errorHandler: ErrorRequestHandler = (error, _req, res, next) => {
   if (res.headersSent) {
     next(error)
     return
   }
   const { status, body } = toErrorResponse(error)
+  if (body.retryAfterSeconds !== undefined) {
+    res.set('Retry-After', String(body.retryAfterSeconds))
+  }
   res.status(status).json(body)
 }

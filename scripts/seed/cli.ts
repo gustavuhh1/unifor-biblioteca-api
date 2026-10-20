@@ -1,14 +1,17 @@
 import { createInterface } from 'node:readline/promises'
 import { parseArgs } from 'node:util'
 
+// Opções da linha de comando do seed.
 export interface CliOptions {
   prod: boolean
   reset: boolean
   googleBooks: boolean
-  // No external calls at all: holidays come from the local file.
+  // Nenhuma chamada externa: os feriados vêm do arquivo local.
   offline: boolean
 }
 
+// Lê os argumentos da linha de comando (--prod, --reset, --no-google-books e
+// --offline); argumento desconhecido é erro.
 export function parseCliArgs(argv: string[]): CliOptions {
   const { values } = parseArgs({
     args: argv,
@@ -29,10 +32,10 @@ export function parseCliArgs(argv: string[]): CliOptions {
   }
 }
 
-// Firebase Authentication refuses passwords shorter than this.
+// O Firebase Authentication recusa senhas menores que isto.
 const MIN_PASSWORD_LENGTH = 6
 
-// Problems that stop the seed before it touches anything.
+// Problemas que param o seed antes de ele tocar em qualquer coisa.
 export function checkEnvironment(
   options: CliOptions,
   source: NodeJS.ProcessEnv,
@@ -65,7 +68,7 @@ export function checkEnvironment(
   return problems
 }
 
-// Asks the user to type `expected` exactly; anything else cancels.
+// Pede ao usuário que digite `expected` exatamente; qualquer outra coisa cancela.
 export async function confirmByTyping(
   question: string,
   expected: string,
@@ -74,7 +77,7 @@ export async function confirmByTyping(
     input: process.stdin,
     output: process.stdout,
   })
-  // A closed input (no terminal, Ctrl+D) counts as "not confirmed".
+  // Entrada fechada (sem terminal, Ctrl+D) conta como "não confirmado".
   const closed = new Promise<string>((resolve) =>
     readline.once('close', () => resolve('')),
   )

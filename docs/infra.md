@@ -31,9 +31,12 @@ Responsáveis: **Gustavo** (contas, cartão, DNS, chaves) e **Claude** (pesquisa
 | `GOOGLE_BOOKS_API_KEY` | sim | Secret Manager `google-books-api-key` e `.env` | Google Books |
 | `GOOGLE_CLOUD_PROJECT` | não | `estoque-pay` | Firestore, Firebase Admin e Secret Manager |
 | `PASSKEY_RP_ID` | não | `uni-books.app` (não trocar: invalida os passkeys) | Passkey |
+| `PASSKEY_ANDROID_ORIGINS` | não | variável do Cloud Run e `.env` | Origens aceitas no passkey do app Android, no formato `android:apk-key-hash:<SHA-256 do certificado de assinatura, em base64url>`, separadas por vírgula (uma para o build de desenvolvimento). Vem do certificado do app, não é segredo |
 | `SEED_TEST_PASSWORD` | sim | só no `.env` de quem roda o seed | Senha das contas de teste criadas pelo script de carga (seção 8 do modelo de dados). Nunca no código |
 | `AUTH_EMAIL_DOMAIN` | não | `contas.uni-books.app` (e-mail interno das contas no Firebase: `<matrícula>@contas.uni-books.app`; não recebe mensagens) | Firebase Authentication |
 | `EXPO_PUBLIC_FIREBASE_*` | não | configuração web do Firebase no app (apiKey, authDomain, projectId, appId). É pública por natureza; a proteção vem das regras e da API | App (SDK JavaScript do Firebase) |
+
+`PASSKEY_RP_ID` e `AUTH_EMAIL_DOMAIN` são obrigatórias com `NODE_ENV=production`: a API não sobe sem elas (no desenvolvimento são opcionais).
 
 Não há `JWT_SECRET`: desde 17/10 a sessão é o ID token do Firebase, e a API o confere com o Firebase Admin. A API no Cloud Run usa a própria conta de serviço para o Firebase Admin, sem arquivo de chave.
 

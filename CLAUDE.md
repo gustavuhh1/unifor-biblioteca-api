@@ -45,7 +45,7 @@ Se dois documentos se contradizem, ou se uma tarefa exige algo que não está ne
 
 ## Convenções
 
-- **Código** (nomes de variáveis, funções, arquivos, coleções e campos) em **inglês**, seguindo os nomes do modelo de dados.
+- Nomes no código (variáveis, funções, arquivos, coleções e campos) em inglês; comentários e textos dos testes em português (pt-BR).
 - **Rotas** em inglês (decisão 14 do escopo). As rotas do escopo em português são nomes sugeridos: mantenha a mesma função e documente cada rota no Swagger.
 - **Mensagens de erro para o usuário** em português (o app mostra), com um `code` em inglês estável. Sem sessão → 401; perfil errado → 403.
 - **Commits em português**, curtos e no imperativo (ex.: `cria script de carga do banco`).
@@ -55,6 +55,44 @@ Se dois documentos se contradizem, ou se uma tarefa exige algo que não está ne
 - Dinheiro em **centavos** (inteiro). Datas gravadas em UTC; contas e textos em `America/Fortaleza`.
 - Sessão: o app manda o **ID token do Firebase** no cabeçalho `Authorization: Bearer`; a API confere com o Admin SDK (incluindo revogação) e lê o `role` (`student` | `librarian`) em `users/{uid}`. Não há JWT próprio.
 - Toda escrita que mexe em mais de um documento (empréstimo, fila, multa, cadastro) usa **transação** do Firestore, como descrito na seção 3 do modelo de dados.
+
+## Estrutura de um módulo
+
+Todo módulo de `src/modules/<módulo>/` segue esta estrutura (o `auth` é o modelo):
+
+```text
+src/modules/<módulo>/
+  <módulo>.routes.ts       só o caminho + os middlewares → controller
+  <módulo>.controller.ts   valida a entrada com o schema, chama o serviço e responde
+  <módulo>.types.ts        tipos EXCLUSIVOS do módulo (internos e os inferidos dos schemas)
+  <módulo>.constants.ts    constantes do módulo (finalidades, esperas, nomes, padrões)
+  <módulo>.errors.ts       erros do módulo (AppError: code em inglês, mensagem em português)
+  <módulo>.docs.ts         Swagger de todas as rotas
+  schemas/                 request.schemas.ts e response.schemas.ts (Zod)
+  services/                só as regras do fluxo, sem db.collection
+  repositories/            todo o acesso ao Firestore do módulo, em funções de nome claro
+  rules/                   funções puras (sem Firestore), fáceis de testar
+  mail/ (ou outro adaptador externo, quando o módulo precisar)
+  __tests__/               todos os testes do módulo
+```
+
+Regras:
+
+- **Tipos fundamentais** (um por documento de coleção, campo a campo como no modelo de dados, e os enums) ficam **só** em `src/shared/types` (`enums.ts`, `user.ts`, `catalog.ts`, `circulation.ts`, `auth.ts`, `system.ts`). Nenhum módulo nem o seed redeclara `User`, `Book`, `Loan`, status etc.; todos importam de `shared/types`.
+- **Tipos exclusivos de um módulo** ficam em `<módulo>.types.ts`.
+- **Acesso ao Firestore só em `repositories/`.** Os serviços recebem e devolvem objetos do domínio e orquestram as transações (`runTransaction`), mas não chamam `db.collection`. Os nomes das coleções vêm de `src/shared/firestore/collections.ts`; a conversão de datas, de `src/shared/firestore/converters.ts`.
+- **Regras puras em `rules/`**: sem Firestore, sem relógio escondido, com teste unitário.
+- O documento `users` novo é montado por `src/shared/domain/user.ts` (cadastro e seed); o log de auditoria, por `src/shared/audit-log.ts`.
+- **Testes em `__tests__/`** do módulo. O código de `src/shared`, `src/middlewares`, `src/config` e `src/docs` tem o teste ao lado (`*.test.ts`). O Firestore falso dos testes está em `src/test-support`.
+- **Comentários e textos de `describe`/`it` em português (pt-BR)**: toda função exportada tem uma linha dizendo o que faz e, quando houver, o requisito que atende (ex.: `RF-AUT-01`). Os nomes continuam em inglês.
+
+## Sem redundância
+
+- Antes de criar uma função, tipo, constante, schema ou mensagem de erro, **procure no projeto** (`src/shared` e o módulo) se já existe algo igual ou parecido. Se existir, reutilize; se for quase igual, **generalize o que já existe** em vez de criar outro.
+- **Nada é declarado duas vezes**: tipos fundamentais só em `src/shared/types`; nomes de coleções só em `src/shared/firestore/collections.ts`; regras usadas por mais de um módulo vão para `src/shared`.
+- **Duas funções com o mesmo objetivo e nomes diferentes são proibidas.**
+- **Texto que se repete** (status, perfis, finalidades, mensagens de erro) **vira constante tipada**. Os valores dos enums têm objetos de constantes em `src/shared/types/enums.ts` (`USER_STATUS.pendingEmail`, `USER_ROLE.student`, `EMAIL_TOKEN_PURPOSE.emailConfirmation`...): o código não escreve `'pending_email'` nem `'student'` soltos. Cada valor é escrito uma vez só, na lista do enum. Conjuntos fixos de textos de um módulo usam o mesmo `constantsOf` (`src/shared/constants-of.ts`).
+- **No fim de cada tarefa, informe** quais funções ou tipos você reutilizou e se encontrou alguma duplicação; se encontrou e não removeu, diga onde.
 
 ## Segredos
 

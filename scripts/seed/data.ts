@@ -1,19 +1,31 @@
-// Static seed data: docs/modelo-de-dados-firestore.md, sections 6.1 to 6.5.
-// Dates are "AAAA-MM-DD" (America/Fortaleza) and are only the example of the
-// documented day: the builder turns each one into an offset from BASE_DATE and
-// applies it to the day the seed runs. Nothing here is computed.
+import {
+  FINE_STATUS,
+  LOAN_STATUS,
+  QUEUE_ENTRY_STATUS,
+  USER_ROLE,
+  type UserRole,
+} from '../../src/shared/types/index.js'
 
-// The documented "today" (section 6): Thursday, 15/10/2026.
+// Dados fixos do seed: docs/modelo-de-dados-firestore.md, seções 6.1 a 6.5.
+// As datas são "AAAA-MM-DD" (America/Fortaleza) e são só o exemplo do dia
+// documentado: o montador transforma cada uma em um deslocamento a partir de
+// BASE_DATE e o aplica ao dia em que o seed roda. Nada aqui é calculado.
+
+// O "hoje" documentado (seção 6): quinta-feira, 15/10/2026.
 export const BASE_DATE = '2026-10-15'
+// Hora usada como "agora" nos dados.
 export const NOW_TIME = '12:00'
 
+// Local do acervo e do atendimento (books.location e settings.contact.place).
+export const LIBRARY_PLACE = 'Biblioteca (Praça Central)'
+
+// Domínio do e-mail interno das contas no Firebase (docs/infra.md).
 export const AUTH_EMAIL_DOMAIN = 'contas.uni-books.app'
 
-export type Role = 'student' | 'librarian'
-
+// Um usuário da seção 6.1.
 export interface UserSpec {
   key: string
-  role: Role
+  role: UserRole
   matricula: string
   fullName: string
   email: string
@@ -21,11 +33,11 @@ export interface UserSpec {
   deskLabel?: string
 }
 
-// Section 6.1. The uid of each account is `uid_<key>` (section 6.4).
+// Seção 6.1. O uid de cada conta é `uid_<chave>` (seção 6.4).
 export const USERS: UserSpec[] = [
   {
     key: 'ana',
-    role: 'librarian',
+    role: USER_ROLE.librarian,
     matricula: '0900001',
     fullName: 'Ana Souza',
     email: 'ana.souza@unifor.br',
@@ -33,7 +45,7 @@ export const USERS: UserSpec[] = [
   },
   {
     key: 'lucas',
-    role: 'student',
+    role: USER_ROLE.student,
     matricula: '2412858',
     fullName: 'Lucas Almeida',
     email: 'lucas.almeida@edu.unifor.br',
@@ -41,7 +53,7 @@ export const USERS: UserSpec[] = [
   },
   {
     key: 'marina',
-    role: 'student',
+    role: USER_ROLE.student,
     matricula: '2513320',
     fullName: 'Marina Castro',
     email: 'marina.castro@edu.unifor.br',
@@ -49,73 +61,75 @@ export const USERS: UserSpec[] = [
   },
   {
     key: 'beatriz',
-    role: 'student',
+    role: USER_ROLE.student,
     matricula: '2311052',
     fullName: 'Beatriz Nogueira',
     email: 'beatriz.nogueira@edu.unifor.br',
   },
   {
     key: 'rafael',
-    role: 'student',
+    role: USER_ROLE.student,
     matricula: '2210478',
     fullName: 'Rafael Teixeira',
     email: 'rafael.teixeira@edu.unifor.br',
   },
   {
     key: 'anabeatriz',
-    role: 'student',
+    role: USER_ROLE.student,
     matricula: '2311047',
     fullName: 'Ana Beatriz Lima',
     email: 'ana.lima@edu.unifor.br',
   },
   {
     key: 'carlos',
-    role: 'student',
+    role: USER_ROLE.student,
     matricula: '2210933',
     fullName: 'Carlos Eduardo Sá',
     email: 'carlos.sa@edu.unifor.br',
   },
   {
     key: 'pedromartins',
-    role: 'student',
+    role: USER_ROLE.student,
     matricula: '2412001',
     fullName: 'Pedro Martins',
     email: 'pedro.martins@edu.unifor.br',
   },
   {
     key: 'pedrohenrique',
-    role: 'student',
+    role: USER_ROLE.student,
     matricula: '2410221',
     fullName: 'Pedro Henrique Lima',
     email: 'pedro.hlima@edu.unifor.br',
   },
   {
     key: 'julia',
-    role: 'student',
+    role: USER_ROLE.student,
     matricula: '2320876',
     fullName: 'Júlia Martins',
     email: 'julia.martins@edu.unifor.br',
   },
   {
     key: 'camila',
-    role: 'student',
+    role: USER_ROLE.student,
     matricula: '2214567',
     fullName: 'Camila Rocha',
     email: 'camila.rocha@edu.unifor.br',
   },
   {
     key: 'diego',
-    role: 'student',
+    role: USER_ROLE.student,
     matricula: '2511903',
     fullName: 'Diego Alves',
     email: 'diego.alves@edu.unifor.br',
   },
 ]
 
+// Um exemplar de um livro.
 export interface CopySpec {
   registration: string
 }
 
+// Uma edição do acervo (seção 6.2) e os seus exemplares.
 export interface BookSpec {
   key: string
   workId: string
@@ -139,9 +153,9 @@ export interface BookSpec {
 
 const SOFTWARE = ['Desenvolvimento de software', 'Programação']
 
-// Sections 6.2 and 6.5, in the order of table 6.2 (the order sets `coverTone`).
-// The four books at the end exist only to carry the open fines (section 6.5):
-// "only the essentials", so no authors, CDU or Cutter were documented.
+// Seções 6.2 e 6.5, na ordem da tabela 6.2 (a ordem define o `coverTone`).
+// Os quatro livros do fim existem só para carregar as multas em aberto (seção
+// 6.5): "só o essencial", então não foram documentados autores, CDU nem Cutter.
 export const BOOKS: BookSpec[] = [
   {
     key: 'codigo_limpo',
@@ -346,34 +360,36 @@ export const BOOKS: BookSpec[] = [
   },
 ]
 
+// Um pedido ou empréstimo (seção 6.3).
 export interface LoanSpec {
   id: string
   student: string
   book: string
   copy: string
-  status: 'awaiting_pickup' | 'active' | 'returned'
-  // awaiting_pickup: when the order was made and its pickup deadline.
+  status: (typeof LOAN_STATUS)['awaitingPickup' | 'active' | 'returned']
+  // awaiting_pickup: quando o pedido foi feito e o prazo para retirar.
   requestedAt?: [date: string, time: string]
   pickupDeadline?: [date: string, time: string]
   pickupCode?: string
   queueEntry?: string
-  // active and returned: when it was picked up (due = +14 days, +14 if renewed).
+  // active e returned: quando foi retirado (vencimento = +14 dias, +14 se renovado).
   pickedUpOn?: string
   renewedOn?: string
   returnedAt?: [date: string, time: string]
   fine?: string
-  // Reminder already sent ("enviado ontem", docs/regras-e-decisoes.md).
+  // Lembrete já enviado ("enviado ontem", docs/regras-e-decisoes.md).
   due2DaysReminderAt?: [date: string, time: string]
 }
 
-// Sections 6.3 and 6.5. Pickup codes not documented are filled in by the builder.
+// Seções 6.3 e 6.5. Os códigos de retirada não documentados são preenchidos pelo
+// montador.
 export const LOANS: LoanSpec[] = [
   {
     id: 'loan_lucas_engenharia',
     student: 'lucas',
     book: 'engenharia_de_software',
     copy: '80141',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-02',
     due2DaysReminderAt: ['2026-10-14', '09:00'],
   },
@@ -382,7 +398,7 @@ export const LOANS: LoanSpec[] = [
     student: 'lucas',
     book: 'redes_de_computadores',
     copy: '80151',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-06',
   },
   {
@@ -390,7 +406,7 @@ export const LOANS: LoanSpec[] = [
     student: 'lucas',
     book: 'estruturas_de_dados',
     copy: '80161',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-09',
   },
   {
@@ -398,7 +414,7 @@ export const LOANS: LoanSpec[] = [
     student: 'lucas',
     book: 'codigo_limpo',
     copy: '46122',
-    status: 'awaiting_pickup',
+    status: LOAN_STATUS.awaitingPickup,
     pickupCode: 'RET-4821',
     queueEntry: 'qe_lucas_codigo_limpo',
     requestedAt: ['2026-10-15', '09:30'],
@@ -409,7 +425,7 @@ export const LOANS: LoanSpec[] = [
     student: 'beatriz',
     book: 'padroes_de_projeto',
     copy: '51902',
-    status: 'awaiting_pickup',
+    status: LOAN_STATUS.awaitingPickup,
     pickupCode: 'RET-4817',
     requestedAt: ['2026-10-13', '12:00'],
     pickupDeadline: ['2026-10-15', '21:55'],
@@ -419,7 +435,7 @@ export const LOANS: LoanSpec[] = [
     student: 'rafael',
     book: 'calculo_vol2',
     copy: '80131',
-    status: 'awaiting_pickup',
+    status: LOAN_STATUS.awaitingPickup,
     pickupCode: 'RET-4809',
     requestedAt: ['2026-10-14', '12:00'],
     pickupDeadline: ['2026-10-16', '21:55'],
@@ -429,7 +445,7 @@ export const LOANS: LoanSpec[] = [
     student: 'marina',
     book: 'calculo_vol1',
     copy: '80121',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-09-26',
     fine: 'fine_marina_calculo1',
   },
@@ -438,7 +454,7 @@ export const LOANS: LoanSpec[] = [
     student: 'pedromartins',
     book: 'arquitetura_limpa',
     copy: '80101',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-07',
   },
   {
@@ -446,7 +462,7 @@ export const LOANS: LoanSpec[] = [
     student: 'julia',
     book: 'codigo_limpo',
     copy: '223223',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-09-30',
     renewedOn: '2026-10-07',
   },
@@ -455,7 +471,7 @@ export const LOANS: LoanSpec[] = [
     student: 'camila',
     book: 'codigo_limpo',
     copy: '223323',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-06',
     renewedOn: '2026-10-08',
   },
@@ -464,7 +480,7 @@ export const LOANS: LoanSpec[] = [
     student: 'diego',
     book: 'refatoracao',
     copy: '51736',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-08',
   },
   {
@@ -472,7 +488,7 @@ export const LOANS: LoanSpec[] = [
     student: 'marina',
     book: 'code_complete',
     copy: '80171',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-05',
   },
   {
@@ -480,7 +496,7 @@ export const LOANS: LoanSpec[] = [
     student: 'marina',
     book: 'algoritmos_3a',
     copy: '60411',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-03',
   },
   {
@@ -488,7 +504,7 @@ export const LOANS: LoanSpec[] = [
     student: 'pedrohenrique',
     book: 'algoritmos_3a',
     copy: '60412',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-13',
   },
   {
@@ -496,7 +512,7 @@ export const LOANS: LoanSpec[] = [
     student: 'anabeatriz',
     book: 'algoritmos_4a',
     copy: '71880',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-07',
   },
   {
@@ -504,16 +520,16 @@ export const LOANS: LoanSpec[] = [
     student: 'rafael',
     book: 'algoritmos_4a',
     copy: '71881',
-    status: 'active',
+    status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-09',
   },
-  // Returned loans behind the four open fines (section 6.5).
+  // Empréstimos devolvidos por trás das quatro multas em aberto (seção 6.5).
   {
     id: 'loan_pedrohenrique_fisica',
     student: 'pedrohenrique',
     book: 'fisica_basica_vol2',
     copy: '80181',
-    status: 'returned',
+    status: LOAN_STATUS.returned,
     pickedUpOn: '2026-09-21',
     returnedAt: ['2026-10-13', '12:00'],
     fine: 'fine_pedrohenrique_fisica',
@@ -523,7 +539,7 @@ export const LOANS: LoanSpec[] = [
     student: 'julia',
     book: 'contabilidade_introdutoria',
     copy: '80182',
-    status: 'returned',
+    status: LOAN_STATUS.returned,
     pickedUpOn: '2026-09-23',
     returnedAt: ['2026-10-09', '12:00'],
     fine: 'fine_julia_contabilidade',
@@ -533,7 +549,7 @@ export const LOANS: LoanSpec[] = [
     student: 'camila',
     book: 'direito_civil_parte_geral',
     copy: '80183',
-    status: 'returned',
+    status: LOAN_STATUS.returned,
     pickedUpOn: '2026-09-14',
     returnedAt: ['2026-10-02', '12:00'],
     fine: 'fine_camila_direito',
@@ -543,31 +559,33 @@ export const LOANS: LoanSpec[] = [
     student: 'diego',
     book: 'anatomia_humana',
     copy: '80184',
-    status: 'returned',
+    status: LOAN_STATUS.returned,
     pickedUpOn: '2026-09-11',
     returnedAt: ['2026-09-30', '12:00'],
     fine: 'fine_diego_anatomia',
   },
 ]
 
+// Um lugar na fila (seção 6.3).
 export interface QueueSpec {
   id: string
   student: string
   book: string
-  status: 'waiting' | 'fulfilled'
+  status: (typeof QUEUE_ENTRY_STATUS)['waiting' | 'fulfilled']
   order: number
   joinedOn: string
-  // Lucas's turn in Código Limpo: started at 09:12 today, confirmed at 09:30.
+  // Vez do Lucas em Código Limpo: começou às 09:12 de hoje e foi confirmada às
+  // 09:30.
   loan?: string
 }
 
-// Sections 6.3 and 6.5. `joinedAt` is at 10:00 (section 6.4 example).
+// Seções 6.3 e 6.5. `joinedAt` é às 10:00 (exemplo da seção 6.4).
 export const QUEUE_ENTRIES: QueueSpec[] = [
   {
     id: 'qe_anabeatriz_arquitetura',
     student: 'anabeatriz',
     book: 'arquitetura_limpa',
-    status: 'waiting',
+    status: QUEUE_ENTRY_STATUS.waiting,
     order: 1000,
     joinedOn: '2026-10-02',
   },
@@ -575,7 +593,7 @@ export const QUEUE_ENTRIES: QueueSpec[] = [
     id: 'qe_lucas_arquitetura',
     student: 'lucas',
     book: 'arquitetura_limpa',
-    status: 'waiting',
+    status: QUEUE_ENTRY_STATUS.waiting,
     order: 2000,
     joinedOn: '2026-10-08',
   },
@@ -583,7 +601,7 @@ export const QUEUE_ENTRIES: QueueSpec[] = [
     id: 'qe_carlos_arquitetura',
     student: 'carlos',
     book: 'arquitetura_limpa',
-    status: 'waiting',
+    status: QUEUE_ENTRY_STATUS.waiting,
     order: 3000,
     joinedOn: '2026-10-10',
   },
@@ -591,7 +609,7 @@ export const QUEUE_ENTRIES: QueueSpec[] = [
     id: 'qe_marina_arquitetura',
     student: 'marina',
     book: 'arquitetura_limpa',
-    status: 'waiting',
+    status: QUEUE_ENTRY_STATUS.waiting,
     order: 4000,
     joinedOn: '2026-10-09',
   },
@@ -599,7 +617,7 @@ export const QUEUE_ENTRIES: QueueSpec[] = [
     id: 'qe_beatriz_engenharia',
     student: 'beatriz',
     book: 'engenharia_de_software',
-    status: 'waiting',
+    status: QUEUE_ENTRY_STATUS.waiting,
     order: 1000,
     joinedOn: '2026-10-05',
   },
@@ -607,7 +625,7 @@ export const QUEUE_ENTRIES: QueueSpec[] = [
     id: 'qe_diego_engenharia',
     student: 'diego',
     book: 'engenharia_de_software',
-    status: 'waiting',
+    status: QUEUE_ENTRY_STATUS.waiting,
     order: 2000,
     joinedOn: '2026-10-13',
   },
@@ -615,7 +633,7 @@ export const QUEUE_ENTRIES: QueueSpec[] = [
     id: 'qe_lucas_codigo_limpo',
     student: 'lucas',
     book: 'codigo_limpo',
-    status: 'fulfilled',
+    status: QUEUE_ENTRY_STATUS.fulfilled,
     order: 1000,
     joinedOn: '2026-10-09',
     loan: 'loan_ret4821',
@@ -624,53 +642,56 @@ export const QUEUE_ENTRIES: QueueSpec[] = [
     id: 'qe_carlos_codigo_limpo',
     student: 'carlos',
     book: 'codigo_limpo',
-    status: 'waiting',
+    status: QUEUE_ENTRY_STATUS.waiting,
     order: 2000,
     joinedOn: '2026-10-10',
   },
 ]
 
+// Uma multa (seção 6.5).
 export interface FineSpec {
   id: string
   loan: string
-  status: 'accruing' | 'open'
-  // Open fines are frozen: their days (and amounts) stay fixed (section 6.5).
+  status: (typeof FINE_STATUS)['accruing' | 'open']
+  // Multas em aberto são congeladas: os dias (e os valores) ficam fixos (seção
+  // 6.5).
   businessDaysLate?: number
 }
 
+// Multas da seção 6.5.
 export const FINES: FineSpec[] = [
   {
     id: 'fine_marina_calculo1',
     loan: 'loan_marina_calculo1',
-    status: 'accruing',
+    status: FINE_STATUS.accruing,
   },
   {
     id: 'fine_pedrohenrique_fisica',
     loan: 'loan_pedrohenrique_fisica',
-    status: 'open',
+    status: FINE_STATUS.open,
     businessDaysLate: 5,
   },
   {
     id: 'fine_julia_contabilidade',
     loan: 'loan_julia_contabilidade',
-    status: 'open',
+    status: FINE_STATUS.open,
     businessDaysLate: 2,
   },
   {
     id: 'fine_camila_direito',
     loan: 'loan_camila_direito',
-    status: 'open',
+    status: FINE_STATUS.open,
     businessDaysLate: 4,
   },
   {
     id: 'fine_diego_anatomia',
     loan: 'loan_diego_anatomia',
-    status: 'open',
+    status: FINE_STATUS.open,
     businessDaysLate: 3,
   },
 ]
 
-// Lucas's saved books and folders (section 6.5): the first folder holds three books.
+// Livros salvos e pastas do Lucas (seção 6.5): a primeira pasta tem três livros.
 export const LUCAS_FOLDERS = [
   {
     id: 'folder_ler_depois',

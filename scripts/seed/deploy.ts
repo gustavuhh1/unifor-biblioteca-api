@@ -1,11 +1,5 @@
 import { spawnSync } from 'node:child_process'
-
-// docs/modelo-de-dados-firestore.md, section 4.3: TTL policies (field `expiresAt`).
-const TTL_COLLECTION_GROUPS = [
-  'emailTokens',
-  'passkeyChallenges',
-  'assistantActions',
-] as const
+import { TTL_COLLECTION_GROUPS } from '../../src/shared/firestore/collections.js'
 
 function run(command: string, args: string[]): boolean {
   const result = spawnSync(command, args, {
@@ -15,10 +9,10 @@ function run(command: string, args: string[]): boolean {
   return !result.error && result.status === 0
 }
 
-// Section 8, step 8 (production only): publishes the indexes and the security
-// rules and enables the TTL policies. The emulator reads the rules from
-// firebase.json, ignores indexes and has no TTL, so it skips this step.
-// Returns the commands that failed, so the caller can print them.
+// Seção 8, passo 8 (só produção): publica os índices e as regras de segurança e
+// ativa as políticas de TTL. O emulador lê as regras do firebase.json, ignora
+// índices e não tem TTL, então pula este passo. Devolve os comandos que
+// falharam, para quem chamou poder mostrá-los.
 export function publishFirestoreConfig(projectId: string): string[] {
   const failed: string[] = []
 

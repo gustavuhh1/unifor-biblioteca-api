@@ -1,48 +1,18 @@
 import type { Firestore } from 'firebase-admin/firestore'
+import { ROOT_COLLECTIONS } from '../../src/shared/firestore/collections.js'
 import type { Write } from './build.js'
 
-// Collections of docs/modelo-de-dados-firestore.md, section 1.1. Clearing a
-// document also clears its subcollections (users/{uid}/...).
-export const COLLECTIONS = [
-  'users',
-  'matriculaIndex',
-  'emailIndex',
-  'emailTokens',
-  'passkeys',
-  'passkeyChallenges',
-  'works',
-  'books',
-  'copies',
-  'loans',
-  'queueEntries',
-  'fines',
-  'recommendations',
-  'holidays',
-  'recesses',
-  'settings',
-  'auditLog',
-  'jobRuns',
-] as const
-
-// Collection groups counted in the final summary (section 1.1).
-export const SUBCOLLECTIONS = [
-  'savedBooks',
-  'folders',
-  'notifications',
-  'devices',
-  'assistantMessages',
-  'assistantActions',
-] as const
-
+// Apaga todas as coleções de nível raiz, com as subcoleções delas.
 export async function clearDatabase(db: Firestore): Promise<void> {
-  for (const name of COLLECTIONS) {
+  for (const name of ROOT_COLLECTIONS) {
     await db.recursiveDelete(db.collection(name))
   }
 }
 
+// Grava todas as escritas da carga, em lote.
 export async function writeAll(db: Firestore, writes: Write[]): Promise<void> {
   const writer = db.bulkWriter()
-  // Attach the handler right away so a failed write is never "unhandled".
+  // Liga o tratamento já, para uma escrita que falhe nunca ficar "sem tratamento".
   const settled = Promise.all(
     writes.map(({ path, data }) => writer.set(db.doc(path), data)),
   )

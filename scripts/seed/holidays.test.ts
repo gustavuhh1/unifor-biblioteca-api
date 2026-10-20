@@ -8,7 +8,7 @@ import {
 
 const fetchedAt = new Date('2026-10-18T12:00:00Z')
 
-// Shape documented by FeriadosAPI: dates as dd/MM/yyyy, type in capitals.
+// Formato documentado pela FeriadosAPI: datas em dd/MM/yyyy e tipo em maiúsculas.
 const apiResponse = {
   cidade: { ibge: 2304400, nome: 'Fortaleza', uf: 'CE' },
   ano: '2026',
@@ -30,8 +30,8 @@ const apiResponse = {
   meta: { total: 3, page: 1, per_page: 50, total_pages: 1 },
 }
 
-describe('parseHolidaysResponse', () => {
-  it('converts dates and types, sorted by date', () => {
+describe('resposta da FeriadosAPI (parseHolidaysResponse)', () => {
+  it('converte datas e tipos, em ordem de data', () => {
     const document = parseHolidaysResponse(apiResponse, 2026, fetchedAt)
 
     expect(document).toEqual({
@@ -51,7 +51,7 @@ describe('parseHolidaysResponse', () => {
     })
   })
 
-  it('refuses a holiday type it does not know', () => {
+  it('recusa um tipo de feriado desconhecido', () => {
     const body = {
       ...apiResponse,
       feriados: [{ id: '1', data: '01/01/2026', nome: 'X', tipo: 'OUTRO' }],
@@ -60,15 +60,15 @@ describe('parseHolidaysResponse', () => {
     expect(() => parseHolidaysResponse(body, 2026, fetchedAt)).toThrow(/OUTRO/)
   })
 
-  it('refuses a paginated answer instead of silently dropping holidays', () => {
+  it('recusa uma resposta paginada em vez de perder feriados em silêncio', () => {
     const body = { ...apiResponse, meta: { total_pages: 2 } }
 
     expect(() => parseHolidaysResponse(body, 2026, fetchedAt)).toThrow(/page/)
   })
 })
 
-describe('fetchHolidays', () => {
-  it('sends the key as a Bearer token and asks for Fortaleza', async () => {
+describe('busca na FeriadosAPI (fetchHolidays)', () => {
+  it('envia a chave como Bearer token e pede Fortaleza', async () => {
     const fetchMock = vi.fn(async () => Response.json(apiResponse))
 
     await fetchHolidays(2026, 'dummy-key', fetchMock as unknown as typeof fetch)
@@ -79,7 +79,7 @@ describe('fetchHolidays', () => {
     )
   })
 
-  it('fails with the HTTP status, never with the key', async () => {
+  it('falha com o status HTTP, nunca com a chave', async () => {
     const fetchMock = vi.fn(async () => new Response('no', { status: 401 }))
 
     await expect(
@@ -88,8 +88,8 @@ describe('fetchHolidays', () => {
   })
 })
 
-describe('local file scripts/data/holidays-2026.json', () => {
-  it('has the Fortaleza holidays, including the 12/10 national holiday', async () => {
+describe('arquivo local scripts/data/holidays-2026.json', () => {
+  it('tem os feriados de Fortaleza, incluindo o feriado nacional de 12/10', async () => {
     const document = await loadHolidaysFile(2026)
 
     expect(document).toMatchObject({

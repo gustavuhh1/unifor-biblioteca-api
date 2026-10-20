@@ -1,9 +1,9 @@
-// Database seed: docs/modelo-de-dados-firestore.md, section 8.
-//   npm run seed                      Emulator Suite only (default)
-//   npm run seed -- --prod            production, with a typed confirmation
-//   npm run seed -- --prod --reset    production, wiping the collections first
-//   npm run seed -- --no-google-books skip the Google Books requests
-//   npm run seed -- --offline         no external call (holidays from the local file)
+// Carga do banco: docs/modelo-de-dados-firestore.md, seção 8.
+//   npm run seed                      só no Emulator Suite (padrão)
+//   npm run seed -- --prod            produção, com confirmação digitada
+//   npm run seed -- --prod --reset    produção, apagando as coleções antes
+//   npm run seed -- --no-google-books pula as requisições ao Google Books
+//   npm run seed -- --offline         nenhuma chamada externa (feriados do arquivo local)
 import { getAdminAuth, getDb } from '../src/config/firebase.js'
 import { env } from '../src/config/env.js'
 import { upsertAccounts } from './seed/accounts.js'
@@ -79,7 +79,7 @@ async function main(): Promise<number> {
   }
   const password = process.env.SEED_TEST_PASSWORD!
 
-  // "Today" is the day the seed runs: every date of the data follows it.
+  // "Hoje" é o dia em que o seed roda: todas as datas dos dados seguem esse dia.
   const today = localDate(new Date())
   const year = Number(today.slice(0, 4))
 
@@ -89,7 +89,8 @@ async function main(): Promise<number> {
       console.error('Cancelado: a confirmação não confere. Nada foi gravado.')
       return 1
     }
-    // The Admin SDK reads these on first use: without them it targets production.
+    // O Admin SDK lê estas variáveis no primeiro uso: sem elas ele aponta para a
+    // produção.
     delete process.env.FIRESTORE_EMULATOR_HOST
     delete process.env.FIREBASE_AUTH_EMULATOR_HOST
     console.log(`  PRODUÇÃO (projeto ${env.GOOGLE_CLOUD_PROJECT})`)

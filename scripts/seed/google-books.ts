@@ -23,13 +23,13 @@ const volumeSchema = z.object({
 type Sleep = (ms: number) => Promise<void>
 const wait: Sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-// Google documents 503 (backendFailed) and 429 as "retry with backoff".
+// O Google documenta 503 (backendFailed) e 429 como "tente de novo com espera".
 const MAX_ATTEMPTS = 4
 const BASE_DELAY_MS = 1000
 
 class HttpError extends Error {
   constructor(readonly status: number) {
-    // Only the status is reported: the URL carries the API key.
+    // Só o status é informado: a URL leva a chave da API.
     super(`HTTP ${status}`)
   }
 }
@@ -37,7 +37,7 @@ class HttpError extends Error {
 const isRetryable = (error: unknown) =>
   error instanceof HttpError
     ? error.status === 429 || error.status >= 500
-    : error instanceof TypeError // network failure from fetch
+    : error instanceof TypeError // falha de rede do fetch
 
 async function getJson(
   url: string,
@@ -56,19 +56,20 @@ async function getJson(
   }
 }
 
+// Quantos livros foram completados, não encontrados e com falha.
 export interface EnrichResult {
   enriched: number
   notFound: number
   failed: number
 }
 
-// Completes cover, synopsis and publisher of the books that have an ISBN, with
-// the two Google Books requests of RF-ACE-04: search by ISBN, then the volume.
+// Completa capa, sinopse e editora dos livros que têm ISBN, com as duas
+// requisições ao Google Books do RF-ACE-04: busca pelo ISBN e depois o volume.
 //
-// The API sometimes answers 200 with no items for an ISBN that exists, so an
-// empty search is repeated before giving up. If it stays empty, or if the API
-// fails, the local data (including the documented `googleBooks`) is kept
-// (RNF-CON-03) and the seed goes on.
+// A API às vezes responde 200 sem itens para um ISBN que existe, então uma busca
+// vazia é repetida antes de desistir. Se continuar vazia, ou se a API falhar, os
+// dados locais (inclusive o `googleBooks` documentado) são mantidos
+// (RNF-CON-03) e o seed segue em frente.
 export async function enrichFromGoogleBooks(
   books: SeedData['books'],
   apiKey: string,
