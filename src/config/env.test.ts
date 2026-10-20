@@ -31,12 +31,12 @@ describe('variáveis de ambiente (parseEnv)', () => {
       NODE_ENV: 'production',
       PASSKEY_RP_ID: 'uni-books.app',
       AUTH_EMAIL_DOMAIN: 'contas.uni-books.app',
-      FIRESTORE_EMULATOR_HOST: '127.0.0.1:8081',
+      FIRESTORE_EMULATOR_HOST: '127.0.0.1:8085',
       RESEND_API_KEY: 'dummy-key',
     })
 
     expect(env.NODE_ENV).toBe('production')
-    expect(env.FIRESTORE_EMULATOR_HOST).toBe('127.0.0.1:8081')
+    expect(env.FIRESTORE_EMULATOR_HOST).toBe('127.0.0.1:8085')
     expect(env.RESEND_API_KEY).toBe('dummy-key')
   })
 
