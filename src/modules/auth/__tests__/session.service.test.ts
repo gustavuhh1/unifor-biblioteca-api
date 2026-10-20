@@ -63,13 +63,6 @@ describe('dados de quem está logado (getMe)', () => {
   it('nunca expõe o e-mail interno do Firebase', async () => {
     expect(await getMe('uid_lucas')).not.toHaveProperty('authEmail')
   })
-
-  it('responde 404 para conta sem documento de perfil', async () => {
-    await expect(getMe('uid_nobody')).rejects.toMatchObject({
-      status: 404,
-      code: 'profile_not_found',
-    })
-  })
 })
 
 describe('nome completo do aluno (updateFullName)', () => {

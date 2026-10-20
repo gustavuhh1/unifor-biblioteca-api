@@ -16,3 +16,4 @@ scripts
 Dockerfile
 .dockerignore
 *.md
+hosting

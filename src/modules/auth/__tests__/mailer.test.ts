@@ -7,13 +7,13 @@ describe('modo de envio do e-mail (mailMode)', () => {
     expect(
       mailMode({
         RESEND_API_KEY: 'key',
-        FIRESTORE_EMULATOR_HOST: '127.0.0.1:8081',
+        FIRESTORE_EMULATOR_HOST: '127.0.0.1:8085',
       }),
     ).toBe('resend')
   })
 
   it('escreve o token no console só no emulador e sem chave', () => {
-    expect(mailMode({ FIRESTORE_EMULATOR_HOST: '127.0.0.1:8081' })).toBe(
+    expect(mailMode({ FIRESTORE_EMULATOR_HOST: '127.0.0.1:8085' })).toBe(
       'console',
     )
   })
