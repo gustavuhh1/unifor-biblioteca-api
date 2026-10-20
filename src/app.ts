@@ -1,6 +1,7 @@
 import express from 'express'
 import { createDocsRouter } from './docs/swagger.js'
 import { errorHandler, notFoundHandler } from './middlewares/error-handler.js'
+import { createRequestLogger } from './middlewares/request-logger.js'
 import { authRouter } from './modules/auth/auth.routes.js'
 import { healthResponseSchema } from './shared/health.js'
 
@@ -8,6 +9,7 @@ import { healthResponseSchema } from './shared/health.js'
 export const app = express()
 
 app.disable('x-powered-by')
+app.use(createRequestLogger())
 app.use(express.json())
 
 app.get('/health', (_req, res) => {
