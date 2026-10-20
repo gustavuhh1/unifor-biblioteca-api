@@ -1,7 +1,6 @@
 import { getAdminAuth } from '../../../config/firebase.js'
 import { initialsOf, normalizeText } from '../../../shared/text.js'
 import type { User } from '../../../shared/types/index.js'
-import { profileNotFound } from '../auth.errors.js'
 import type { MeResponse } from '../auth.types.js'
 import * as usersRepository from '../repositories/users.repository.js'
 
@@ -31,11 +30,11 @@ function toMe(uid: string, user: User): MeResponse {
   }
 }
 
-// Devolve os dados de quem está logado (GET /me).
+// Devolve os dados de quem está logado (GET /me). O authenticate já respondeu
+// 403 para conta sem perfil, então o documento existe aqui.
 export async function getMe(uid: string): Promise<MeResponse> {
   const user = await usersRepository.findById(uid)
-  if (!user) throw profileNotFound()
-  return toMe(uid, user)
+  return toMe(uid, user as User)
 }
 
 // O aluno informa o nome completo depois do cadastro (PATCH /me, decidido em
