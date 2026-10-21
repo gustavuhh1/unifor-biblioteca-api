@@ -1,10 +1,11 @@
 import type { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
 import { getDb } from '../../../config/firebase.js'
-import {
-  COLLECTIONS,
-  SETTINGS_DOC_ID,
-} from '../../../shared/firestore/collections.js'
+import { COLLECTIONS } from '../../../shared/firestore/collections.js'
 import { dataWithDates } from '../../../shared/firestore/converters.js'
+import {
+  positiveNumberOr,
+  readLibrarySettings,
+} from '../../../shared/firestore/settings.js'
 import type {
   EmailToken,
   EmailTokenPurpose,
@@ -46,18 +47,13 @@ function toRecord(snapshot: DocumentSnapshot): EmailTokenRecord {
 // (emailTokenMinutes e emailTokenMaxAttempts). Sem o documento, valem 20
 // minutos e 5 tentativas.
 export async function readTokenSettings(): Promise<TokenSettings> {
-  const snapshot = await getDb()
-    .collection(COLLECTIONS.settings)
-    .doc(SETTINGS_DOC_ID)
-    .get()
-  const positive = (value: unknown, fallback: number) =>
-    typeof value === 'number' && value > 0 ? value : fallback
+  const snapshot = await readLibrarySettings()
   return {
-    ttlMinutes: positive(
+    ttlMinutes: positiveNumberOr(
       snapshot.get('emailTokenMinutes'),
       DEFAULT_TOKEN_SETTINGS.ttlMinutes,
     ),
-    maxAttempts: positive(
+    maxAttempts: positiveNumberOr(
       snapshot.get('emailTokenMaxAttempts'),
       DEFAULT_TOKEN_SETTINGS.maxAttempts,
     ),

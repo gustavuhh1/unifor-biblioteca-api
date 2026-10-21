@@ -9,7 +9,6 @@ import {
   NOW_TIME,
   QUEUE_ENTRIES,
   USERS,
-  type BookSpec,
   type LoanSpec,
 } from './data.js'
 import { buildUserDocument } from '../../src/shared/domain/user.js'

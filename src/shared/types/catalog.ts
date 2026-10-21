@@ -69,6 +69,9 @@ export interface Book extends Timestamps {
   createdBy?: string
 }
 
+// Livro lido do banco, com o seu id (o id do documento).
+export type BookRecord = Book & { id: string }
+
 // copies/{copyId}: cada exemplar físico.
 export interface Copy extends Timestamps {
   bookId: string
@@ -87,3 +90,6 @@ export interface Copy extends Timestamps {
   // Cópia de loans.dueAt quando on_loan.
   dueAt?: Date
 }
+
+// Exemplar lido do banco, com o seu id.
+export type CopyRecord = Copy & { id: string }

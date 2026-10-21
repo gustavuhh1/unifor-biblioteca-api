@@ -3,11 +3,18 @@
 // `Date` como estão e executa uma transação guardando as escritas e aplicando-as
 // só se a função terminar sem erro.
 
+import { FieldValue } from 'firebase-admin/firestore'
+
 type Data = Record<string, unknown>
 type Op =
   | { kind: 'set'; path: string; data: Data }
   | { kind: 'update'; path: string; data: Data }
   | { kind: 'delete'; path: string }
+
+// Diz se o valor é o FieldValue.delete() do Firestore (apagar o campo).
+function isDeleteSentinel(value: unknown): boolean {
+  return value instanceof FieldValue && value.isEqual(FieldValue.delete())
+}
 
 // Documento lido, como o DocumentSnapshot do Firestore.
 export class FakeSnapshot {
@@ -53,7 +60,13 @@ export class FakeDocRef {
   }
 }
 
-type Filter = { field: string; value: unknown }
+type Operator = '==' | 'in'
+type Filter = { field: string; op: Operator; value: unknown }
+
+// Diz se o valor do campo passa no filtro (igualdade ou "está na lista").
+function matches(actual: unknown, { op, value }: Filter): boolean {
+  return op === 'in' ? (value as unknown[]).includes(actual) : actual === value
+}
 
 // Consulta com where, orderBy e limit, como a Query do Firestore.
 export class FakeQuery {
@@ -64,11 +77,11 @@ export class FakeQuery {
     private readonly order?: { field: string; direction: 'asc' | 'desc' },
     private readonly max?: number,
   ) {}
-  where(field: string, _op: '==', value: unknown) {
+  where(field: string, op: Operator, value: unknown) {
     return new FakeQuery(
       this.store,
       this.collectionName,
-      [...this.filters, { field, value }],
+      [...this.filters, { field, op, value }],
       this.order,
       this.max,
     )
@@ -96,7 +109,7 @@ export class FakeQuery {
       .idsOf(this.collectionName)
       .map((id) => this.store.snapshot(this.store.doc(this.collectionName, id)))
       .filter((snap) =>
-        this.filters.every(({ field, value }) => snap.get(field) === value),
+        this.filters.every((filter) => matches(snap.get(filter.field), filter)),
       )
     if (this.order) {
       const { field, direction } = this.order
@@ -177,7 +190,12 @@ export class FakeFirestore {
     else {
       const current = this.docs.get(op.path)
       if (!current) throw new Error(`No document to update at ${op.path}`)
-      this.docs.set(op.path, { ...current, ...op.data })
+      const next = { ...current }
+      for (const [field, value] of Object.entries(op.data)) {
+        if (isDeleteSentinel(value)) delete next[field]
+        else next[field] = value
+      }
+      this.docs.set(op.path, next)
     }
   }
   async runTransaction<T>(fn: (tx: FakeTransaction) => Promise<T>) {
@@ -188,8 +206,8 @@ export class FakeFirestore {
   }
 
   // --- apoio para os testes ---
-  put(collectionName: string, id: string, data: Data) {
-    this.docs.set(`${collectionName}/${id}`, { ...data })
+  put(collectionName: string, id: string, data: object) {
+    this.docs.set(`${collectionName}/${id}`, { ...data } as Data)
   }
   read(collectionName: string, id: string): Data | undefined {
     return this.docs.get(`${collectionName}/${id}`)
