@@ -1,6 +1,7 @@
 import type { Transaction } from 'firebase-admin/firestore'
 import { getDb } from '../config/firebase.js'
 import { COLLECTIONS } from './firestore/collections.js'
+import { withoutUndefined } from './firestore/converters.js'
 import type { AuditLogEntry } from './types/index.js'
 
 // Dados de uma entrada do log; createdAt e updatedAt são preenchidos aqui.
@@ -13,11 +14,8 @@ export function writeAuditLog(
   entry: AuditLogInput,
   now: Date,
 ): void {
-  const defined = Object.fromEntries(
-    Object.entries(entry).filter(([, value]) => value !== undefined),
-  )
   tx.set(getDb().collection(COLLECTIONS.auditLog).doc(), {
-    ...defined,
+    ...withoutUndefined(entry),
     createdAt: now,
     updatedAt: now,
   })

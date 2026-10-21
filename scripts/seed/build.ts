@@ -4,7 +4,6 @@ import {
   BASE_DATE,
   BOOKS,
   FINES,
-  LIBRARY_PLACE,
   LOANS,
   LUCAS_FOLDERS,
   NOW_TIME,
@@ -19,6 +18,14 @@ import {
   SETTINGS_DOC_ID,
   userSubcollectionPath,
 } from '../../src/shared/firestore/collections.js'
+import { withoutUndefined } from '../../src/shared/firestore/converters.js'
+import {
+  DEFAULT_BOOK_LANGUAGE,
+  DEFAULT_COPY_FORMAT,
+  DEFAULT_MATERIAL_TYPE,
+  LIBRARY_PLACE,
+} from '../../src/shared/library.js'
+import { buildSearchText } from '../../src/shared/search-text.js'
 import { normalizeText } from '../../src/shared/text.js'
 import { LIBRARY_TIMEZONE } from '../../src/shared/time.js'
 import {
@@ -165,8 +172,8 @@ export function buildSeed(options: BuildOptions): SeedData {
       publicationPlace: spec.publicationPlace,
       edition: spec.edition,
       year: spec.year,
-      language: 'Português',
-      materialType: 'Livro',
+      language: DEFAULT_BOOK_LANGUAGE,
+      materialType: DEFAULT_MATERIAL_TYPE,
       series: spec.series,
       subjects: spec.subjects,
       synopsis: spec.synopsis,
@@ -185,7 +192,7 @@ export function buildSeed(options: BuildOptions): SeedData {
       queueLength: 0,
       unavailableForNewRequests: spec.unavailableForNewRequests ?? false,
       status: BOOK_STATUS.active,
-      searchText: searchTextOf(spec),
+      searchText: buildSearchText(spec),
       ...stamps(),
     }
     for (const { registration } of spec.copies) {
@@ -193,7 +200,7 @@ export function buildSeed(options: BuildOptions): SeedData {
         bookId: id,
         workId: spec.workId,
         registration,
-        format: 'Impresso',
+        format: DEFAULT_COPY_FORMAT,
         libraryCode: '1163 · Biblioteca · Livros',
         status: COPY_STATUS.available,
         ...stamps(),
@@ -600,35 +607,13 @@ export function buildSeed(options: BuildOptions): SeedData {
   }
 }
 
-// `searchText`: título, subtítulo, autores, assuntos e ISBN (seções 2.7 e 6.4).
-function searchTextOf(spec: BookSpec): string {
-  return normalizeText(
-    [spec.title, spec.subtitle, ...spec.authors, ...spec.subjects, spec.isbn]
-      .filter(Boolean)
-      .join(' '),
-  )
-}
-
-// Remove os campos `undefined` (o Firestore os recusa), mantendo `null` e datas.
-function clean(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(clean)
-  if (value && typeof value === 'object' && !(value instanceof Date)) {
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([, field]) => field !== undefined)
-        .map(([key, field]) => [key, clean(field)]),
-    )
-  }
-  return value
-}
-
 function inCollection(
   collection: string,
   docs: Record<string, object>,
 ): Write[] {
   return Object.entries(docs).map(([id, data]) => ({
     path: `${collection}/${id}`,
-    data: clean(data) as Doc,
+    data: withoutUndefined(data) as Doc,
   }))
 }
 

@@ -33,3 +33,22 @@ export function dataWithDates(
   }
   return data
 }
+
+// Copia o valor tirando os campos `undefined`, que o Firestore recusa. Mantém
+// `null`, datas e os demais valores como estão. Todo documento gravado passa por
+// aqui quando tem campos opcionais.
+export function withoutUndefined<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(withoutUndefined) as T
+  if (
+    value !== null &&
+    typeof value === 'object' &&
+    Object.getPrototypeOf(value) === Object.prototype
+  ) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, field]) => field !== undefined)
+        .map(([key, field]) => [key, withoutUndefined(field)]),
+    ) as T
+  }
+  return value
+}

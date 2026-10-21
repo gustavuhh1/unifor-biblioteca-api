@@ -8,6 +8,9 @@ export interface FieldError {
 export interface ErrorExtra {
   fields?: FieldError[]
   retryAfterSeconds?: number
+  // O que o usuário pode fazer no lugar, como código estável em inglês (ex.:
+  // "mark_unavailable").
+  suggestion?: string
 }
 
 // Erro da API com status HTTP. O `code` é um identificador estável, em inglês,

@@ -5,6 +5,10 @@ describe('texto normalizado (normalizeText)', () => {
   it('passa para minúsculas e tira os acentos', () => {
     expect(normalizeText('João da Conceição')).toBe('joao da conceicao')
   })
+
+  it('tira os espaços das pontas e junta os repetidos', () => {
+    expect(normalizeText('  Código \t  Limpo  ')).toBe('codigo limpo')
+  })
 })
 
 describe('iniciais do aluno (initialsOf)', () => {

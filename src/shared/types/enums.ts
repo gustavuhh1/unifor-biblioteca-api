@@ -72,6 +72,13 @@ export type DataSource = (typeof DATA_SOURCES)[number]
 // Valores com nome (cada texto escrito uma vez só): DATA_SOURCE.googleBooks, DATA_SOURCE.manual.
 export const DATA_SOURCE = constantsOf(DATA_SOURCES)
 
+// O que a página do livro sugere ao aluno: pedir o empréstimo (há exemplar
+// disponível) ou entrar na fila (não há).
+export const ELIGIBILITY_ACTIONS = ['request', 'join_queue'] as const
+export type EligibilityAction = (typeof ELIGIBILITY_ACTIONS)[number]
+// Valores com nome (cada texto escrito uma vez só): ELIGIBILITY_ACTION.request, ELIGIBILITY_ACTION.joinQueue.
+export const ELIGIBILITY_ACTION = constantsOf(ELIGIBILITY_ACTIONS)
+
 // --- Circulação --------------------------------------------------------------
 
 // Pedido e empréstimo (loans.status).
@@ -200,8 +207,10 @@ export type AssistantActionStatus = (typeof ASSISTANT_ACTION_STATUSES)[number]
 // Valores com nome (cada texto escrito uma vez só): ASSISTANT_ACTION_STATUS.proposed, ASSISTANT_ACTION_STATUS.confirmed.
 export const ASSISTANT_ACTION_STATUS = constantsOf(ASSISTANT_ACTION_STATUSES)
 
-// Motivo de uma ação bloqueada (assistantActions.blockedReason).
-export const ASSISTANT_BLOCKED_REASONS = [
+// Motivo de um pedido ou de uma entrada na fila estar bloqueado. Vale para a
+// ação do Assistente (assistantActions.blockedReason) e para o bloco de ação da
+// página do livro.
+export const BLOCKED_REASONS = [
   'overdue',
   'loan_limit',
   'queue_limit',
@@ -209,9 +218,9 @@ export const ASSISTANT_BLOCKED_REASONS = [
   'unavailable',
   'not_queueable',
 ] as const
-export type AssistantBlockedReason = (typeof ASSISTANT_BLOCKED_REASONS)[number]
-// Valores com nome (cada texto escrito uma vez só): ASSISTANT_BLOCKED_REASON.overdue, ASSISTANT_BLOCKED_REASON.loanLimit.
-export const ASSISTANT_BLOCKED_REASON = constantsOf(ASSISTANT_BLOCKED_REASONS)
+export type BlockedReason = (typeof BLOCKED_REASONS)[number]
+// Valores com nome (cada texto escrito uma vez só): BLOCKED_REASON.overdue, BLOCKED_REASON.loanLimit.
+export const BLOCKED_REASON = constantsOf(BLOCKED_REASONS)
 
 // --- Sistema -----------------------------------------------------------------
 
