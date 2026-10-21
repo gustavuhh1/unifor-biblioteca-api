@@ -12,15 +12,15 @@ describe('ID da obra (workIdOf)', () => {
     expect(workIdOf('Cálculo, Vol. 1', ['James Stewart'])).toBe(
       'calculo-vol-1--stewart',
     )
-    expect(workIdOf('Programação: Técnicas & Práticas!', ['José D’Ávila'])).toBe(
-      'programacao-tecnicas-praticas--d-avila',
-    )
+    expect(
+      workIdOf('Programação: Técnicas & Práticas!', ['José D’Ávila']),
+    ).toBe('programacao-tecnicas-praticas--d-avila')
   })
 
   it('usa só o primeiro autor', () => {
-    expect(workIdOf('Algoritmos', ['Thomas H. Cormen', 'Charles Leiserson'])).toBe(
-      'algoritmos--cormen',
-    )
+    expect(
+      workIdOf('Algoritmos', ['Thomas H. Cormen', 'Charles Leiserson']),
+    ).toBe('algoritmos--cormen')
   })
 
   it('entende o formato "Sobrenome, Nome"', () => {

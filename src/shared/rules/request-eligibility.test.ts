@@ -174,10 +174,12 @@ describe('elegibilidade da fila (checkRequestEligibility, join_queue)', () => {
   })
 
   it('bloqueia o aluno no limite de filas', () => {
-    expect(joinQueue({ student: { ...student, activeQueueCount: 7 } })).toEqual({
-      allowed: false,
-      blockedReason: 'queue_limit',
-    })
+    expect(joinQueue({ student: { ...student, activeQueueCount: 7 } })).toEqual(
+      {
+        allowed: false,
+        blockedReason: 'queue_limit',
+      },
+    )
   })
 
   it('só abre a fila sem exemplar disponível (not_queueable)', () => {
