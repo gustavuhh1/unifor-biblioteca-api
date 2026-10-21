@@ -44,16 +44,28 @@ REST API for Unifor Biblioteca, a university library app. Node + TypeScript + Ex
 
 ### Other commands
 
-| Command              | What it does                      |
-| -------------------- | --------------------------------- |
-| `npm test`           | Unit tests (Vitest)               |
-| `npm run test:watch` | Unit tests in watch mode          |
-| `npm run lint`       | ESLint                            |
-| `npm run format`     | Prettier                          |
-| `npm run typecheck`  | Type-check without emitting files |
-| `npm run build`      | Compile to `dist/`                |
-| `npm start`          | Run the compiled server           |
-| `npm run seed`       | Load the demo data (see below)    |
+| Command                | What it does                                                            |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `npm test`             | Unit tests (Vitest)                                                     |
+| `npm run test:watch`   | Unit tests in watch mode                                                |
+| `npm run lint`         | ESLint                                                                  |
+| `npm run format`       | Prettier                                                                |
+| `npm run typecheck`    | Type-check without emitting files                                       |
+| `npm run build`        | Compile to `dist/`                                                      |
+| `npm start`            | Run the compiled server                                                 |
+| `npm run seed`         | Load the demo data (see below)                                          |
+| `npm run catalog:sync` | Update the active books that have an ISBN from Google Books (see below) |
+
+## Updating the catalog from Google Books
+
+`npm run catalog:sync` goes through the active books that have an ISBN and updates each one from Google Books (title, subtitle, authors, publisher, year, synopsis, cover, subjects and language; never the CDU, Cutter, shelf or copies). It calls the same service as `POST /librarian/books/{bookId}/sync-google`, waits between calls (`SYNC_PAUSE_MS` in `scripts/catalog-sync/run.ts`) and records the audit log entries with the actor `system`. At the end it prints how many books were updated, not found, failed and skipped (no ISBN).
+
+It runs against the emulators by default and needs `GOOGLE_BOOKS_API_KEY` in your `.env`. To run it against production, pass `--prod` and type the project ID when asked:
+
+```sh
+npm run catalog:sync            # emulators
+npm run catalog:sync -- --prod  # production, with typed confirmation
+```
 
 ## Firebase Hosting
 

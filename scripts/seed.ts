@@ -6,14 +6,14 @@
 //   npm run seed -- --offline         nenhuma chamada externa (feriados do arquivo local)
 import { getAdminAuth, getDb } from '../src/config/firebase.js'
 import { env } from '../src/config/env.js'
+import {
+  confirmByTyping,
+  confirmProduction,
+  useProductionDatabase,
+} from './lib/environment.js'
 import { upsertAccounts } from './seed/accounts.js'
 import { buildSeed, toWrites, uidOf } from './seed/build.js'
-import {
-  checkEnvironment,
-  confirmByTyping,
-  parseCliArgs,
-  type CliOptions,
-} from './seed/cli.js'
+import { checkEnvironment, parseCliArgs, type CliOptions } from './seed/cli.js'
 import { AUTH_EMAIL_DOMAIN, BASE_DATE, USERS } from './seed/data.js'
 import { publishFirestoreConfig } from './seed/deploy.js'
 import { clearDatabase, writeAll } from './seed/firestore.js'
@@ -55,11 +55,12 @@ async function loadHolidays(
   return document
 }
 
-async function confirmProduction(options: CliOptions): Promise<boolean> {
-  const project = env.GOOGLE_CLOUD_PROJECT
-  const confirmed = await confirmByTyping(
-    `ATENÇÃO: isto grava em PRODUÇÃO (projeto ${project}), inclusive as contas de teste no Firebase Authentication, com a senha de SEED_TEST_PASSWORD.\nDigite o ID do projeto para confirmar:`,
-    project,
+// Confirmações de quem grava em produção: o ID do projeto e, com --reset, a
+// frase que autoriza apagar as coleções.
+async function confirmProductionRun(options: CliOptions): Promise<boolean> {
+  const confirmed = await confirmProduction(
+    env.GOOGLE_CLOUD_PROJECT,
+    'inclusive as contas de teste no Firebase Authentication, com a senha de SEED_TEST_PASSWORD',
   )
   if (!confirmed || !options.reset) return confirmed
 
@@ -85,14 +86,11 @@ async function main(): Promise<number> {
 
   console.log('1. Ambiente')
   if (options.prod) {
-    if (!(await confirmProduction(options))) {
+    if (!(await confirmProductionRun(options))) {
       console.error('Cancelado: a confirmação não confere. Nada foi gravado.')
       return 1
     }
-    // O Admin SDK lê estas variáveis no primeiro uso: sem elas ele aponta para a
-    // produção.
-    delete process.env.FIRESTORE_EMULATOR_HOST
-    delete process.env.FIREBASE_AUTH_EMULATOR_HOST
+    useProductionDatabase()
     console.log(`  PRODUÇÃO (projeto ${env.GOOGLE_CLOUD_PROJECT})`)
   } else {
     console.log(

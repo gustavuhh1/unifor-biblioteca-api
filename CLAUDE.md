@@ -120,3 +120,4 @@ Regras:
 - `npm run lint` / `npm run format`: ESLint e Prettier
 - `npm run emulators`: Firebase Emulator Suite (Firestore e Auth)
 - `npm run seed`: carga do banco (emulador por padrão)
+- `npm run catalog:sync`: atualiza os livros com ISBN pelo Google Books (emulador por padrão; `--prod` pede confirmação)

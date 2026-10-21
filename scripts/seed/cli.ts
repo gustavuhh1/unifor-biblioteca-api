@@ -1,5 +1,5 @@
-import { createInterface } from 'node:readline/promises'
 import { parseArgs } from 'node:util'
+import { emulatorProblems } from '../lib/environment.js'
 
 // Opções da linha de comando do seed.
 export interface CliOptions {
@@ -54,42 +54,12 @@ export function checkEnvironment(
   }
 
   if (!options.prod) {
-    for (const name of [
-      'FIRESTORE_EMULATOR_HOST',
-      'FIREBASE_AUTH_EMULATOR_HOST',
-    ]) {
-      if (!source[name]) {
-        problems.push(
-          `${name} não está definida. Por padrão o seed só roda no Emulator Suite: defina-a no .env e rode "npm run emulators". Para gravar em produção use --prod.`,
-        )
-      }
-    }
+    problems.push(
+      ...emulatorProblems(source, [
+        'FIRESTORE_EMULATOR_HOST',
+        'FIREBASE_AUTH_EMULATOR_HOST',
+      ]),
+    )
   }
   return problems
-}
-
-// Pede ao usuário que digite `expected` exatamente; qualquer outra coisa cancela.
-export async function confirmByTyping(
-  question: string,
-  expected: string,
-): Promise<boolean> {
-  const readline = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  })
-  // Entrada fechada (sem terminal, Ctrl+D) conta como "não confirmado".
-  const closed = new Promise<string>((resolve) =>
-    readline.once('close', () => resolve('')),
-  )
-  try {
-    const answer = await Promise.race([
-      readline.question(`${question}\n> `),
-      closed,
-    ])
-    return answer.trim() === expected
-  } catch {
-    return false
-  } finally {
-    readline.close()
-  }
 }
