@@ -12,7 +12,7 @@ import type {
   SourceLookup,
 } from '../catalog.types.js'
 import { dataSourceAfterSync } from './data-source.rules.js'
-import { sameValue } from './same-value.rules.js'
+import { isEmptyValue } from './same-value.rules.js'
 
 // Combina as respostas das duas fontes (RF-ACE-04). A Open Library vem primeiro
 // em título, autores, capa e assuntos; a BrasilAPI traz a sinopse e preenche o
@@ -89,11 +89,13 @@ export interface MetadataSyncUpdate {
 }
 
 // Combina os dados salvos do livro com a resposta das fontes externas (RF-GAC-04,
-// RF-ACE-04). Troca SOMENTE title, subtitle, authors, publisher, year, synopsis,
-// coverUrl, subjects e externalMetadata; nunca cdu, cutter, shelf, location,
-// idioma, exemplares, contadores, workId nem status. Campo que as fontes não
-// trouxeram não apaga o valor salvo. ISBN que nenhuma fonte achou só atualiza
-// externalMetadata (found false). `at` é o horário real da atualização.
+// RF-ACE-04). Só PREENCHE campo vazio: title, subtitle, authors, publisher, year,
+// synopsis, coverUrl e subjects nunca sobrescrevem um valor que já existe, e
+// campo que as fontes não trouxeram não apaga nada. Além deles, só grava
+// externalMetadata; nunca cdu, cutter, shelf, location, idioma, exemplares,
+// contadores, workId nem status. Se nada foi preenchido, o dataSource continua o
+// mesmo. ISBN que nenhuma fonte achou só atualiza externalMetadata (found false).
+// `at` é o horário real da atualização.
 export function applyMetadataLookup(
   saved: Book,
   lookup: Exclude<
@@ -116,19 +118,23 @@ export function applyMetadataLookup(
   const changedFields: MetadataSyncField[] = []
   for (const field of METADATA_SYNC_FIELDS) {
     const value = lookup.data[field]
-    if (value !== undefined && !sameValue(value, saved[field])) {
+    if (value !== undefined && isEmptyValue(saved[field])) {
       Object.assign(changes, { [field]: value })
       changedFields.push(field)
     }
   }
 
-  const merged = { ...saved, ...changes }
+  const filled = changedFields.length > 0
   return {
     update: {
       ...changes,
       externalMetadata: externalMetadataOf(lookup, at),
-      searchText: buildSearchText(merged),
-      dataSource: dataSourceAfterSync(lookup.data),
+      ...(filled
+        ? {
+            searchText: buildSearchText({ ...saved, ...changes }),
+            dataSource: dataSourceAfterSync(saved.dataSource, changedFields),
+          }
+        : {}),
       updatedAt: at,
     },
     changedFields,

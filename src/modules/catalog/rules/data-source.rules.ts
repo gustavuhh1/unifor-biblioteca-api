@@ -9,12 +9,17 @@ import { sameValue } from './same-value.rules.js'
 // Os campos do cadastro que dão a origem dos dados.
 type DataSourceInput = Pick<BookMetadata, (typeof DATA_SOURCE_FIELDS)[number]>
 
-// Origem dos dados depois de atualizar pelas fontes externas (RF-GAC-04):
-// external se elas trouxeram título, autores, editora e sinopse; senão mixed.
-export function dataSourceAfterSync(data: BookMetadata): DataSource {
-  return DATA_SOURCE_FIELDS.every((field) => data[field] !== undefined)
-    ? DATA_SOURCE.external
-    : DATA_SOURCE.mixed
+// Origem dos dados depois de atualizar pelas fontes externas (RF-GAC-04). A
+// atualização só preenche campo vazio, então: se nada foi preenchido, a origem
+// continua a mesma; se algo foi preenchido num livro manual, vira mixed (dado
+// local mais dado externo); external e mixed continuam como estão.
+export function dataSourceAfterSync(
+  current: DataSource,
+  filledFields: readonly string[],
+): DataSource {
+  return filledFields.length > 0 && current === DATA_SOURCE.manual
+    ? DATA_SOURCE.mixed
+    : current
 }
 
 // Origem dos dados de um livro novo (books.dataSource, RF-GAC-02):

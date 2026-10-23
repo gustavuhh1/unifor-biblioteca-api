@@ -176,7 +176,7 @@ registry.registerPath({
   tags: ['Acervo (bibliotecário)'],
   summary: 'Atualiza um livro pelas fontes externas',
   description:
-    'Usa o ISBN salvo e consulta a Open Library e a BrasilAPI. Troca só título, subtítulo, autores, editora, ano, sinopse, capa e assuntos, e só os que as fontes trouxeram; CDU, Cutter, estante, idioma e exemplares nunca mudam. ISBN que nenhuma fonte conhece grava só `externalMetadata.found: false`. Se nenhuma achou e alguma não respondeu, responde 502 sem alterar o livro. `changedFields` lista o que mudou.',
+    'Usa o ISBN salvo e consulta a Open Library e a BrasilAPI. Só preenche campo vazio: título, subtítulo, autores, editora, ano, sinopse, capa e assuntos nunca sobrescrevem um valor que já existe, e campo que as fontes não trouxeram não apaga nada; CDU, Cutter, estante, idioma e exemplares nunca mudam. Se nada foi preenchido, `dataSource` continua o mesmo; se algo foi preenchido num livro `manual`, ele vira `mixed`. ISBN que nenhuma fonte conhece grava só `externalMetadata.found: false`. Se nenhuma achou e alguma não respondeu, responde 502 sem alterar o livro. `changedFields` lista o que mudou.',
   security,
   request: { params: bookParamsSchema },
   responses: {

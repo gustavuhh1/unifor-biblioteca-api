@@ -58,14 +58,19 @@ describe('origem dos dados de um livro novo (dataSourceForNewBook)', () => {
 })
 
 describe('origem dos dados depois da atualização (dataSourceAfterSync)', () => {
-  it('é external quando as fontes trouxeram título, autores, editora e sinopse', () => {
-    expect(dataSourceAfterSync(external)).toBe('external')
+  it('continua a mesma quando nada foi preenchido', () => {
+    for (const current of ['external', 'mixed', 'manual'] as const) {
+      expect(dataSourceAfterSync(current, [])).toBe(current)
+    }
   })
 
-  it('é mixed quando falta algum dos quatro (por exemplo, a sinopse)', () => {
-    expect(
-      dataSourceAfterSync({ title: 'A', authors: ['B'], publisher: 'C' }),
-    ).toBe('mixed')
+  it('livro manual com algo preenchido pelas fontes vira mixed', () => {
+    expect(dataSourceAfterSync('manual', ['synopsis'])).toBe('mixed')
+  })
+
+  it('external e mixed continuam como estão mesmo com campos preenchidos', () => {
+    expect(dataSourceAfterSync('external', ['coverUrl'])).toBe('external')
+    expect(dataSourceAfterSync('mixed', ['coverUrl'])).toBe('mixed')
   })
 })
 

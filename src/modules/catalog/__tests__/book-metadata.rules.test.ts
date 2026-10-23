@@ -179,6 +179,18 @@ describe('o que gravar em books.externalMetadata (externalMetadataOf)', () => {
 
 describe('combinação do salvo com as fontes (applyMetadataLookup)', () => {
   const saved = makeBook()
+  // Livro com os campos que as fontes podem preencher todos vazios.
+  const empty = makeBook({
+    title: '',
+    subtitle: undefined,
+    authors: [],
+    publisher: undefined,
+    year: undefined,
+    synopsis: undefined,
+    coverUrl: null,
+    subjects: [],
+    dataSource: 'manual',
+  })
 
   // Resposta em que só a Open Library achou o livro.
   const foundLookup = (data: Parameters<typeof foundBy>[0]) =>
@@ -187,31 +199,26 @@ describe('combinação do salvo com as fontes (applyMetadataLookup)', () => {
       { status: typeof LOOKUP_STATUS.found }
     >
 
-  it('troca só os campos permitidos e grava o externalMetadata com a hora real', () => {
+  const everything = {
+    title: 'Código Limpo 2',
+    subtitle: 'novo subtítulo',
+    authors: ['Robert Martin'],
+    publisher: 'Outra Editora',
+    year: 2024,
+    synopsis: 'Nova sinopse',
+    subjects: ['Software'],
+    coverUrl: 'https://x.example/c.jpg',
+  }
+
+  it('preenche todos os campos vazios e grava o externalMetadata com a hora real', () => {
     const { update, changedFields } = applyMetadataLookup(
-      saved,
-      foundLookup({
-        title: 'Código Limpo 2',
-        subtitle: 'novo subtítulo',
-        authors: ['Robert Martin'],
-        publisher: 'Outra Editora',
-        year: 2024,
-        synopsis: 'Nova sinopse',
-        subjects: ['Software'],
-        coverUrl: 'https://x.example/c.jpg',
-      }),
+      empty,
+      foundLookup(everything),
       LATER,
     )
 
     expect(update).toMatchObject({
-      title: 'Código Limpo 2',
-      subtitle: 'novo subtítulo',
-      authors: ['Robert Martin'],
-      publisher: 'Outra Editora',
-      year: 2024,
-      synopsis: 'Nova sinopse',
-      subjects: ['Software'],
-      coverUrl: 'https://x.example/c.jpg',
+      ...everything,
       externalMetadata: {
         sources: ['open_library'],
         openLibraryKey: '/books/OL999M',
@@ -232,10 +239,53 @@ describe('combinação do salvo com as fontes (applyMetadataLookup)', () => {
     ])
   })
 
+  it('nunca sobrescreve um valor que já existe (o caso do Código Limpo)', () => {
+    // O Código Limpo do seed: as fontes mandam outro título e outro ano.
+    const { update, changedFields } = applyMetadataLookup(
+      saved,
+      foundLookup({
+        ...everything,
+        title: 'Código Limpo. Habilidades Práticas Do Agile Softwar',
+        year: 2008,
+      }),
+      LATER,
+    )
+
+    // Só a capa estava vazia (coverUrl null); o resto já tinha valor.
+    expect(changedFields).toEqual(['coverUrl'])
+    for (const field of [
+      'title',
+      'subtitle',
+      'authors',
+      'publisher',
+      'year',
+      'synopsis',
+      'subjects',
+    ]) {
+      expect(update).not.toHaveProperty(field)
+    }
+    expect({ ...saved, ...update }).toMatchObject({
+      title: 'Código Limpo',
+      year: 2011,
+      publisher: 'Alta Books',
+      coverUrl: 'https://x.example/c.jpg',
+    })
+  })
+
+  it('texto em branco e lista vazia contam como vazios; o número 0 não', () => {
+    const { changedFields } = applyMetadataLookup(
+      makeBook({ title: '   ', subjects: [], year: 0 }),
+      foundLookup({ title: 'Título novo', subjects: ['A'], year: 2020 }),
+      LATER,
+    )
+
+    expect(changedFields).toEqual(['title', 'subjects'])
+  })
+
   it('nunca toca cdu, cutter, shelf, location, idioma, exemplares, contadores, workId nem status', () => {
     const { update } = applyMetadataLookup(
-      saved,
-      foundLookup({ title: 'Outro título', authors: ['Outro Autor'] }),
+      empty,
+      foundLookup(everything),
       LATER,
     )
 
@@ -259,7 +309,7 @@ describe('combinação do salvo com as fontes (applyMetadataLookup)', () => {
     ]) {
       expect(update).not.toHaveProperty(field)
     }
-    expect({ ...saved, ...update }).toMatchObject({
+    expect({ ...empty, ...update }).toMatchObject({
       cdu: '005.1',
       cutter: 'M386c',
       shelf: 'Estante 005.1',
@@ -269,66 +319,65 @@ describe('combinação do salvo com as fontes (applyMetadataLookup)', () => {
     })
   })
 
-  it('campo ausente na resposta das fontes não apaga o valor salvo', () => {
+  it('campo ausente na resposta das fontes não preenche nem apaga nada', () => {
     const { update, changedFields } = applyMetadataLookup(
-      saved,
-      foundLookup({ title: 'Código Limpo', synopsis: 'Sinopse nova' }),
+      empty,
+      foundLookup({ synopsis: 'Sinopse nova' }),
       LATER,
     )
 
     expect(changedFields).toEqual(['synopsis'])
+    expect(update).not.toHaveProperty('title')
     expect(update).not.toHaveProperty('publisher')
     expect(update).not.toHaveProperty('authors')
-    expect(update).not.toHaveProperty('year')
     expect(update).not.toHaveProperty('subjects')
-    expect(update).not.toHaveProperty('coverUrl')
   })
 
-  it('não lista como mudado o campo que as fontes mandaram igual ao salvo', () => {
-    const { changedFields } = applyMetadataLookup(
+  it('refaz o texto de busca só quando preenche algo', () => {
+    const filled = applyMetadataLookup(
+      makeBook({ subjects: [] }),
+      foundLookup({ subjects: ['Programming'] }),
+      LATER,
+    )
+    const nothing = applyMetadataLookup(
       saved,
-      foundLookup({
-        title: saved.title,
-        authors: saved.authors,
-        publisher: saved.publisher,
-      }),
+      foundLookup({ title: 'Clean Code' }),
       LATER,
     )
 
-    expect(changedFields).toEqual([])
+    expect(filled.update.searchText).toBe(
+      'codigo limpo habilidades praticas do agile software robert c. martin programming 9788576082675',
+    )
+    expect(nothing.update).not.toHaveProperty('searchText')
   })
 
-  it('refaz o texto de busca com os dados novos', () => {
-    const { update } = applyMetadataLookup(
-      saved,
-      foundLookup({ title: 'Clean Code', subjects: ['Programming'] }),
-      LATER,
-    )
+  it('se nada foi preenchido, o dataSource continua o mesmo e só o externalMetadata muda', () => {
+    for (const dataSource of ['external', 'mixed', 'manual'] as const) {
+      const { update, changedFields } = applyMetadataLookup(
+        makeBook({ dataSource, coverUrl: 'https://x.example/ja-tem.jpg' }),
+        foundLookup(everything),
+        LATER,
+      )
 
-    expect(update.searchText).toBe(
-      'clean code habilidades praticas do agile software robert c. martin programming 9788576082675',
-    )
+      expect(changedFields).toEqual([])
+      expect(update).toEqual({
+        externalMetadata: expect.objectContaining({ found: true }),
+        updatedAt: LATER,
+      })
+    }
   })
 
-  it('dataSource vira external se as fontes trouxeram título, autores, editora e sinopse', () => {
-    const complete = applyMetadataLookup(
-      saved,
-      foundLookup({
-        title: 'A',
-        authors: ['B'],
-        publisher: 'C',
-        synopsis: 'D',
-      }),
-      LATER,
-    )
-    const partial = applyMetadataLookup(
-      saved,
-      foundLookup({ title: 'A', authors: ['B'], publisher: 'C' }),
-      LATER,
-    )
+  it('preencher algo num livro manual o torna mixed; external e mixed continuam', () => {
+    const fill = (dataSource: 'manual' | 'external' | 'mixed') =>
+      applyMetadataLookup(
+        makeBook({ dataSource, coverUrl: null }),
+        foundLookup({ coverUrl: 'https://x.example/c.jpg' }),
+        LATER,
+      ).update.dataSource
 
-    expect(complete.update.dataSource).toBe('external')
-    expect(partial.update.dataSource).toBe('mixed')
+    expect(fill('manual')).toBe('mixed')
+    expect(fill('external')).toBe('external')
+    expect(fill('mixed')).toBe('mixed')
   })
 
   it('ISBN não encontrado só atualiza o externalMetadata e não altera mais nada', () => {

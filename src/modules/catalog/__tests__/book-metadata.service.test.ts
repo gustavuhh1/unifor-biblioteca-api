@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { START } from '../../../test-support/clock.js'
 import type { FakeFirestore } from '../../../test-support/fake-firestore.js'
 import type { AppError } from '../../../shared/errors.js'
+import type { BookRecord } from '../../../shared/types/index.js'
 
 const h = vi.hoisted(() => ({
   db: undefined as unknown as FakeFirestore,
@@ -51,6 +52,19 @@ const brasilApiData = foundBy({
 function bothFind() {
   h.lookupOpenLibrary.mockResolvedValue(openLibraryData)
   h.lookupBrasilApi.mockResolvedValue(brasilApiData)
+}
+
+// Livro com os campos que as fontes podem preencher todos vazios.
+const EMPTY_FIELDS: Partial<BookRecord> = {
+  title: '',
+  subtitle: undefined,
+  authors: [],
+  publisher: undefined,
+  year: undefined,
+  synopsis: undefined,
+  subjects: [],
+  coverUrl: null,
+  dataSource: 'manual',
 }
 
 function seedBook(overrides: Parameters<typeof makeBook>[0] = {}) {
@@ -184,8 +198,8 @@ describe('consulta do ISBN para pré-preencher o cadastro (lookupBookByIsbn)', (
 })
 
 describe('atualização pelas fontes externas (syncBookMetadata)', () => {
-  it('troca só os campos permitidos e devolve os que mudaram', async () => {
-    seedBook()
+  it('preenche os campos vazios e devolve os que foram preenchidos', async () => {
+    seedBook(EMPTY_FIELDS)
     bothFind()
 
     const response = await syncBookMetadata('book1', LIBRARIAN)
@@ -206,13 +220,57 @@ describe('atualização pelas fontes externas (syncBookMetadata)', () => {
       publisher: 'Editora OL',
       year: 2024,
       synopsis: 'Sinopse da BrasilAPI.',
-      dataSource: 'external',
+      // Livro manual que ganhou dados das fontes.
+      dataSource: 'mixed',
       externalMetadata: {
         sources: ['open_library', 'brasil_api'],
         openLibraryKey: '/books/OL999M',
         lastSyncedAt: START.toISOString(),
         found: true,
       },
+    })
+  })
+
+  it('nunca sobrescreve o que já existe: o Código Limpo do seed mantém título e ano', async () => {
+    const before = seedBook()
+    bothFind()
+
+    const response = await syncBookMetadata('book1', LIBRARIAN)
+
+    // As fontes mandam outro título, outro ano e outra editora; só a capa estava vazia.
+    expect(response.changedFields).toEqual(['coverUrl'])
+    expect(response.book).toMatchObject({
+      title: 'Código Limpo',
+      year: 2011,
+      publisher: 'Alta Books',
+      authors: ['Robert C. Martin'],
+      synopsis: before.synopsis,
+      coverUrl: 'https://covers.openlibrary.org/c.jpg',
+      dataSource: 'mixed',
+      externalMetadata: { found: true, lastSyncedAt: START.toISOString() },
+    })
+    expect(h.db.read('books', 'book1')).toMatchObject({
+      title: 'Código Limpo',
+      year: 2011,
+    })
+  })
+
+  it('se nada foi preenchido, só o externalMetadata e o updatedAt mudam', async () => {
+    const before = seedBook({ coverUrl: 'https://x.example/ja-tem.jpg' })
+    bothFind()
+
+    const response = await syncBookMetadata('book1', LIBRARIAN)
+
+    expect(response.changedFields).toEqual([])
+    expect(h.db.read('books', 'book1')).toEqual({
+      ...before,
+      externalMetadata: {
+        sources: ['open_library', 'brasil_api'],
+        openLibraryKey: '/books/OL999M',
+        lastSyncedAt: START,
+        found: true,
+      },
+      updatedAt: START,
     })
   })
 
@@ -242,8 +300,8 @@ describe('atualização pelas fontes externas (syncBookMetadata)', () => {
     })
   })
 
-  it('refaz o texto de busca', async () => {
-    seedBook()
+  it('refaz o texto de busca com o que foi preenchido', async () => {
+    seedBook(EMPTY_FIELDS)
     bothFind()
 
     await syncBookMetadata('book1', LIBRARIAN)
@@ -282,8 +340,8 @@ describe('atualização pelas fontes externas (syncBookMetadata)', () => {
     ])
   })
 
-  it('com só uma fonte, atualiza com ela e deixa o resto como estava', async () => {
-    seedBook()
+  it('com só uma fonte, preenche com ela e deixa o resto como estava', async () => {
+    seedBook(EMPTY_FIELDS)
     h.lookupOpenLibrary.mockResolvedValue(UNAVAILABLE)
     h.lookupBrasilApi.mockResolvedValue(brasilApiData)
 
@@ -294,7 +352,7 @@ describe('atualização pelas fontes externas (syncBookMetadata)', () => {
       sources: ['brasil_api'],
       found: true,
     })
-    expect(response.book.publisher).toBe('Alta Books')
+    expect(response.book.publisher).toBeNull()
   })
 
   it('ISBN não encontrado grava só externalMetadata e não altera mais nada', async () => {
