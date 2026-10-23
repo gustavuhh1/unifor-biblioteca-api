@@ -1,5 +1,9 @@
 import type { z } from 'zod'
-import type { QUEUE_EXIT_STATUSES } from './queues.constants.js'
+import type {
+  CONFIRM_DENIALS,
+  PLACEMENT_REFUSALS,
+  QUEUE_EXIT_STATUSES,
+} from './queues.constants.js'
 import type {
   addToQueueBodySchema,
   joinQueueBodySchema,
@@ -14,6 +18,8 @@ import type {
   myQueuesResponseSchema,
   queueChangeResponseSchema,
   queueEntrySchema,
+  queueMovedDownSchema,
+  queuePreviewEditionSchema,
   queuePreviewSchema,
 } from './schemas/response.schemas.js'
 
@@ -33,6 +39,12 @@ export type RemoveFromQueueBody = z.infer<typeof removeFromQueueBodySchema>
 
 // Um lugar na fila, como o aluno o vê.
 export type QueueEntryResponse = z.infer<typeof queueEntrySchema>
+// Uma edição da prévia da fila.
+export type QueuePreviewEditionResponse = z.infer<
+  typeof queuePreviewEditionSchema
+>
+// Quem desce uma posição quando alguém passa à frente.
+export type QueueMovedDownResponse = z.infer<typeof queueMovedDownSchema>
 // Resposta de GET /books/:bookId/queue/preview.
 export type QueuePreviewResponse = z.infer<typeof queuePreviewSchema>
 // Resposta de POST /queues.
@@ -52,3 +64,7 @@ export type QueueChangeResponse = z.infer<typeof queueChangeResponseSchema>
 
 // Status com que um lugar sai da fila ativa sem virar pedido.
 export type QueueExitStatus = (typeof QUEUE_EXIT_STATUSES)[number]
+// Motivo de a posição pedida na fila ser recusada.
+export type PlacementRefusal = (typeof PLACEMENT_REFUSALS)[number]
+// Motivo de o aluno não poder confirmar a vez.
+export type ConfirmDenial = (typeof CONFIRM_DENIALS)[number]

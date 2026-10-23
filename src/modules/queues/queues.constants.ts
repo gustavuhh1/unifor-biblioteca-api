@@ -1,3 +1,4 @@
+import { constantsOf } from '../../shared/constants-of.js'
 import { QUEUE_ENTRY_STATUS } from '../../shared/types/index.js'
 
 // Constantes do módulo de filas (RF-FIL-*, RF-BAL-06, RF-BAL-07).
@@ -26,3 +27,29 @@ export const QUEUE_EXIT_STATUSES = [
   QUEUE_ENTRY_STATUS.removed,
   QUEUE_ENTRY_STATUS.cancelledOtherEdition,
 ] as const
+
+// Motivos de o bibliotecário não poder pôr alguém na posição pedida (RF-BAL-06).
+// Também são o code do erro 409.
+export const PLACEMENT_REFUSALS = [
+  // A posição não existe ou fica antes de quem está na vez.
+  'invalid_position',
+  // O aluno já está nessa posição.
+  'same_position',
+  // Quem está na vez não se move.
+  'turn_in_progress',
+] as const
+
+// Os mesmos motivos com nome: PLACEMENT_REFUSAL.invalidPosition etc.
+export const PLACEMENT_REFUSAL = constantsOf(PLACEMENT_REFUSALS)
+
+// Motivos de o aluno não poder confirmar a vez (RF-FIL-06): o lugar já saiu da
+// fila, ainda está esperando, ou passou do prazo de confirmar. Também são o code
+// do erro 409.
+export const CONFIRM_DENIALS = [
+  'queue_entry_not_active',
+  'not_your_turn',
+  'turn_expired',
+] as const
+
+// Os mesmos motivos com nome: CONFIRM_DENIAL.queueEntryNotActive etc.
+export const CONFIRM_DENIAL = constantsOf(CONFIRM_DENIALS)
