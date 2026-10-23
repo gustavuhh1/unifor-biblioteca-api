@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { atLocalTime } from '../../../shared/calendar/dates.js'
 import {
+  movedDownUids,
   positionOf,
   toEndedEntryResponse,
   toLibrarianQueue,
@@ -207,5 +208,23 @@ describe('quem desce uma posição (toMovedDownResponse, RF-BAL-07)', () => {
 
   it('ninguém descendo devolve lista vazia', () => {
     expect(toMovedDownResponse([], makeQueue())).toEqual([])
+  })
+})
+
+describe('uids de quem desce, para o auditLog (movedDownUids, RF-BAL-07)', () => {
+  it('lista o uid de cada aluno que desce', () => {
+    expect(
+      movedDownUids(
+        [
+          { entryId: 'qe2', fromPosition: 2, toPosition: 3 },
+          { entryId: 'qe3', fromPosition: 3, toPosition: 4 },
+        ],
+        makeQueue(),
+      ),
+    ).toEqual(['uid_lucas', 'uid_carlos'])
+  })
+
+  it('ninguém descendo devolve lista vazia', () => {
+    expect(movedDownUids([], makeQueue())).toEqual([])
   })
 })

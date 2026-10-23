@@ -151,3 +151,15 @@ export function toMovedDownResponse(
       : []
   })
 }
+
+// Os uids dos alunos que descem uma posição, para o auditLog (`details.movedDown`,
+// RF-BAL-07).
+export function movedDownUids(
+  movedDown: readonly MovedDown[],
+  queue: readonly Pick<QueueEntryRecord, 'id' | 'studentUid'>[],
+): string[] {
+  return movedDown.flatMap((moved) => {
+    const entry = queue.find((candidate) => candidate.id === moved.entryId)
+    return entry ? [entry.studentUid] : []
+  })
+}

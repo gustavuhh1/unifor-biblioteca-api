@@ -55,6 +55,12 @@ export interface FineReceiver {
   name: string
 }
 
+// Os campos que o congelamento sempre grava, mais os do pagamento na devolução.
+export type FrozenFineFields = Partial<Fine> &
+  Required<
+    Pick<Fine, 'status' | 'businessDaysLate' | 'amountCents' | 'frozenAt'>
+  >
+
 // O que gravar na multa ao congelar (RF-MUL-02, RF-BAL-08): ela para de contar na
 // devolução (`returnedAt`) e fica `open` até o pagamento no balcão. Com
 // `paidNow` (a chave "Multa paga agora" do balcão), fecha direto como `paid`,
@@ -66,7 +72,7 @@ export function freezeFields(
     closedDates: ReadonlySet<DateOnly>
     paidNow?: FineReceiver | undefined
   },
-): Partial<Fine> {
+): FrozenFineFields {
   const { returnedAt, closedDates, paidNow } = input
   const calculation = calculateFine({
     dueAt: fine.dueAt,
