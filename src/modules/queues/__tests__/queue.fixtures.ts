@@ -84,7 +84,9 @@ export function putStudent(
   uid: string,
   overrides: Record<string, unknown> = {},
 ) {
-  db.put('users', uid, makeStudent(overrides))
+  const student = makeStudent(overrides)
+  db.put('users', uid, student)
+  db.put('matriculaIndex', student.matricula, { uid, role: 'student' })
 }
 
 // Guarda o bibliotecário (a Ana Souza do balcão).
@@ -103,6 +105,7 @@ export function putLibrarian(db: Seedable, uid = LIBRARIAN_UID) {
     createdAt: NOW,
     updatedAt: NOW,
   })
+  db.put('matriculaIndex', '1000001', { uid, role: 'librarian' })
 }
 
 // Guarda uma edição com todos os exemplares emprestados (a fila está aberta).
