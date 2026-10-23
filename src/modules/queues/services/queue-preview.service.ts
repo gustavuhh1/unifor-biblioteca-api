@@ -47,7 +47,12 @@ export async function previewQueue(
         at,
         activeQueueBookIds,
       })
-      return toPreviewEdition(edition, check, queue.length)
+      return toPreviewEdition(
+        edition,
+        check,
+        queue.length,
+        activeQueueBookIds.has(edition.id),
+      )
     }),
   )
 

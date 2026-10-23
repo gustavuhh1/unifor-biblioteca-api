@@ -69,7 +69,9 @@ export function toEndedEntryResponse(
 }
 
 // Monta uma edição da prévia da fila: as pessoas na frente (os lugares ativos da
-// edição) e se o aluno pode entrar (RF-FIL-01, RF-FIL-04).
+// edição), se o aluno já está nela e se pode entrar (RF-FIL-01, RF-FIL-04).
+// `alreadyInQueue` vale mesmo quando outro motivo bloqueia a entrada (o livro
+// ficou indisponível para novos pedidos com o aluno já na fila, por exemplo).
 export function toPreviewEdition(
   book: Pick<
     BookRecord,
@@ -77,9 +79,8 @@ export function toPreviewEdition(
   >,
   check: JoinCheck,
   peopleAhead: number,
+  alreadyInQueue: boolean,
 ): QueuePreviewEditionResponse {
-  const alreadyInQueue =
-    !check.allowed && check.reason === ALREADY_IN_QUEUE_CODE
   return {
     bookId: book.id,
     title: book.title,

@@ -96,7 +96,7 @@ describe('prévia da fila (toPreviewEdition, RF-FIL-01)', () => {
   const edition = { ...book, copiesAvailable: 0 }
 
   it('mostra as pessoas na frente e que pode entrar', () => {
-    expect(toPreviewEdition(edition, { allowed: true }, 4)).toEqual({
+    expect(toPreviewEdition(edition, { allowed: true }, 4, false)).toEqual({
       bookId: 'book1',
       title: 'Arquitetura Limpa',
       edition: '1. ed.',
@@ -111,7 +111,12 @@ describe('prévia da fila (toPreviewEdition, RF-FIL-01)', () => {
 
   it('traz o motivo quando não pode entrar', () => {
     expect(
-      toPreviewEdition(edition, { allowed: false, reason: 'queue_limit' }, 4),
+      toPreviewEdition(
+        edition,
+        { allowed: false, reason: 'queue_limit' },
+        4,
+        false,
+      ),
     ).toMatchObject({
       canJoin: false,
       alreadyInQueue: false,
@@ -125,6 +130,7 @@ describe('prévia da fila (toPreviewEdition, RF-FIL-01)', () => {
         edition,
         { allowed: false, reason: 'already_in_queue' },
         4,
+        true,
       ),
     ).toMatchObject({
       canJoin: false,
@@ -133,10 +139,25 @@ describe('prévia da fila (toPreviewEdition, RF-FIL-01)', () => {
     })
   })
 
+  it('já na fila e bloqueado por outro motivo: mostra os dois', () => {
+    expect(
+      toPreviewEdition(
+        edition,
+        { allowed: false, reason: 'unavailable' },
+        4,
+        true,
+      ),
+    ).toMatchObject({
+      canJoin: false,
+      alreadyInQueue: true,
+      blockedReason: 'unavailable',
+    })
+  })
+
   it('edição sem o campo edição ou ano vai como null', () => {
     const bare = { ...edition, edition: undefined, year: undefined }
 
-    expect(toPreviewEdition(bare, { allowed: true }, 0)).toMatchObject({
+    expect(toPreviewEdition(bare, { allowed: true }, 0, false)).toMatchObject({
       edition: null,
       year: null,
     })

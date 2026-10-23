@@ -56,14 +56,17 @@ export async function findById(
   return snapshot.exists ? toRecord(snapshot) : undefined
 }
 
-// As multas do aluno, as de vencimento mais recente primeiro (RF-MUL-03).
+// As multas do aluno, as de vencimento mais recente primeiro (RF-MUL-03). A busca
+// usa só o índice automático de studentUid; a ordem é feita aqui, em memória (são
+// poucas multas por aluno), para não pedir um índice composto novo.
 export async function listByStudent(uid: string): Promise<FineRecord[]> {
   const result = await fines()
     .where('studentUid', '==', uid)
-    .orderBy('dueAt', 'desc')
     .limit(FINE_LIST_LIMIT)
     .get()
-  return result.docs.map(toRecord)
+  return result.docs
+    .map(toRecord)
+    .sort((a, b) => b.dueAt.getTime() - a.dueAt.getTime())
 }
 
 // Como cada aba da aba Multas ordena (índices status + frozenAt, dueAt, paidAt):

@@ -182,6 +182,19 @@ describe('quando o aluno não pode entrar', () => {
     })
   })
 
+  it('livro marcado como indisponível com o aluno já na fila: mostra o motivo e que ele já está', async () => {
+    putBook(h.db, 'book1', { year: 2011, unavailableForNewRequests: true })
+    putEntry(h.db, 'qe1', { bookId: 'book1', studentUid: STUDENT_UID })
+
+    const preview = await previewQueue(STUDENT_UID, 'book1')
+
+    expect(preview.editions[0]).toMatchObject({
+      canJoin: false,
+      alreadyInQueue: true,
+      blockedReason: 'unavailable',
+    })
+  })
+
   it('com empréstimo atrasado, overdue', async () => {
     h.db.put(
       'loans',
