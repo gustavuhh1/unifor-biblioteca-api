@@ -10,7 +10,7 @@ Responsáveis: **Gustavo** (contas, cartão, DNS, chaves) e **Claude** (pesquisa
 | Item | Valor |
 |---|---|
 | Projeto do Google Cloud e do Firebase (produção) | ID `estoque-pay`, nome de exibição "Unifor-biblioteca", conta Google com os créditos grátis |
-| Projeto sem faturamento (chaves grátis) | Projeto criado pelo AI Studio. Guarda as chaves do Gemini e do Google Books. **Nunca ligar faturamento nele.** |
+| Projeto sem faturamento (chaves grátis) | Projeto criado pelo AI Studio. Guarda a chave do Gemini. **Nunca ligar faturamento nele.** |
 | Região | `southamerica-east1` (São Paulo) para Firestore e Cloud Run |
 | Domínio | `uni-books.app` (Name.com, GitHub Student Pack, vence em 16/10/2027, renovação automática desligada) |
 | API | `api.uni-books.app` → Firebase Hosting → Cloud Run |
@@ -28,7 +28,6 @@ Responsáveis: **Gustavo** (contas, cartão, DNS, chaves) e **Claude** (pesquisa
 | `FERIADOS_API_KEY` | sim | Secret Manager `feriados-api-key` e `.env` | FeriadosAPI |
 | `GEMINI_API_KEY` | sim | Secret Manager `gemini-api-key` e `.env` | Gemini |
 | `GEMINI_MODEL` | não | variável do Cloud Run e `.env` (`gemini-3.8-flash`; reserva `gemini-3.1-flash-lite`) | Gemini |
-| `GOOGLE_BOOKS_API_KEY` | sim | Secret Manager `google-books-api-key` e `.env` | Google Books |
 | `GOOGLE_CLOUD_PROJECT` | não | `estoque-pay` | Firestore, Firebase Admin e Secret Manager |
 | `PASSKEY_RP_ID` | não | `uni-books.app` (não trocar: invalida os passkeys) | Passkey |
 | `PASSKEY_ANDROID_ORIGINS` | não | variável do Cloud Run e `.env` | Origens aceitas no passkey do app Android, no formato `android:apk-key-hash:<SHA-256 do certificado de assinatura, em base64url>`, separadas por vírgula (uma para o build de desenvolvimento). Vem do certificado do app, não é segredo |
@@ -92,28 +91,30 @@ Fortaleza = IBGE `2304400`. Uma chamada por ano traz os feriados nacionais, esta
 
 Sem faturamento no projeto da chave, não há como cobrar: ao passar do limite, a chamada só falha. No plano grátis o Google usa os dados para melhorar os produtos. Os dados do app são fictícios; registrar isso no README.
 
-## 5. Google Books (API externa da cadeira de Integração)
+## 5. Open Library e BrasilAPI (API externa da cadeira de Integração)
+
+Decidido em 23/10: a Google Books saiu (erros 503 e 429) e entram duas APIs que **não pedem chave**. Não há segredo nem variável de ambiente para elas.
 
 | Item | Status | Responsável | Data | Como testar |
 |---|---|---|---|---|
-| Books API ativada no projeto sem faturamento; chave restrita à Books API | ✅ | Gustavo | 17/10 | — |
-| Segredo `google-books-api-key` com versão | ✅ | Gustavo | 17/10 | `curl` em `/books/v1/volumes?q=isbn:9788576082675` → título do livro |
-| Cota diária real | ⬜ conferir | Gustavo | 18/10 | Console → APIs e serviços → Books API → Cotas |
+| Open Library responde | ⬜ conferir | Gustavo | 23/10 | `curl -A "UniBooks/1.0 (+https://uni-books.app)" "https://openlibrary.org/api/books?bibkeys=ISBN:9780132350884&format=json&jscmd=data"` → título "Clean Code" |
+| BrasilAPI responde | ⬜ conferir | Gustavo | 23/10 | `curl https://brasilapi.com.br/api/isbn/v1/9788535914849` → título "1984" e a sinopse |
+| Apagar o segredo `google-books-api-key` e a linha `GOOGLE_BOOKS_API_KEY` do `.env` | ⬜ | Gustavo | 23/10 | `gcloud secrets list` sem o segredo |
 
-As 2 requisições usadas são a busca por ISBN (`volumes?q=isbn:`) e a consulta pelo id do volume (`volumes/{id}`).
+As 2 requisições usadas são a da Open Library (`api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data`) e a da BrasilAPI (`isbn/v1/{isbn}`), feitas ao mesmo tempo, com 5 segundos de limite cada. A Open Library pede um `User-Agent` que identifique o app (`UniBooks/1.0 (+https://uni-books.app)`).
 
 ## Ordem de execução
 
 Protótipo de passkey na **terça, 20/10**. Código a partir de quarta, 21/10. Entrega de Integração em 29/10.
 
-1. **Sáb 17/10 — feito:** domínio, faturamento, Firestore, domínios `uni-books.app` e `api.uni-books.app` conectados no Hosting, domínio do Resend verificado, e as chaves do Resend, FeriadosAPI, Gemini e Google Books guardadas no Secret Manager e no `.env` local. Escopo fechado.
+1. **Sáb 17/10 — feito:** domínio, faturamento, Firestore, domínios `uni-books.app` e `api.uni-books.app` conectados no Hosting, domínio do Resend verificado, e as chaves do Resend, FeriadosAPI e Gemini guardadas no Secret Manager e no `.env` local. Escopo fechado.
 2. **Dom 18/10 (Gustavo, ~20 min):**
    - conferir o alerta `alerta-zero`, o teto do Cloud Run e as APIs ativas;
    - ativar o provedor E-mail/senha no Firebase Authentication;
    - mandar um e-mail de teste do Resend para o seu @edu.unifor.br e ver se chega na caixa de entrada;
    - confirmar que a chave antiga do Resend foi revogada;
    - apagar o projeto `unifor-biblioteca`;
-   - conferir as cotas do Gemini e do Google Books.
+   - conferir as cotas do Gemini.
 3. **Seg 19/10 (Claude e Gustavo):**
    - definir o nome do pacote Android;
    - registrar o app da Web no Firebase e dar à conta de serviço o papel Service Account Token Creator;

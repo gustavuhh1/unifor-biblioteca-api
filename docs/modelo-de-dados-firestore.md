@@ -242,15 +242,15 @@ A obra (o título), que reúne as edições. ID = slug do título + sobrenome do
 | `materialType` | string | S | "Livro" (registro completo da página do livro) |
 | `series` | string | N | "(Robert C. Martin)" |
 | `subjects` | array<string> | S | Assuntos ("Desenvolvimento de software"). Pode ser vazio |
-| `synopsis` | string | N | Do Google Books ou à mão |
-| `coverUrl` | string | N | Imagem do Google Books. Sem ela, o app gera a capa |
+| `synopsis` | string | N | Da BrasilAPI ou à mão |
+| `coverUrl` | string | N | Imagem da Open Library ou da BrasilAPI. Sem ela, o app gera a capa |
 | `coverTone` | number | S | 1 a 6, cor da capa gerada (design system) |
-| `cdu` | string | S | "005.1" (dado do projeto, não vem do Google Books) |
+| `cdu` | string | S | "005.1" (dado do projeto, não vem das fontes externas) |
 | `cutter` | string | S | "M386c" |
 | `shelf` | string | S | "Estante 005.1" |
 | `location` | string | S | "Biblioteca (Praça Central)" |
-| `googleBooks` | map | N | `{ volumeId, lastSyncedAt, found: boolean }`. `found: false` quando o ISBN não foi encontrado (RF-GAC-02) |
-| `dataSource` | enum `google_books` \| `manual` \| `mixed` | S | De onde vieram título, autores, editora e sinopse |
+| `externalMetadata` | map | N | `{ sources, openLibraryKey?, lastSyncedAt, found: boolean }`. `sources` lista as fontes que trouxeram dados (`open_library`, `brasil_api`), `openLibraryKey` é a chave do livro na Open Library (ex.: "/books/OL26449397M") e `lastSyncedAt` é `null` quando nenhuma fonte chegou a responder. `found: false` quando o ISBN não foi encontrado em nenhuma fonte (RF-GAC-02) |
+| `dataSource` | enum `external` \| `manual` \| `mixed` | S | De onde vieram título, autores, editora e sinopse |
 | `copiesTotal` | number | S | Exemplares não retirados do acervo |
 | `copiesAvailable` | number | S | Exemplares `available`. A fila só abre com `copiesAvailable == 0` e nenhum exemplar `reserved` livre (RF-FIL-02) |
 | `queueLength` | number | S | Lugares `waiting` + `your_turn` nesta edição ("1 reserva na fila") |
@@ -266,8 +266,8 @@ A obra (o título), que reúne as edições. ID = slug do título + sobrenome do
 
 Regras:
 - Remover (`status: removed`) só quando nenhum exemplar está `reserved` ou `on_loan` e `queueLength == 0` (RF-GAC-05). Senão, a API recusa e sugere marcar `unavailableForNewRequests`.
-- Atualizar pelo Google Books (RF-GAC-04) troca só `title`, `subtitle`, `authors`, `publisher`, `year`, `synopsis`, `coverUrl`, `subjects`, `language` e `googleBooks`. **Nunca** `cdu`, `cutter`, `shelf` nem exemplares.
-- Se o Google Books falhar, a API usa os dados já salvos (RNF-CON-03).
+- Atualizar pelas fontes externas (RF-GAC-04) troca só `title`, `subtitle`, `authors`, `publisher`, `year`, `synopsis`, `coverUrl`, `subjects` e `externalMetadata`, e só os campos que as fontes trouxeram. **Nunca** `cdu`, `cutter`, `shelf`, `language` nem exemplares. A Open Library vem primeiro em título, autores, capa e assuntos; a BrasilAPI traz a sinopse e preenche o que faltar. `dataSource` fica `external` quando as fontes trouxeram título, autores, editora e sinopse, ou `mixed`.
+- Se as fontes externas falharem, a API usa os dados já salvos (RNF-CON-03). Só o cadastro e a atualização as consultam.
 
 ### 2.8 `copies/{copyId}`
 
@@ -575,7 +575,7 @@ Registro das ações do bibliotecário que pedem motivo ou mexem em outro aluno 
 | `reason` | string | N | Motivo informado |
 | `details` | map | N | Ex.: `{ from: 4, to: 1, movedDown: ["uidA", "uidB"] }` |
 
-Valores de `action`: `queue_add`, `queue_move`, `queue_remove`, `queue_resend_notice`, `loan_pickup`, `loan_return`, `fine_paid`, `book_create`, `book_update`, `book_sync_google`, `book_remove`, `book_set_unavailable`, `passkey_create`, `passkey_remove`, `password_reset`.
+Valores de `action`: `queue_add`, `queue_move`, `queue_remove`, `queue_resend_notice`, `loan_pickup`, `loan_return`, `fine_paid`, `book_create`, `book_update`, `book_sync_external`, `book_remove`, `book_set_unavailable`, `passkey_create`, `passkey_remove`, `password_reset`.
 
 ### 2.23 `jobRuns/{runId}`
 
@@ -772,7 +772,7 @@ A matrícula e o e-mail da bibliotecária são de exemplo; trocar pelos dados re
 | Algoritmos — 3ª ed. (Elsevier, 2012) e 4ª ed. (GEN LTC, 2024) | algoritmos--cormen | 9788535236996 (3ª) | 005.1 · C811a | 4 em 2 edições (60411, 60412, 71880, 71881) | Exemplo de fila em 2 edições |
 | Code Complete (Steve McConnell, 2005) | code-complete--mcconnell | — | 005.1 | 1+ | Emprestado, sem fila |
 
-Campos sem valor na tabela (ISBN, editora) podem ser preenchidos pelo script com o Google Books ou ficar vazios. Para a busca "código" retornar 24 resultados, como na tela A09, completar o acervo com mais livros de programação.
+Campos sem valor na tabela (ISBN, editora) podem ser preenchidos pelo script com a Open Library e a BrasilAPI (só com `--with-external-metadata`) ou ficar vazios. Para a busca "código" retornar 24 resultados, como na tela A09, completar o acervo com mais livros de programação.
 
 ### 6.3 Pedidos, empréstimos, filas e multas
 
@@ -845,7 +845,7 @@ Campos sem valor na tabela (ISBN, editora) podem ser preenchidos pelo script com
   "cutter": "M386c",
   "shelf": "Estante 005.1",
   "location": "Biblioteca (Praça Central)",
-  "googleBooks": {"volumeId": null, "lastSyncedAt": null, "found": true},
+  "externalMetadata": {"sources": [], "lastSyncedAt": null, "found": true},
   "dataSource": "mixed",
   "copiesTotal": 3,
   "copiesAvailable": 0,
@@ -961,7 +961,7 @@ Com isso Marina fica com 3 de 10 (Cálculo, Vol. 1, Code Complete e Algoritmos),
 ## 7. O que fica fora do banco
 
 - Senhas e sessões: Firebase Authentication.
-- Chaves (Resend, Gemini, FeriadosAPI, Google Books): Secret Manager e `.env` (RNF-SEG-07).
+- Chaves (Resend, Gemini, FeriadosAPI): Secret Manager e `.env` (RNF-SEG-07).
 - Tema claro ou escuro e "já viu a apresentação": no próprio aparelho.
 - Perda, dano e reposição de obras: fora do escopo, só texto na tela Regras da biblioteca.
 - Pagamentos: o app não recebe; só o registro feito pelo bibliotecário (`fines.paid`).
@@ -978,7 +978,7 @@ O script fica no repositório `unifor-biblioteca-api` (ex.: `scripts/seed.ts`), 
 2. **Limpa** as coleções da seção 1 (só no emulador, ou em produção com `--reset` confirmado).
 3. **Grava as configurações:** `settings/library` (sem `simulatedNow`: as datas do seed já são relativas ao dia em que roda), `recesses` e `holidays/2026` (buscado na FeriadosAPI, ou um arquivo local se a chave não estiver no `.env`).
 4. **Cria as contas no Firebase Authentication:** cada usuário da seção 6.1 com `authEmail` e uma senha de teste lida do `.env` (nunca escrita no código), já ativas, e grava `users`, `matriculaIndex` e `emailIndex` com o mesmo `uid`.
-5. **Grava o acervo:** `works`, `books` e `copies` da seção 6.2; com a chave do Google Books, completa capa, sinopse e editora pelo ISBN (RF-ACE-04, RF-ACE-05).
+5. **Grava o acervo:** `works`, `books` e `copies` da seção 6.2; com a opção `--with-external-metadata`, completa capa, sinopse e editora pelo ISBN na Open Library e na BrasilAPI (RF-ACE-04, RF-ACE-05). Sem a opção o seed não usa a rede para o acervo: é determinístico, rápido e funciona offline.
 6. **Grava a circulação:** `loans`, `queueEntries` e `fines` da seção 6.3, com contadores (`activeLoanCount`, `activeQueueCount`, `copiesAvailable`, `queueLength`, `openFineTotalCents`, `booksReadByYear`) calculados a partir dos próprios dados, nunca digitados à mão.
 7. **Grava avisos e salvos de exemplo** (Notificações do Lucas, pastas "Ler depois", "Amei!!!" e "TCC").
 8. **Publica os índices e as regras:** `firestore.indexes.json` e `firestore.rules` da seção 4 e 5 (`firebase deploy --only firestore`) e as políticas de TTL da seção 4.3 (`gcloud firestore fields ttls update`).
