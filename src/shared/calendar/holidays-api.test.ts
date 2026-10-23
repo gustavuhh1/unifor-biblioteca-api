@@ -86,3 +86,13 @@ describe('busca na FeriadosAPI (fetchHolidays)', () => {
     ).rejects.toThrow('HTTP 401')
   })
 })
+
+describe('datas dos feriados (holidayDates)', () => {
+  it('devolve só as datas, sem repetir', () => {
+    const document = parseHolidaysResponse(apiResponse, 2026, fetchedAt)
+
+    expect(holidayDates(document)).toEqual(
+      new Set(['2026-01-01', '2026-03-25', '2026-04-13']),
+    )
+  })
+})
