@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AppError } from '../../../shared/errors.js'
 import type { FakeFirestore } from '../../../test-support/fake-firestore.js'
 
 const h = vi.hoisted(() => ({ db: undefined as unknown as FakeFirestore }))
@@ -9,17 +8,11 @@ vi.mock('../../../config/firebase.js', () => ({ getDb: () => h.db }))
 const { FakeFirestore: Fake } =
   await import('../../../test-support/fake-firestore.js')
 const { payFine } = await import('../services/fine-pay.service.js')
+const { catchError } = await import('../../../test-support/catch-error.js')
 const { atLocalTime } = await import('../../../shared/calendar/dates.js')
 const { NOW, makeFine } = await import('./fine.fixtures.js')
 
 const LIBRARIAN = 'uid_ana'
-
-async function catchError(promise: Promise<unknown>): Promise<AppError> {
-  return (await promise.then(
-    () => undefined,
-    (error: unknown) => error,
-  )) as AppError
-}
 
 // A multa em aberto do Pedro Henrique (5 dias, R$ 10,00) e a Ana Souza no balcão.
 beforeEach(() => {
