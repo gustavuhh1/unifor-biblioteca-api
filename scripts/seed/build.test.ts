@@ -1,12 +1,16 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildSeed, toWrites, type SeedData } from './build.js'
-import { lateBusinessDays } from './business-days.js'
+import { lateBusinessDays } from '../../src/shared/calendar/business-days.js'
+import {
+  atLocalTime,
+  localDate,
+  plusDays,
+} from '../../src/shared/calendar/dates.js'
 import {
   holidayDates,
-  loadHolidaysFile,
   type HolidaysDocument,
-} from './holidays.js'
-import { at, localDate, plusDays } from './time.js'
+} from '../../src/shared/calendar/holidays-api.js'
+import { loadHolidaysFile } from './holidays.js'
 
 const BASE_DAY = '2026-10-15'
 
@@ -61,7 +65,7 @@ describe('contadores (seção 8, passo 6)', () => {
       copiesTotal: 3,
       copiesAvailable: 0,
       queueLength: 1,
-      nextReturnAt: at('2026-10-28', '21:55'),
+      nextReturnAt: atLocalTime('2026-10-28', '21:55'),
     })
   })
 
@@ -143,23 +147,43 @@ describe('consistência dos dados', () => {
   it('dá aos empréstimos os vencimentos documentados', () => {
     const due = (id: string) => data.loans[id]!.dueAt
     // Seções 6.3 e 6.5.
-    expect(due('loan_lucas_engenharia')).toEqual(at('2026-10-16', '21:55'))
-    expect(due('loan_lucas_redes')).toEqual(at('2026-10-20', '21:55'))
-    expect(due('loan_lucas_estruturas')).toEqual(at('2026-10-23', '21:55'))
-    expect(due('loan_marina_calculo1')).toEqual(at('2026-10-10', '14:10'))
+    expect(due('loan_lucas_engenharia')).toEqual(
+      atLocalTime('2026-10-16', '21:55'),
+    )
+    expect(due('loan_lucas_redes')).toEqual(atLocalTime('2026-10-20', '21:55'))
+    expect(due('loan_lucas_estruturas')).toEqual(
+      atLocalTime('2026-10-23', '21:55'),
+    )
+    expect(due('loan_marina_calculo1')).toEqual(
+      atLocalTime('2026-10-10', '14:10'),
+    )
     expect(due('loan_pedromartins_arquitetura')).toEqual(
-      at('2026-10-21', '21:55'),
+      atLocalTime('2026-10-21', '21:55'),
     )
-    expect(due('loan_julia_codigo_limpo')).toEqual(at('2026-10-28', '21:55'))
-    expect(due('loan_camila_codigo_limpo')).toEqual(at('2026-11-03', '21:55'))
-    expect(due('loan_diego_refatoracao')).toEqual(at('2026-10-22', '21:55'))
-    expect(due('loan_marina_code_complete')).toEqual(at('2026-10-19', '21:55'))
-    expect(due('loan_marina_algoritmos')).toEqual(at('2026-10-17', '14:10'))
+    expect(due('loan_julia_codigo_limpo')).toEqual(
+      atLocalTime('2026-10-28', '21:55'),
+    )
+    expect(due('loan_camila_codigo_limpo')).toEqual(
+      atLocalTime('2026-11-03', '21:55'),
+    )
+    expect(due('loan_diego_refatoracao')).toEqual(
+      atLocalTime('2026-10-22', '21:55'),
+    )
+    expect(due('loan_marina_code_complete')).toEqual(
+      atLocalTime('2026-10-19', '21:55'),
+    )
+    expect(due('loan_marina_algoritmos')).toEqual(
+      atLocalTime('2026-10-17', '14:10'),
+    )
     expect(due('loan_pedrohenrique_algoritmos')).toEqual(
-      at('2026-10-27', '21:55'),
+      atLocalTime('2026-10-27', '21:55'),
     )
-    expect(due('loan_anabeatriz_algoritmos')).toEqual(at('2026-10-21', '21:55'))
-    expect(due('loan_rafael_algoritmos')).toEqual(at('2026-10-23', '21:55'))
+    expect(due('loan_anabeatriz_algoritmos')).toEqual(
+      atLocalTime('2026-10-21', '21:55'),
+    )
+    expect(due('loan_rafael_algoritmos')).toEqual(
+      atLocalTime('2026-10-23', '21:55'),
+    )
   })
 
   it('renova só os dois empréstimos documentados e retira 14 dias antes do vencimento', () => {
@@ -173,11 +197,11 @@ describe('consistência dos dados', () => {
       'loan_julia_codigo_limpo',
     ])
     expect(data.loans.loan_julia_codigo_limpo).toMatchObject({
-      pickedUpAt: at('2026-09-30', '21:55'),
-      originalDueAt: at('2026-10-14', '21:55'),
+      pickedUpAt: atLocalTime('2026-09-30', '21:55'),
+      originalDueAt: atLocalTime('2026-10-14', '21:55'),
     })
     expect(data.loans.loan_pedromartins_arquitetura!.pickedUpAt).toEqual(
-      at('2026-10-07', '21:55'),
+      atLocalTime('2026-10-07', '21:55'),
     )
   })
 
@@ -187,8 +211,8 @@ describe('consistência dos dados', () => {
       origin: 'queue',
       queueEntryId: 'qe_lucas_codigo_limpo',
       qrToken: 'q9Zr0bH6v3S1kT8xY2mW4pLc',
-      requestedAt: at('2026-10-15', '09:30'),
-      pickupDeadline: at('2026-10-19', '21:55'),
+      requestedAt: atLocalTime('2026-10-15', '09:30'),
+      pickupDeadline: atLocalTime('2026-10-19', '21:55'),
     })
     expect(data.queueEntries.qe_lucas_codigo_limpo).toMatchObject({
       status: 'fulfilled',
@@ -389,7 +413,11 @@ describe.each([
     })
     // Cerca de 3 dias úteis (um feriado ou um fim de semana pode mudar um pouco).
     expect(
-      lateBusinessDays(loan.dueAt!, at(today, '12:00'), holidayDates(holidays)),
+      lateBusinessDays(
+        loan.dueAt!,
+        atLocalTime(today, '12:00'),
+        holidayDates(holidays),
+      ),
     ).toBeGreaterThanOrEqual(1)
   })
 

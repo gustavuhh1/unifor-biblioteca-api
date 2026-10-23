@@ -58,17 +58,15 @@ import {
   type UserNotification,
   type Work,
 } from '../../src/shared/types/index.js'
-import type { HolidaysDocument } from './holidays.js'
+import type { HolidaysDocument } from '../../src/shared/calendar/holidays-api.js'
+import { atClosing, closingTime, formatDayMonth } from './time.js'
 import {
-  OPENING_HOURS,
-  at,
-  atClosing,
-  closingTime,
+  atLocalTime,
   daysBetween,
-  formatDayMonth,
   localDate,
   plusDays,
-} from './time.js'
+} from '../../src/shared/calendar/dates.js'
+import { DEFAULT_OPENING_HOURS } from '../../src/shared/library.js'
 
 // Documento como vai para o Firestore, com campos soltos.
 export type Doc = Record<string, unknown>
@@ -137,9 +135,10 @@ export function buildSeed(options: BuildOptions): SeedData {
   // partir desse dia, aplicado a hoje (ex.: retirado em 02/10 = hoje - 13 dias).
   const dayShift = daysBetween(BASE_DATE, today)
   const shift = (date: string) => plusDays(date, dayShift)
-  const atShifted = ([date, time]: [string, string]) => at(shift(date), time)
-  const now = at(today, NOW_TIME)
-  const created = at(shift('2026-09-01'), '09:50')
+  const atShifted = ([date, time]: [string, string]) =>
+    atLocalTime(shift(date), time)
+  const now = atLocalTime(today, NOW_TIME)
+  const created = atLocalTime(shift('2026-09-01'), '09:50')
   const userByKey = new Map(USERS.map((user) => [user.key, user]))
   const bookSpecByKey = new Map(BOOKS.map((book) => [book.key, book]))
   const loanSpecById = new Map(LOANS.map((loan) => [loan.id, loan]))
@@ -270,9 +269,9 @@ export function buildSeed(options: BuildOptions): SeedData {
     const pickedUpOn = shift(required(spec.pickedUpOn, 'pickedUpOn'))
     const originalDueOn = plusDays(pickedUpOn, 14)
     const dueOn = spec.renewedOn ? plusDays(originalDueOn, 14) : originalDueOn
-    const pickedUpAt = at(pickedUpOn, closingTime(originalDueOn))
+    const pickedUpAt = atLocalTime(pickedUpOn, closingTime(originalDueOn))
     const renewedAt = spec.renewedOn
-      ? at(shift(spec.renewedOn), '12:00')
+      ? atLocalTime(shift(spec.renewedOn), '12:00')
       : undefined
     const returnedAt = spec.returnedAt ? atShifted(spec.returnedAt) : undefined
     return {
@@ -312,11 +311,11 @@ export function buildSeed(options: BuildOptions): SeedData {
   for (const spec of QUEUE_ENTRIES) {
     const student = userOf(spec.student)
     const book = bookOf(spec.book)
-    const joinedAt = at(shift(spec.joinedOn), '10:00')
+    const joinedAt = atLocalTime(shift(spec.joinedOn), '10:00')
     const fulfilled = spec.status === QUEUE_ENTRY_STATUS.fulfilled
     // Lucas foi chamado às 09:12 de hoje e confirmou às 09:30 (24 h para
     // confirmar).
-    const turnStartedAt = fulfilled ? at(today, '09:12') : undefined
+    const turnStartedAt = fulfilled ? atLocalTime(today, '09:12') : undefined
     queueEntries[spec.id] = {
       bookId: bookIdOf(book.key),
       workId: book.workId,
@@ -330,15 +329,15 @@ export function buildSeed(options: BuildOptions): SeedData {
       origin: QUEUE_ORIGIN.student,
       turnStartedAt,
       confirmDeadline: turnStartedAt
-        ? at(plusDays(today, 1), '09:12')
+        ? atLocalTime(plusDays(today, 1), '09:12')
         : undefined,
       reservedCopyId: fulfilled
         ? loans[required(spec.loan, 'loan')]?.copyId
         : undefined,
       loanId: spec.loan,
-      endedAt: fulfilled ? at(today, '09:30') : undefined,
+      endedAt: fulfilled ? atLocalTime(today, '09:30') : undefined,
       notifyCount: 0,
-      ...stamps(joinedAt, fulfilled ? at(today, '09:30') : joinedAt),
+      ...stamps(joinedAt, fulfilled ? atLocalTime(today, '09:30') : joinedAt),
     }
   }
 
@@ -475,7 +474,7 @@ export function buildSeed(options: BuildOptions): SeedData {
         booksReadByYear,
       },
       createdAt: created,
-      updatedAt: isLucas ? at(today, '09:12') : now,
+      updatedAt: isLucas ? atLocalTime(today, '09:12') : now,
     })
     matriculaIndex[spec.matricula] = { uid, role: spec.role, ...stamps() }
     emailIndex[spec.email.toLowerCase()] = { uid, ...stamps() }
@@ -522,9 +521,9 @@ export function buildSeed(options: BuildOptions): SeedData {
       loanId: 'loan_ret4821',
       queueEntryId: 'qe_lucas_codigo_limpo',
       action: NOTIFICATION_ACTION.openLoan,
-      readAt: at(today, '09:30'),
+      readAt: atLocalTime(today, '09:30'),
       delivery,
-      ...stamps(at(today, '09:12'), at(today, '09:30')),
+      ...stamps(atLocalTime(today, '09:12'), atLocalTime(today, '09:30')),
     },
     notif_pickup_ready: {
       type: NOTIFICATION_TYPE.pickupReady,
@@ -534,7 +533,7 @@ export function buildSeed(options: BuildOptions): SeedData {
       loanId: 'loan_ret4821',
       action: NOTIFICATION_ACTION.showQr,
       delivery,
-      ...stamps(at(today, '09:30'), at(today, '09:30')),
+      ...stamps(atLocalTime(today, '09:30'), atLocalTime(today, '09:30')),
     },
     notif_due_reminder: {
       type: NOTIFICATION_TYPE.dueReminder,
@@ -545,8 +544,8 @@ export function buildSeed(options: BuildOptions): SeedData {
       action: NOTIFICATION_ACTION.openLoan,
       delivery,
       ...stamps(
-        at(shift('2026-10-14'), '09:00'),
-        at(shift('2026-10-14'), '09:00'),
+        atLocalTime(shift('2026-10-14'), '09:00'),
+        atLocalTime(shift('2026-10-14'), '09:00'),
       ),
     },
   }
@@ -555,7 +554,7 @@ export function buildSeed(options: BuildOptions): SeedData {
 
   const settings: LibrarySettings = {
     timezone: LIBRARY_TIMEZONE,
-    openingHours: OPENING_HOURS,
+    openingHours: DEFAULT_OPENING_HOURS,
     maxActiveLoans: 10,
     maxActiveQueues: 7,
     loanDays: 14,

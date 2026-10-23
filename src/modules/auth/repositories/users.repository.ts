@@ -168,3 +168,14 @@ export async function updateFullName(
 ): Promise<void> {
   await usersRef(uid).update({ ...fields, updatedAt: now })
 }
+
+// Grava quantos pedidos e empréstimos o aluno tem em andamento (pedido, cancelamento
+// e devolução, seção 3). Chame depois de todas as leituras da transação.
+export function setActiveLoanCount(
+  tx: Transaction,
+  uid: string,
+  count: number,
+  at: Date,
+): void {
+  tx.update(usersRef(uid), { activeLoanCount: count, updatedAt: at })
+}

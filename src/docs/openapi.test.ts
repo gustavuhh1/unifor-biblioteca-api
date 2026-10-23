@@ -9,7 +9,7 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     expect(document.paths?.['/health']?.get?.summary).toBeTruthy()
   })
 
-  it('documenta todas as rotas dos módulos de acesso e do acervo', () => {
+  it('documenta todas as rotas dos módulos de acesso, do acervo e de empréstimos', () => {
     const operations = Object.entries(document.paths ?? {}).flatMap(
       ([path, item]) =>
         ['get', 'post', 'patch', 'delete']
@@ -42,6 +42,10 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'PATCH /librarian/books/{bookId}',
         'POST /librarian/books/{bookId}/sync',
         'DELETE /librarian/books/{bookId}',
+        'POST /loans',
+        'GET /me/loans',
+        'POST /loans/{loanId}/cancel',
+        'POST /loans/{loanId}/renew',
       ].sort(),
     )
   })
@@ -88,6 +92,33 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     expect(
       paths['/librarian/books/{bookId}/sync']?.post?.responses?.['502'],
     ).toBeDefined()
+  })
+
+  it('documenta as rotas de empréstimo com sessão, perfil do aluno e as recusas', () => {
+    const paths = document.paths ?? {}
+    const loanRoutes = [
+      paths['/loans']?.post,
+      paths['/me/loans']?.get,
+      paths['/loans/{loanId}/cancel']?.post,
+      paths['/loans/{loanId}/renew']?.post,
+    ]
+
+    for (const operation of loanRoutes) {
+      expect(operation?.security).toEqual([{ bearerAuth: [] }])
+      expect(operation?.responses?.['401']).toBeDefined()
+      expect(operation?.responses?.['403']).toBeDefined()
+    }
+    expect(paths['/loans']?.post?.responses?.['409']).toBeDefined()
+    expect(paths['/loans']?.post?.responses?.['201']).toBeDefined()
+    expect(
+      paths['/loans/{loanId}/cancel']?.post?.responses?.['404'],
+    ).toBeDefined()
+    expect(
+      paths['/loans/{loanId}/renew']?.post?.responses?.['409'],
+    ).toBeDefined()
+    expect(document.components?.schemas?.Loan).toMatchObject({
+      type: 'object',
+    })
   })
 
   it('pede o ID token do Firebase só nas rotas com sessão', () => {

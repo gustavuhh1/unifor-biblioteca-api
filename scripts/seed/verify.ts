@@ -12,9 +12,16 @@ import {
   QUEUE_ENTRY_STATUS,
 } from '../../src/shared/types/index.js'
 import { bookIdOf, uidOf } from './build.js'
-import { lateBusinessDays } from './business-days.js'
-import { holidayDates, type HolidaysDocument } from './holidays.js'
-import { at, localDate, plusDays } from './time.js'
+import { lateBusinessDays } from '../../src/shared/calendar/business-days.js'
+import {
+  atLocalTime,
+  localDate,
+  plusDays,
+} from '../../src/shared/calendar/dates.js'
+import {
+  holidayDates,
+  type HolidaysDocument,
+} from '../../src/shared/calendar/holidays-api.js'
 
 // Resultado de uma conferência: o que foi conferido, se passou e o detalhe.
 export interface Check {
@@ -77,7 +84,11 @@ export async function runChecks(
   const marinaFine = await read(`${COLLECTIONS.fines}/fine_marina_calculo1`)
   const marinaDue = optionalDate(marinaLoan?.dueAt)
   const marinaDays = marinaDue
-    ? lateBusinessDays(marinaDue, at(today, '12:00'), holidayDates(holidays))
+    ? lateBusinessDays(
+        marinaDue,
+        atLocalTime(today, '12:00'),
+        holidayDates(holidays),
+      )
     : 0
   const rate = (marinaFine?.ratePerBusinessDayCents as number | undefined) ?? 0
   check(

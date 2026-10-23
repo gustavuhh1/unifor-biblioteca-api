@@ -107,3 +107,6 @@ export interface Fine extends Timestamps {
   // true quando marcado "Multa paga agora" na devolução.
   paidAtReturn?: boolean
 }
+
+// Pedido ou empréstimo lido do banco, com o seu id (o id do documento).
+export type LoanRecord = Loan & { id: string }
