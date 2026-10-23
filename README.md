@@ -25,7 +25,7 @@ REST API for Unifor Biblioteca, a university library app. Node + TypeScript + Ex
    cp .env.example .env
    ```
 
-   The defaults already point to the local emulators. Secrets (Resend, FeriadosAPI, Gemini, Google Books) can stay blank until the module that uses them exists.
+   The defaults already point to the local emulators. Secrets (Resend, FeriadosAPI, Gemini) can stay blank until the module that uses them exists.
 
 3. Start the Firebase emulators (Firestore on `8085`, Auth on `9099`, UI on `4000`):
 
@@ -44,23 +44,23 @@ REST API for Unifor Biblioteca, a university library app. Node + TypeScript + Ex
 
 ### Other commands
 
-| Command                | What it does                                                            |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `npm test`             | Unit tests (Vitest)                                                     |
-| `npm run test:watch`   | Unit tests in watch mode                                                |
-| `npm run lint`         | ESLint                                                                  |
-| `npm run format`       | Prettier                                                                |
-| `npm run typecheck`    | Type-check without emitting files                                       |
-| `npm run build`        | Compile to `dist/`                                                      |
-| `npm start`            | Run the compiled server                                                 |
-| `npm run seed`         | Load the demo data (see below)                                          |
-| `npm run catalog:sync` | Update the active books that have an ISBN from Google Books (see below) |
+| Command                | What it does                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `npm test`             | Unit tests (Vitest)                                                                   |
+| `npm run test:watch`   | Unit tests in watch mode                                                              |
+| `npm run lint`         | ESLint                                                                                |
+| `npm run format`       | Prettier                                                                              |
+| `npm run typecheck`    | Type-check without emitting files                                                     |
+| `npm run build`        | Compile to `dist/`                                                                    |
+| `npm start`            | Run the compiled server                                                               |
+| `npm run seed`         | Load the demo data (see below)                                                        |
+| `npm run catalog:sync` | Update the active books that have an ISBN from Open Library and BrasilAPI (see below) |
 
-## Updating the catalog from Google Books
+## Updating the catalog from Open Library and BrasilAPI
 
-`npm run catalog:sync` goes through the active books that have an ISBN and updates each one from Google Books (title, subtitle, authors, publisher, year, synopsis, cover, subjects and language; never the CDU, Cutter, shelf or copies). It calls the same service as `POST /librarian/books/{bookId}/sync-google`, waits between calls (`SYNC_PAUSE_MS` in `scripts/catalog-sync/run.ts`) and records the audit log entries with the actor `system`. At the end it prints how many books were updated, not found, failed and skipped (no ISBN).
+`npm run catalog:sync` goes through the active books that have an ISBN and updates each one from Open Library and BrasilAPI (title, subtitle, authors, publisher, year, synopsis, cover and subjects; never the CDU, Cutter, shelf, language or copies). Open Library comes first for title, authors, cover and subjects; BrasilAPI brings the synopsis and fills what is empty. Neither needs an API key. It calls the same service as `POST /librarian/books/{bookId}/sync`, waits between calls (`SYNC_PAUSE_MS` in `scripts/catalog-sync/run.ts`) and records the audit log entries with the actor `system`. At the end it prints how many books were updated, not found, failed and skipped (no ISBN).
 
-It runs against the emulators by default and needs `GOOGLE_BOOKS_API_KEY` in your `.env`. To run it against production, pass `--prod` and type the project ID when asked:
+It runs against the emulators by default. To run it against production, pass `--prod` and type the project ID when asked:
 
 ```sh
 npm run catalog:sync            # emulators
@@ -86,9 +86,9 @@ All dates are built from the day the seed runs ("today" in America/Fortaleza), k
 
 It can be run again at any time and always reaches the same state for the same day. Options (pass them after `--`):
 
-| Option              | What it does                                                                                  |
-| ------------------- | --------------------------------------------------------------------------------------------- |
-| `--no-google-books` | Skip the Google Books requests (cover, synopsis and publisher)                                |
-| `--offline`         | No external call at all: holidays come from `scripts/data/holidays-2026.json`                 |
-| `--prod`            | Write to **production** (`estoque-pay`). Asks you to type the project ID first                |
-| `--reset`           | With `--prod` only: wipe the collections before writing. Asks for a second typed confirmation |
+| Option                     | What it does                                                                                                                                                                                          |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--with-external-metadata` | Fill cover, synopsis and publisher from Open Library and BrasilAPI. Off by default: without it the seed makes no request for the catalog (deterministic and offline). Not combinable with `--offline` |
+| `--offline`                | No external call at all: holidays come from `scripts/data/holidays-2026.json`                                                                                                                         |
+| `--prod`                   | Write to **production** (`estoque-pay`). Asks you to type the project ID first                                                                                                                        |
+| `--reset`                  | With `--prod` only: wipe the collections before writing. Asks for a second typed confirmation                                                                                                         |
