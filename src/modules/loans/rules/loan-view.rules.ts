@@ -1,3 +1,4 @@
+import { isoOrNull } from '../../../shared/iso-date.js'
 import { isOverdue } from '../../../shared/time.js'
 import { LOAN_STATUS, type LoanRecord } from '../../../shared/types/index.js'
 import { LOAN_DISPLAY_STATE, LOAN_VIEW } from '../loans.constants.js'
@@ -79,9 +80,6 @@ export function belongsToView(
   return view === LOAN_VIEW.active ? inProgress : !inProgress
 }
 
-const iso = (date: Date | undefined): string | null =>
-  date ? date.toISOString() : null
-
 // Monta o pedido ou empréstimo da resposta. `renewalDenial` é o motivo de a
 // renovação ser negada, ou null se pode renovar (só faz sentido para empréstimo
 // ativo; nos outros itens canRenew é sempre false). O código curto e o segredo do QR
@@ -108,15 +106,15 @@ export function toLoanResponse(
     pickupDeadline: loan.pickupDeadline.toISOString(),
     pickupCode: waiting ? loan.pickupCode : null,
     qrToken: waiting ? loan.qrToken : null,
-    pickedUpAt: iso(loan.pickedUpAt),
-    dueAt: iso(loan.dueAt),
-    originalDueAt: iso(loan.originalDueAt),
+    pickedUpAt: isoOrNull(loan.pickedUpAt),
+    dueAt: isoOrNull(loan.dueAt),
+    originalDueAt: isoOrNull(loan.originalDueAt),
     renewalCount: loan.renewalCount,
     canRenew: active && renewalDenial === null,
     renewalDenialReason: active ? renewalDenial : null,
     progress: progressOf(loan, at),
-    returnedAt: iso(loan.returnedAt),
-    cancelledAt: iso(loan.cancelledAt),
-    expiredAt: iso(loan.expiredAt),
+    returnedAt: isoOrNull(loan.returnedAt),
+    cancelledAt: isoOrNull(loan.cancelledAt),
+    expiredAt: isoOrNull(loan.expiredAt),
   }
 }

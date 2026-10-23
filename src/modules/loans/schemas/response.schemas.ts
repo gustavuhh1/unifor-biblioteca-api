@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isoDateSchema as isoDate } from '../../../shared/iso-date.js'
 import { LOAN_STATUSES } from '../../../shared/types/index.js'
 import {
   LOAN_DISPLAY_STATES,
@@ -8,8 +9,6 @@ import {
 
 // Schemas de saída do módulo de empréstimos. Também alimentam o Swagger. Data vai
 // em ISO 8601 (UTC); campo que o pedido ainda não tem vai como null.
-
-const isoDate = z.iso.datetime()
 
 // Um pedido ou empréstimo do aluno, com o estado calculado na hora (RF-EMP-08,
 // RF-SIS-03). É a resposta de pedir, cancelar e renovar, e o item de Meus
