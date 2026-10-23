@@ -1,6 +1,6 @@
 # Requisitos funcionais e não funcionais
 
-Gerado em 18/10/2026 a partir do documento de requisitos (rev 77) e do kanban. São 85 RF e 28 RNF. "Comum" vale para as duas entregas (29/10 e 09/11); "Sistema" é comportamento automático da API. Prioridade: Alta, Média ou Baixa.
+Gerado em 18/10/2026 a partir do documento de requisitos (rev 77) e do kanban. São 85 RF e 28 RNF. "Comum" vale para as duas entregas (27/10 e 09/11); "Sistema" é comportamento automático da API. Prioridade: Alta, Média ou Baixa.
 
 Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EMP-01`).
 
@@ -167,7 +167,7 @@ Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EM
 
 ### Manutenção
 
-- **RNF-MAN-01 — Dois repositórios, só a main, entregas por tag** (Alta, Comum): São dois repositórios, unifor-biblioteca-api e unifor-biblioteca-app, cada um só com a branch main. Cada tarefa vira uma branch curta com PR para a main, e cada entrega é marcada por tag: integration-delivery (29/10, nos dois) e mobile-delivery (09/11).
+- **RNF-MAN-01 — Dois repositórios, só a main, entregas por tag** (Alta, Comum): São dois repositórios, unifor-biblioteca-api e unifor-biblioteca-app, cada um só com a branch main. Cada tarefa vira uma branch curta com PR para a main, e cada entrega é marcada por tag: integration-delivery (27/10, nos dois) e mobile-delivery (09/11).
 - **RNF-MAN-02 — README e código em inglês** (Alta, Comum): README e código do app em inglês; commits e interface em português.
 - **RNF-MAN-03 — Usar o design system UniforBib** (Média, Comum): As telas usam o design system UniforBib (cores, tipos e componentes) em vez de estilos soltos.
 
@@ -176,4 +176,4 @@ Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EM
 - **RNF-IMP-01 — API no Cloud Run** (Alta, Comum): A API roda no Google Cloud Run, com HTTPS e domínio próprio, e orçamento com alerta.
 - **RNF-IMP-02 — README da API** (Alta, Comum): O README da API traz como clonar, executar, as variáveis de ambiente, o deploy e o link da API publicada.
 - **RNF-IMP-03 — Firestore: produção e Emulator Suite** (Alta, Comum): O banco é o Firebase Firestore, com ambiente de produção no Firebase e ambiente de teste no Emulator Suite.
-- **RNF-IMP-04 — App completo na demo de 29/10** (Alta, Comum): O app completo, com todas as funcionalidades, funciona em 29/10 para a demonstração ao vivo da API.
+- **RNF-IMP-04 — App completo na demo de 27/10** (Alta, Comum): O app completo, com todas as funcionalidades, funciona em 27/10 para a demonstração ao vivo da API.
