@@ -1,8 +1,12 @@
+import type { AppError } from '../../../shared/errors.js'
 import { atLocalTime } from '../../../shared/calendar/dates.js'
 import type {
+  Copy,
   QueueEntry,
   QueueEntryRecord,
 } from '../../../shared/types/index.js'
+import { makeBook, makeCopy } from '../../catalog/__tests__/book.fixtures.js'
+import { makeStudent } from '../../loans/__tests__/loan.fixtures.js'
 
 // "Hoje" dos testes de fila: sexta 16/10/2026, 09:12 em Fortaleza (a hora da vez
 // do exemplo da seção 2.14).
@@ -67,4 +71,88 @@ export function makeQueue(): QueueEntryRecord[] {
       order: 4000,
     }),
   ]
+}
+
+// O que o Firestore em memória oferece para montar os dados do teste.
+interface Seedable {
+  put(collection: string, id: string, data: object): void
+}
+
+// Guarda um aluno ativo (o Lucas, a menos que o teste mude os campos).
+export function putStudent(
+  db: Seedable,
+  uid: string,
+  overrides: Record<string, unknown> = {},
+) {
+  db.put('users', uid, makeStudent(overrides))
+}
+
+// Guarda o bibliotecário (a Ana Souza do balcão).
+export function putLibrarian(db: Seedable, uid = LIBRARIAN_UID) {
+  db.put('users', uid, {
+    role: 'librarian',
+    status: 'active',
+    matricula: '1000001',
+    fullName: 'Ana Souza',
+    email: 'ana@unifor.br',
+    authEmail: '1000001@contas.uni-books.app',
+    deskLabel: 'Balcão 1',
+    activeLoanCount: 0,
+    activeQueueCount: 0,
+    openFineTotalCents: 0,
+    createdAt: NOW,
+    updatedAt: NOW,
+  })
+}
+
+// Guarda uma edição com todos os exemplares emprestados (a fila está aberta).
+export function putBook(
+  db: Seedable,
+  id = BOOK_ID,
+  overrides: Parameters<typeof makeBook>[0] = {},
+) {
+  const { id: _id, ...book } = makeBook({
+    id,
+    copiesTotal: 1,
+    copiesAvailable: 0,
+    queueLength: 0,
+    ...overrides,
+  })
+  void _id
+  db.put('books', id, book)
+}
+
+// Guarda um exemplar emprestado da edição.
+export function putCopy(
+  db: Seedable,
+  id = 'copy1',
+  overrides: Partial<Copy> = {},
+) {
+  db.put(
+    'copies',
+    id,
+    makeCopy({
+      bookId: BOOK_ID,
+      registration: id,
+      status: 'on_loan',
+      ...overrides,
+    }),
+  )
+}
+
+// Guarda um lugar na fila.
+export function putEntry(
+  db: Seedable,
+  id: string,
+  overrides: Partial<QueueEntry> = {},
+) {
+  db.put('queueEntries', id, makeEntry(overrides))
+}
+
+// Espera a promessa falhar e devolve o erro (ou undefined se ela deu certo).
+export async function catchError(promise: Promise<unknown>): Promise<AppError> {
+  return (await promise.then(
+    () => undefined,
+    (error: unknown) => error,
+  )) as AppError
 }
