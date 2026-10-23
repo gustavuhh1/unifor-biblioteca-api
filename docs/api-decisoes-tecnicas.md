@@ -26,7 +26,7 @@ unifor-biblioteca-api/
 │   ├── middlewares/        # auth (ID token), perfil (aluno/bibliotecário), erros, validação
 │   ├── modules/            # um por área: routes, controller, service, schemas, testes
 │   │   ├── auth/           # cadastro, token de e-mail, senha, passkeys
-│   │   ├── catalog/        # acervo, Google Books
+│   │   ├── catalog/        # acervo, Open Library e BrasilAPI
 │   │   ├── loans/          # empréstimos, renovação, retirada
 │   │   ├── queues/         # filas
 │   │   ├── fines/          # multas

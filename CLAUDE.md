@@ -42,7 +42,8 @@ Se dois documentos se contradizem, ou se uma tarefa exige algo que não está ne
 - **Vitest** só com **testes unitários** (regras de negócio, validações, datas). **Sem testes de ponta a ponta.**
 - **tsx** para desenvolvimento; build de produção com `tsc`; deploy no **Cloud Run** (região `southamerica-east1`) com Dockerfile.
 - **ESLint + Prettier**, Prettier com `"semi": false` (**sem ponto e vírgula**).
-- Resend (e-mail), Gemini (Assistente), Google Books (API externa) e FeriadosAPI: os SDKs entram só quando o módulo correspondente for implementado.
+- **Open Library** e **BrasilAPI (ISBN)** (API externa do acervo, decidido em 23/10; sem chave, com `fetch` do Node e timeout de 5 s cada, consultadas em paralelo): a Open Library vem primeiro em título, autores, capa e assuntos, e a BrasilAPI traz a sinopse e preenche o que faltar. A atualização de um livro (`sync`) só preenche campo vazio, nunca sobrescreve um valor existente. Só o cadastro e a atualização de livro chamam as fontes; busca e página do livro nunca. A Google Books não é mais usada.
+- Resend (e-mail), Gemini (Assistente) e FeriadosAPI: os SDKs entram só quando o módulo correspondente for implementado.
 
 ## Convenções
 
@@ -120,3 +121,4 @@ Regras:
 - `npm run lint` / `npm run format`: ESLint e Prettier
 - `npm run emulators`: Firebase Emulator Suite (Firestore e Auth)
 - `npm run seed`: carga do banco (emulador por padrão)
+- `npm run catalog:sync`: atualiza os livros com ISBN pela Open Library e BrasilAPI (emulador por padrão; `--prod` pede confirmação)

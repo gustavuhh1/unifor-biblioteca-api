@@ -9,7 +9,7 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     expect(document.paths?.['/health']?.get?.summary).toBeTruthy()
   })
 
-  it('documenta todas as rotas do módulo de acesso', () => {
+  it('documenta todas as rotas dos módulos de acesso e do acervo', () => {
     const operations = Object.entries(document.paths ?? {}).flatMap(
       ([path, item]) =>
         ['get', 'post', 'patch', 'delete']
@@ -34,8 +34,60 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'GET /me',
         'PATCH /me',
         'POST /auth/logout',
+        'GET /books',
+        'GET /books/{bookId}',
+        'GET /librarian/books',
+        'GET /librarian/books/isbn/{isbn}',
+        'POST /librarian/books',
+        'PATCH /librarian/books/{bookId}',
+        'POST /librarian/books/{bookId}/sync',
+        'DELETE /librarian/books/{bookId}',
       ].sort(),
     )
+  })
+
+  it('documenta 401 nas rotas do acervo e 403 nas do bibliotecário', () => {
+    const paths = document.paths ?? {}
+    const catalogRoutes = [
+      paths['/books']?.get,
+      paths['/books/{bookId}']?.get,
+      paths['/librarian/books']?.get,
+      paths['/librarian/books/isbn/{isbn}']?.get,
+      paths['/librarian/books']?.post,
+      paths['/librarian/books/{bookId}']?.patch,
+      paths['/librarian/books/{bookId}/sync']?.post,
+      paths['/librarian/books/{bookId}']?.delete,
+    ]
+
+    for (const operation of catalogRoutes) {
+      expect(operation?.security).toEqual([{ bearerAuth: [] }])
+      expect(operation?.responses?.['401']).toBeDefined()
+    }
+    for (const operation of catalogRoutes.slice(2)) {
+      expect(operation?.responses?.['403']).toBeDefined()
+    }
+  })
+
+  it('documenta 404, 409 e 502 do acervo onde se aplicam', () => {
+    const paths = document.paths ?? {}
+
+    expect(paths['/books/{bookId}']?.get?.responses?.['404']).toBeDefined()
+    expect(
+      paths['/librarian/books/{bookId}']?.patch?.responses?.['404'],
+    ).toBeDefined()
+    expect(
+      paths['/librarian/books/{bookId}']?.delete?.responses?.['404'],
+    ).toBeDefined()
+    expect(paths['/librarian/books']?.post?.responses?.['409']).toBeDefined()
+    expect(
+      paths['/librarian/books/{bookId}']?.delete?.responses?.['409'],
+    ).toBeDefined()
+    expect(
+      paths['/librarian/books/isbn/{isbn}']?.get?.responses?.['502'],
+    ).toBeDefined()
+    expect(
+      paths['/librarian/books/{bookId}/sync']?.post?.responses?.['502'],
+    ).toBeDefined()
   })
 
   it('pede o ID token do Firebase só nas rotas com sessão', () => {

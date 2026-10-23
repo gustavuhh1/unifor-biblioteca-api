@@ -70,7 +70,7 @@ Aprovadas pelo aluno depois da auditoria design × escopo. Aplicadas no Figma e 
 - A79 / SessaoExpirada: login com o aviso "Sua sessão expirou" (401).
 - A80 / MeusPasskeysSemPasskey: aparelho sem passkey, com "Criar passkey neste aparelho" ativo.
 - A81 / AssistenteBloqueado: Marina pede um livro e o Assistente explica que o atraso bloqueia, sem botão de confirmar.
-- B21 / LivroNovo: ISBN não encontrado no Google Books, com texto vermelho pedindo para preencher à mão.
+- B21 / LivroNovo: ISBN não encontrado nas fontes externas, com texto vermelho pedindo para preencher à mão.
 - Remover livro com empréstimo ou fila não ganhou tela: a B26 (marcar "Indisponível para novos pedidos") já cobre.
 
 **Textos e dados corrigidos**
@@ -148,7 +148,7 @@ Aprovadas pelo aluno depois da auditoria design × escopo. Aplicadas no Figma e 
 - Estados: exemplar (disponível, emprestado, reservado); empréstimo (aguardando retirada, ativo, devolvido, expirado, cancelado). "Atrasado" é calculado pela data de vencimento, não é um estado salvo.
 - Retirada: QR no app do aluno (funciona sem internet), com um código aleatório do pedido. O bibliotecário escaneia num leitor único, sem abas, e o QR abre a ficha do aluno, de onde ele entrega o pedido e registra devoluções; sem QR, digita a matrícula ou o código do pedido e cai na mesma ficha (decidido em 18/10).
 - Fila automática, com ações manuais do bibliotecário (mudar posição, reenviar aviso, remover com motivo, adicionar aluno em qualquer posição com motivo).
-- Acervo (bibliotecário): cria, edita e remove livros e atualiza um livro pelo Google Books (ISBN). Se o Google Books não acha o ISBN, o app avisa em vermelho e o bibliotecário preenche à mão. Só remove livro sem exemplar emprestado e sem fila; o histórico de empréstimos é mantido (o livro sai da busca e não pode mais ser pedido, mas os empréstimos antigos continuam no Histórico do aluno).
+- Acervo (bibliotecário): cria, edita e remove livros e atualiza um livro pela Open Library e BrasilAPI (ISBN); essa atualização só preenche campo vazio e nunca sobrescreve um valor que já existe. Se nenhuma acha o ISBN, o app avisa em vermelho e o bibliotecário preenche à mão. Só remove livro sem exemplar emprestado e sem fila; o histórico de empréstimos é mantido (o livro sai da busca e não pode mais ser pedido, mas os empréstimos antigos continuam no Histórico do aluno).
 - **Indisponível para novos pedidos (decidido em 17/10/2026):** o bibliotecário marca (e desmarca) o livro ao editá-lo. Com a marca, ninguém solicita o livro nem entra na fila dele, mas o livro continua no catálogo, visível para os alunos, com o aviso "Indisponível para novos pedidos" e os botões Solicitar empréstimo e Entrar na fila desativados. É a saída quando o livro precisa sair do acervo e ainda tem exemplar emprestado ou fila. Pedidos, empréstimos e filas que já existem não mudam (o 1º da fila continua sendo avisado quando o livro voltar) — confirmado em 17/10.
 - Assistente (IA) só para o aluno: ajuda de uso, busca com sugestão de parecidos e sugestões pelo histórico, que aparecem também no Início ("Recomendados para você"). Também solicita empréstimo e entra em fila em nome do aluno, mostrando antes o que vai fazer e esperando a confirmação; as ações seguem as mesmas regras e permissões do aluno, e quando uma regra bloqueia (atraso, limite) ele explica o motivo sem oferecer confirmação. Mostra aviso de que pode errar.
 - Atendimento: Biblioteca (Praça Central), seg a sex 7h às 21h55, sáb 8h às 14h10, BiblioZap (85) 3477-3257, Empréstimo (85) 3477-3162, bibemprestimo@unifor.br.
@@ -157,7 +157,7 @@ Aprovadas pelo aluno depois da auditoria design × escopo. Aplicadas no Figma e 
 - App: React Native com Expo, Android e iOS, num único app para os dois perfis. API: Node, concentra regras, autenticação, permissões, Assistente e integração externa. O app só fala com a API.
 - Banco: Firebase Firestore. Produção no Firebase; testes no Firebase Emulator Suite.
 - Assistente: Gemini API, como módulo da própria API principal (não é serviço separado).
-- API externa: Google Books (2 requisições: busca por ISBN e consulta pelo id do volume), combinada com os dados locais. O Google Books não traz CDU, Cutter, estante nem exemplares: esses dados são do projeto.
+- API externa: Open Library e BrasilAPI (2 requisições ao mesmo tempo, com o ISBN, e 5 segundos de limite cada), combinadas entre si (Open Library primeiro em título, autores, capa e assuntos; BrasilAPI traz a sinopse e preenche o que faltar) e com os dados locais. Nenhuma das duas traz CDU, Cutter, estante nem exemplares: esses dados são do projeto. Ao atualizar um livro já cadastrado, as fontes só completam o que está vazio (título, subtítulo, autores, editora, ano, sinopse, capa e assuntos); o cadastro usa a consulta por ISBN para pré-preencher o formulário.
 - Feriados: FeriadosAPI, com cache no banco. Busca no acervo: em memória na API.
 - E-mail: Resend com domínio próprio. Push: Expo, só no Android (decidido em 17/10). Lembretes: Cloud Scheduler chamando a API. Deploy: Google Cloud Run.
 - **Metas de desempenho (decidido em 17/10/2026):** busca em até 1 s e demais telas em até 2 s, com a API acordada. A primeira chamada depois de a API ficar parada (Cloud Run com zero instâncias, para gasto zero) fica de fora; a API é acordada antes da demonstração.
@@ -173,7 +173,7 @@ Aprovadas pelo aluno depois da auditoria design × escopo. Aplicadas no Figma e 
 
 ## Dados do acervo
 - Não há acesso a dados reais da biblioteca. Livros, datas e históricos nas telas são exemplos, inclusive ISBN, Cutter e nomes de aparelhos.
-- Os dados de capa, sinopse, ISBN, autores e editora vêm da Google Books API; CDU, Cutter, estante e exemplares são dados de exemplo do projeto.
+- Os dados de capa, sinopse, ISBN, autores e editora vêm da Open Library e da BrasilAPI; CDU, Cutter, estante e exemplares são dados de exemplo do projeto.
 
 ## Página do livro (espelha o catálogo web da Biblioteca Unifor; sem avaliação de usuários)
 - Capa, status, exemplares na estante e reservas; título, subtítulo, material/edição/editora/ano; Salvar e Compartilhar.
@@ -194,7 +194,7 @@ Aprovadas pelo aluno depois da auditoria design × escopo. Aplicadas no Figma e 
 - **Navegação do bibliotecário decidida em 16/10:** Multas na barra e Acervo pelo Painel, já nos dois (a tela de editar livro tem a lixeira "Remover livro" no topo).
 - **Login do aluno (decidido em 16/10; vale para as duas entregas desde 18/10):** passkey como método principal e senha como alternativa, para manter a mesma interface nas duas entregas. O aluno confirmou que atende o critério de autenticação da cadeira; sem pendência com o professor.
 - **E-mail para @edu.unifor.br:** mandar um e-mail de teste do Resend para o e-mail institucional do aluno e conferir se chega na caixa de entrada. Se a Unifor filtrar, o cadastro ao vivo não funciona.
-- Dados e capas: BookCover com imagem real (Google Books) e capa gerada como reserva; corrigir quebra de palavras longas no título da capa M.
+- Dados e capas: BookCover com imagem real (Open Library) e capa gerada como reserva; corrigir quebra de palavras longas no título da capa M.
 - Decisões de escopo: fechadas em 17/10 e ajustadas em 18/10 pela auditoria de design (seção própria). Nenhuma em aberto.
 - Para a entrega aos devs: nomes acessíveis dos botões só com ícone (voltar, lápis, +, enviar, mais, sino), texto alternativo das capas ("Título, de Autor") e teste real com leitor de tela (VoiceOver/TalkBack).
 - Final: separar style guide e telas em dois arquivos (publicar biblioteca); protótipo clicável; apagar o arquivo antigo da conta Gmail (aluno).

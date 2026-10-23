@@ -1,10 +1,14 @@
-// Põe o texto em minúsculas e sem acento: é o formato dos campos `*Normalized`
-// e do texto que a API busca (docs/modelo-de-dados-firestore.md, seção 4.2).
+// Põe o texto em minúsculas, sem acento e com os espaços normalizados (sem
+// espaço nas pontas e um só entre as palavras): é o formato dos campos
+// `*Normalized` e do texto que a API busca (docs/modelo-de-dados-firestore.md,
+// seção 4.2).
 export function normalizeText(text: string): string {
   return text
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 // Iniciais do aluno: primeira letra do primeiro e do último nome, em maiúscula

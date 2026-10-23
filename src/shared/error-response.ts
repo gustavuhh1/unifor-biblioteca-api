@@ -13,6 +13,10 @@ export const errorResponseSchema = z
       .optional()
       .meta({ description: 'Campos errados, para o app marcar na tela.' }),
     retryAfterSeconds: z.number().int().optional(),
+    suggestion: z.string().optional().meta({
+      description:
+        'O que fazer no lugar, como código estável (ex.: `mark_unavailable`).',
+    }),
   })
   .meta({
     id: 'ErrorResponse',

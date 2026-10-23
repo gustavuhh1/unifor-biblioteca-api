@@ -1,7 +1,7 @@
 import type {
   AssistantActionStatus,
   AssistantActionType,
-  AssistantBlockedReason,
+  BlockedReason,
   AssistantSender,
   Cents,
   DevicePlatform,
@@ -143,7 +143,7 @@ export interface AssistantAction extends Timestamps {
   type: AssistantActionType
   bookIds: string[]
   status: AssistantActionStatus
-  blockedReason?: AssistantBlockedReason
+  blockedReason?: BlockedReason
   preview: AssistantActionPreview
   // createdAt + 15 minutos. Campo de TTL.
   expiresAt: Date

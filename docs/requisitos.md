@@ -30,8 +30,8 @@ Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EM
 - **RF-ACE-01 — Busca no acervo** (Alta, Comum): O aluno busca livros por título, autor ou assunto, ignorando acento, sem filtros avançados.
 - **RF-ACE-02 — Página do livro** (Alta, Comum): A página do livro mostra capa, status, exemplares, edição, editora, ano, CDU, Cutter, estante e sinopse.
 - **RF-ACE-03 — Devolução prevista e fila no livro emprestado** (Alta, Comum): Livro emprestado mostra a devolução prevista e quantas pessoas estão na fila.
-- **RF-ACE-04 — Enriquecer livro com Google Books** (Alta, Comum): A API enriquece cada livro com a Google Books API em 2 requisições (busca por ISBN e consulta pelo id do volume) e combina o resultado com os dados locais.
-- **RF-ACE-05 — Script de importação do acervo** (Média, Comum): Um script de importação percorre o acervo e atualiza os livros pelo Google Books.
+- **RF-ACE-04 — Enriquecer livro com Open Library e BrasilAPI** (Alta, Comum): A API enriquece cada livro com 2 requisições feitas ao mesmo tempo, com o ISBN: uma à Open Library (título, autores, capa e assuntos) e outra à BrasilAPI (sinopse e campos vazios), e combina o resultado com os dados locais. Cada requisição tem tempo máximo de 5 segundos.
+- **RF-ACE-05 — Script de importação do acervo** (Média, Comum): Um script de importação percorre o acervo e atualiza os livros pela Open Library e BrasilAPI.
 - **RF-ACE-06 — Busca sem resultado leva ao Assistente** (Baixa, Comum): Na busca sem resultado, o app oferece perguntar ao Assistente.
 - **RF-ACE-07 — Compartilhar livro** (Baixa, Comum): O aluno compartilha o livro pelo menu nativo do celular, pelo botão Compartilhar da página do livro.
 - **RF-ACE-08 — Livro indisponível para novos pedidos** (Média, Comum): O livro marcado como indisponível para novos pedidos continua na busca e na página do livro. Os botões Solicitar empréstimo e Entrar na fila ficam desativados, com o aviso "Indisponível para novos pedidos".
@@ -96,9 +96,9 @@ Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EM
 ### Gestão do acervo
 
 - **RF-GAC-01 — Listar e buscar acervo (bibliotecário)** (Alta, Comum): O bibliotecário abre o acervo por um atalho no Painel (a home) e lista e busca os livros por título, autor ou ISBN, com filtros.
-- **RF-GAC-02 — Cadastrar livro (aviso de ISBN não encontrado)** (Alta, Comum): O bibliotecário cadastra um livro (ISBN, título, autores, editora, edição, ano, CDU, Cutter, estante e exemplares), com busca do ISBN no Google Books. Se o Google Books não encontrar o ISBN, o app avisa em vermelho e o bibliotecário preenche os dados à mão.
+- **RF-GAC-02 — Cadastrar livro (aviso de ISBN não encontrado)** (Alta, Comum): O bibliotecário cadastra um livro (ISBN, título, autores, editora, edição, ano, CDU, Cutter, estante e exemplares), com busca do ISBN na Open Library e na BrasilAPI. Se nenhuma encontrar o ISBN, o app avisa em vermelho e o bibliotecário preenche os dados à mão.
 - **RF-GAC-03 — Editar livro** (Alta, Comum): O bibliotecário edita os dados de um livro.
-- **RF-GAC-04 — Atualizar livro pelo Google Books** (Alta, Comum): O bibliotecário atualiza um livro pelo Google Books; CDU, Cutter, estante e exemplares não mudam. Rota só do bibliotecário.
+- **RF-GAC-04 — Atualizar livro pelas fontes externas** (Alta, Comum): O bibliotecário atualiza um livro pela Open Library e BrasilAPI; a atualização só preenche campo vazio (título, subtítulo, autores, editora, ano, sinopse, capa e assuntos nunca sobrescrevem um valor que já existe); CDU, Cutter, estante, idioma e exemplares não mudam. Rota só do bibliotecário.
 - **RF-GAC-05 — Remover livro** (Média, Comum): O bibliotecário remove um livro do acervo. Só é possível se nenhum exemplar estiver emprestado e não houver fila; o histórico de empréstimos é mantido. Quando não for possível, o bibliotecário marca o livro como indisponível para novos pedidos (RF-GAC-06).
 - **RF-GAC-06 — Indisponível para novos pedidos** (Média, Comum): O bibliotecário marca um livro como "Indisponível para novos pedidos" ao editá-lo e tira a marca quando quiser. Com a marca, ninguém solicita o livro nem entra na fila dele. O livro continua no catálogo, visível para os alunos. Pedidos, empréstimos e filas que já existem não mudam.
 
@@ -137,7 +137,7 @@ Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EM
 - **RNF-SEG-04 — Senhas só no Firebase Authentication** (Alta, Comum): As senhas ficam só no Firebase Authentication, nas duas entregas. A API não guarda senha nenhuma, nem em hash, e nunca as registra em log.
 - **RNF-SEG-05 — Tokens de e-mail de uso único** (Alta, Comum): Os tokens de e-mail (confirmação e recuperação) são de uso único e de validade curta (meta: 20 minutos).
 - **RNF-SEG-06 — App só fala com a API** (Alta, Comum): O app nunca lê nem grava no banco direto: tudo passa pela API, que aplica as regras e as permissões.
-- **RNF-SEG-07 — Segredos no Secret Manager e em .env fora do Git** (Alta, Comum): Chaves e segredos (Resend, Gemini, FeriadosAPI, Google Books) ficam no Secret Manager em produção e num arquivo .env fora do Git no desenvolvimento, nunca no repositório.
+- **RNF-SEG-07 — Segredos no Secret Manager e em .env fora do Git** (Alta, Comum): Chaves e segredos (Resend, Gemini, FeriadosAPI) ficam no Secret Manager em produção e num arquivo .env fora do Git no desenvolvimento, nunca no repositório.
 - **RNF-SEG-08 — Testes só no Emulator Suite** (Alta, Comum): Os testes usam o Firebase Emulator Suite e nunca tocam os dados de produção.
 
 ### Desempenho
@@ -150,7 +150,7 @@ Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EM
 
 - **RNF-CON-01 — QR funciona sem internet** (Alta, Comum): O QR de retirada aparece no celular do aluno mesmo sem internet.
 - **RNF-CON-02 — Aviso não se perde se o push falhar** (Média, Comum): Falha no push não perde o aviso: ele continua dentro do app.
-- **RNF-CON-03 — Acervo funciona se a Google Books falhar** (Média, Comum): Falha na Google Books não impede o uso do acervo: a API usa os dados já salvos.
+- **RNF-CON-03 — Acervo funciona se as fontes externas falharem** (Média, Comum): Falha na Open Library ou na BrasilAPI não impede o uso do acervo: a busca e a página do livro nunca chamam as fontes e a API usa os dados já salvos. Só o cadastro e a atualização de um livro as consultam, e uma fonte fora do ar não impede a outra de responder.
 
 ### Usabilidade
 

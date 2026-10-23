@@ -1,5 +1,6 @@
 import { OpenApiGeneratorV31 } from '@asteasolutions/zod-to-openapi'
 import '../modules/auth/auth.docs.js'
+import '../modules/catalog/catalog.docs.js'
 import { healthResponseSchema } from '../shared/health.js'
 import { jsonContent, registry } from './registry.js'
 

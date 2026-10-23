@@ -1,33 +1,42 @@
-import { createInterface } from 'node:readline/promises'
 import { parseArgs } from 'node:util'
+import { emulatorProblems } from '../lib/environment.js'
 
 // Opções da linha de comando do seed.
 export interface CliOptions {
   prod: boolean
   reset: boolean
-  googleBooks: boolean
+  // Completa capa, sinopse e editora pelas fontes externas (Open Library e
+  // BrasilAPI). Desligado por padrão: o seed é determinístico e funciona offline.
+  externalMetadata: boolean
   // Nenhuma chamada externa: os feriados vêm do arquivo local.
   offline: boolean
 }
 
-// Lê os argumentos da linha de comando (--prod, --reset, --no-google-books e
-// --offline); argumento desconhecido é erro.
+// Lê os argumentos da linha de comando (--prod, --reset, --with-external-metadata
+// e --offline); argumento desconhecido é erro, e --offline com
+// --with-external-metadata também (um pede rede, o outro proíbe).
 export function parseCliArgs(argv: string[]): CliOptions {
   const { values } = parseArgs({
     args: argv,
     options: {
       prod: { type: 'boolean' },
       reset: { type: 'boolean' },
-      'no-google-books': { type: 'boolean' },
+      'with-external-metadata': { type: 'boolean' },
       offline: { type: 'boolean' },
     },
     strict: true,
   })
   const offline = values.offline ?? false
+  const externalMetadata = values['with-external-metadata'] ?? false
+  if (offline && externalMetadata) {
+    throw new Error(
+      '--offline e --with-external-metadata não podem ser usados juntos.',
+    )
+  }
   return {
     prod: values.prod ?? false,
     reset: values.reset ?? false,
-    googleBooks: !offline && !values['no-google-books'],
+    externalMetadata,
     offline,
   }
 }
@@ -54,42 +63,12 @@ export function checkEnvironment(
   }
 
   if (!options.prod) {
-    for (const name of [
-      'FIRESTORE_EMULATOR_HOST',
-      'FIREBASE_AUTH_EMULATOR_HOST',
-    ]) {
-      if (!source[name]) {
-        problems.push(
-          `${name} não está definida. Por padrão o seed só roda no Emulator Suite: defina-a no .env e rode "npm run emulators". Para gravar em produção use --prod.`,
-        )
-      }
-    }
+    problems.push(
+      ...emulatorProblems(source, [
+        'FIRESTORE_EMULATOR_HOST',
+        'FIREBASE_AUTH_EMULATOR_HOST',
+      ]),
+    )
   }
   return problems
-}
-
-// Pede ao usuário que digite `expected` exatamente; qualquer outra coisa cancela.
-export async function confirmByTyping(
-  question: string,
-  expected: string,
-): Promise<boolean> {
-  const readline = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  })
-  // Entrada fechada (sem terminal, Ctrl+D) conta como "não confirmado".
-  const closed = new Promise<string>((resolve) =>
-    readline.once('close', () => resolve('')),
-  )
-  try {
-    const answer = await Promise.race([
-      readline.question(`${question}\n> `),
-      closed,
-    ])
-    return answer.trim() === expected
-  } catch {
-    return false
-  } finally {
-    readline.close()
-  }
 }

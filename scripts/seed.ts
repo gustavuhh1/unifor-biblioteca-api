@@ -2,27 +2,28 @@
 //   npm run seed                      só no Emulator Suite (padrão)
 //   npm run seed -- --prod            produção, com confirmação digitada
 //   npm run seed -- --prod --reset    produção, apagando as coleções antes
-//   npm run seed -- --no-google-books pula as requisições ao Google Books
+//   npm run seed -- --with-external-metadata completa capa, sinopse e editora pela
+//                                     Open Library e BrasilAPI (padrão: desligado)
 //   npm run seed -- --offline         nenhuma chamada externa (feriados do arquivo local)
 import { getAdminAuth, getDb } from '../src/config/firebase.js'
 import { env } from '../src/config/env.js'
+import {
+  confirmByTyping,
+  confirmProduction,
+  useProductionDatabase,
+} from './lib/environment.js'
 import { upsertAccounts } from './seed/accounts.js'
 import { buildSeed, toWrites, uidOf } from './seed/build.js'
-import {
-  checkEnvironment,
-  confirmByTyping,
-  parseCliArgs,
-  type CliOptions,
-} from './seed/cli.js'
+import { checkEnvironment, parseCliArgs, type CliOptions } from './seed/cli.js'
 import { AUTH_EMAIL_DOMAIN, BASE_DATE, USERS } from './seed/data.js'
 import { publishFirestoreConfig } from './seed/deploy.js'
 import { clearDatabase, writeAll } from './seed/firestore.js'
-import { enrichFromGoogleBooks } from './seed/google-books.js'
 import {
   fetchHolidays,
   loadHolidaysFile,
   type HolidaysDocument,
 } from './seed/holidays.js'
+import { enrichFromExternalSources } from './seed/external-metadata.js'
 import { daysBetween, localDate } from './seed/time.js'
 import { countDocuments, runChecks } from './seed/verify.js'
 
@@ -55,11 +56,12 @@ async function loadHolidays(
   return document
 }
 
-async function confirmProduction(options: CliOptions): Promise<boolean> {
-  const project = env.GOOGLE_CLOUD_PROJECT
-  const confirmed = await confirmByTyping(
-    `ATENÇÃO: isto grava em PRODUÇÃO (projeto ${project}), inclusive as contas de teste no Firebase Authentication, com a senha de SEED_TEST_PASSWORD.\nDigite o ID do projeto para confirmar:`,
-    project,
+// Confirmações de quem grava em produção: o ID do projeto e, com --reset, a
+// frase que autoriza apagar as coleções.
+async function confirmProductionRun(options: CliOptions): Promise<boolean> {
+  const confirmed = await confirmProduction(
+    env.GOOGLE_CLOUD_PROJECT,
+    'inclusive as contas de teste no Firebase Authentication, com a senha de SEED_TEST_PASSWORD',
   )
   if (!confirmed || !options.reset) return confirmed
 
@@ -85,14 +87,11 @@ async function main(): Promise<number> {
 
   console.log('1. Ambiente')
   if (options.prod) {
-    if (!(await confirmProduction(options))) {
+    if (!(await confirmProductionRun(options))) {
       console.error('Cancelado: a confirmação não confere. Nada foi gravado.')
       return 1
     }
-    // O Admin SDK lê estas variáveis no primeiro uso: sem elas ele aponta para a
-    // produção.
-    delete process.env.FIRESTORE_EMULATOR_HOST
-    delete process.env.FIREBASE_AUTH_EMULATOR_HOST
+    useProductionDatabase()
     console.log(`  PRODUÇÃO (projeto ${env.GOOGLE_CLOUD_PROJECT})`)
   } else {
     console.log(
@@ -130,16 +129,13 @@ async function main(): Promise<number> {
 
   console.log('5. a 7. Dados')
   const data = buildSeed({ holidays, tokenSecret: password, today })
-  if (options.googleBooks && process.env.GOOGLE_BOOKS_API_KEY) {
-    const result = await enrichFromGoogleBooks(
-      data.books,
-      process.env.GOOGLE_BOOKS_API_KEY,
-    )
+  if (options.externalMetadata) {
+    const result = await enrichFromExternalSources(data.books)
     console.log(
-      `  Google Books: ${result.enriched} completados, ${result.notFound} sem resultado, ${result.failed} com falha`,
+      `  Fontes externas: ${result.enriched} completados, ${result.notFound} sem resultado, ${result.failed} sem resposta`,
     )
   } else {
-    console.log('  Google Books: pulado')
+    console.log('  Fontes externas: puladas (use --with-external-metadata)')
   }
   const writes = toWrites(data)
   await writeAll(db, writes)
