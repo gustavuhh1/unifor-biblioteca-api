@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   checkRequestEligibility,
   DEFAULT_REQUEST_LIMITS,
+  hasOverdueLoan,
   suggestedActionOf,
   type EligibilityBook,
   type StudentCirculation,
@@ -23,7 +24,12 @@ const student: StudentCirculation = {
   activeLoanCount: 3,
   activeQueueCount: 1,
   openLoans: [
-    { workId: 'redes--tanenbaum', status: 'active', dueAt: NEXT_WEEK },
+    {
+      bookId: 'book_x',
+      workId: 'redes--tanenbaum',
+      status: 'active',
+      dueAt: NEXT_WEEK,
+    },
   ],
 }
 
@@ -76,7 +82,12 @@ describe('elegibilidade do pedido (checkRequestEligibility, request)', () => {
         student: {
           ...student,
           openLoans: [
-            { workId: 'calculo--stewart', status: 'active', dueAt: YESTERDAY },
+            {
+              bookId: 'book_x',
+              workId: 'calculo--stewart',
+              status: 'active',
+              dueAt: YESTERDAY,
+            },
           ],
         },
       }),
@@ -89,8 +100,8 @@ describe('elegibilidade do pedido (checkRequestEligibility, request)', () => {
         student: {
           ...student,
           openLoans: [
-            { workId: 'a', status: 'awaiting_pickup' },
-            { workId: 'b', status: 'active', dueAt: AT },
+            { bookId: 'book_x', workId: 'a', status: 'awaiting_pickup' },
+            { bookId: 'book_x', workId: 'b', status: 'active', dueAt: AT },
           ],
         },
       }),
@@ -103,7 +114,14 @@ describe('elegibilidade do pedido (checkRequestEligibility, request)', () => {
         request({
           student: {
             ...student,
-            openLoans: [{ workId: book.workId, status, dueAt: NEXT_WEEK }],
+            openLoans: [
+              {
+                bookId: 'book_x',
+                workId: book.workId,
+                status,
+                dueAt: NEXT_WEEK,
+              },
+            ],
           },
         }),
       ).toEqual({ allowed: false, blockedReason: 'same_title' })
@@ -127,7 +145,14 @@ describe('elegibilidade do pedido (checkRequestEligibility, request)', () => {
     const everything: StudentCirculation = {
       activeLoanCount: 10,
       activeQueueCount: 0,
-      openLoans: [{ workId: book.workId, status: 'active', dueAt: YESTERDAY }],
+      openLoans: [
+        {
+          bookId: 'book_x',
+          workId: book.workId,
+          status: 'active',
+          dueAt: YESTERDAY,
+        },
+      ],
     }
     const unavailableBook = { ...book, unavailableForNewRequests: true }
 
@@ -139,7 +164,13 @@ describe('elegibilidade do pedido (checkRequestEligibility, request)', () => {
       request({
         student: {
           ...everything,
-          openLoans: [{ workId: book.workId, status: 'awaiting_pickup' }],
+          openLoans: [
+            {
+              bookId: 'book_x',
+              workId: book.workId,
+              status: 'awaiting_pickup',
+            },
+          ],
         },
       }).blockedReason,
     ).toBe('same_title')
@@ -167,7 +198,14 @@ describe('elegibilidade da fila (checkRequestEligibility, join_queue)', () => {
       joinQueue({
         student: {
           ...student,
-          openLoans: [{ workId: 'x', status: 'active', dueAt: YESTERDAY }],
+          openLoans: [
+            {
+              bookId: 'book_x',
+              workId: 'x',
+              status: 'active',
+              dueAt: YESTERDAY,
+            },
+          ],
         },
       }),
     ).toEqual({ allowed: false, blockedReason: 'overdue' })
@@ -193,7 +231,9 @@ describe('elegibilidade da fila (checkRequestEligibility, join_queue)', () => {
     const everything: StudentCirculation = {
       activeLoanCount: 0,
       activeQueueCount: 7,
-      openLoans: [{ workId: 'x', status: 'active', dueAt: YESTERDAY }],
+      openLoans: [
+        { bookId: 'book_x', workId: 'x', status: 'active', dueAt: YESTERDAY },
+      ],
     }
     const unavailableBook = { ...book, unavailableForNewRequests: true }
 
@@ -222,10 +262,60 @@ describe('elegibilidade da fila (checkRequestEligibility, join_queue)', () => {
           activeLoanCount: 10,
           activeQueueCount: 0,
           openLoans: [
-            { workId: bookWithoutCopies.workId, status: 'awaiting_pickup' },
+            {
+              bookId: 'book_x',
+              workId: bookWithoutCopies.workId,
+              status: 'awaiting_pickup',
+            },
           ],
         },
       }),
     ).toEqual({ allowed: true })
+  })
+})
+
+describe('fila em várias edições (queueSlots)', () => {
+  it('cada edição marcada conta como uma fila: 1 em fila + 6 edições chega a 7', () => {
+    expect(joinQueue({ queueSlots: 6 })).toEqual({ allowed: true })
+  })
+
+  it('bloqueia quando as edições marcadas passam do limite de 7 filas', () => {
+    expect(joinQueue({ queueSlots: 7 })).toEqual({
+      allowed: false,
+      blockedReason: 'queue_limit',
+    })
+  })
+
+  it('sem queueSlots, vale uma fila só', () => {
+    expect(joinQueue({ student: { ...student, activeQueueCount: 6 } })).toEqual(
+      { allowed: true },
+    )
+  })
+})
+
+describe('atraso é o único bloqueio (hasOverdueLoan, RF-MUL-04)', () => {
+  it('multa em aberto não aparece na regra: sem empréstimo atrasado, o aluno pode pedir', () => {
+    // A circulação do aluno não carrega multa; quem tem multa em aberto mas
+    // nenhum empréstimo atrasado passa como qualquer outro aluno em dia.
+    expect(hasOverdueLoan(student, AT)).toBe(false)
+    expect(request()).toEqual({ allowed: true })
+  })
+
+  it('o empréstimo ativo vencido bloqueia', () => {
+    const late: StudentCirculation = {
+      ...student,
+      openLoans: [
+        { bookId: 'b', workId: 'w', status: 'active', dueAt: YESTERDAY },
+      ],
+    }
+    expect(hasOverdueLoan(late, AT)).toBe(true)
+  })
+
+  it('pedido ainda não retirado não conta como atraso', () => {
+    const waiting: StudentCirculation = {
+      ...student,
+      openLoans: [{ bookId: 'b', workId: 'w', status: 'awaiting_pickup' }],
+    }
+    expect(hasOverdueLoan(waiting, AT)).toBe(false)
   })
 })

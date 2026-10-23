@@ -64,6 +64,8 @@ describe('números das regras de empréstimo (readLoanSettings)', () => {
       maxRenewals: 2,
       pickupBusinessDays: 3,
       dueSoonDays: 4,
+      queueConfirmHours: 12,
+      fineCentsPerBusinessDay: 300,
       openingHours: {
         mon: { open: '08:00', close: '18:00' },
         tue: null,
@@ -83,6 +85,8 @@ describe('números das regras de empréstimo (readLoanSettings)', () => {
       maxRenewals: 2,
       pickupBusinessDays: 3,
       dueSoonDays: 4,
+      queueConfirmHours: 12,
+      fineCentsPerBusinessDay: 300,
       openingHours: { mon: { open: '08:00', close: '18:00' }, tue: null },
       simulatedNow: null,
     })
@@ -99,6 +103,8 @@ describe('números das regras de empréstimo (readLoanSettings)', () => {
       maxRenewals: 1,
       pickupBusinessDays: 2,
       dueSoonDays: 2,
+      queueConfirmHours: 24,
+      fineCentsPerBusinessDay: 200,
       openingHours: DEFAULT_OPENING_HOURS,
       simulatedNow: null,
     })

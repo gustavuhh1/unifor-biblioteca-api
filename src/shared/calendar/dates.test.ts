@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   atLocalTime,
   daysBetween,
+  formatLocalDateTime,
   localDate,
   plusDays,
   weekdayOf,
@@ -53,5 +54,20 @@ describe('dia da semana (weekdayOf)', () => {
     expect(weekdayOf('2026-10-10')).toBe('sat')
     expect(weekdayOf('2026-10-11')).toBe('sun')
     expect(weekdayOf('2026-10-12')).toBe('mon')
+  })
+})
+
+describe('dia e hora para os avisos (formatLocalDateTime)', () => {
+  it('escreve o horário de Fortaleza, não o de UTC', () => {
+    // 16/10 às 12:12 UTC é 09:12 em Fortaleza.
+    expect(formatLocalDateTime(new Date('2026-10-16T12:12:00Z'))).toBe(
+      '16/10 às 09:12',
+    )
+  })
+
+  it('usa o dia de Fortaleza na virada do dia', () => {
+    expect(formatLocalDateTime(new Date('2026-10-16T02:30:00Z'))).toBe(
+      '15/10 às 23:30',
+    )
   })
 })

@@ -110,3 +110,9 @@ export interface Fine extends Timestamps {
 
 // Pedido ou empréstimo lido do banco, com o seu id (o id do documento).
 export type LoanRecord = Loan & { id: string }
+
+// Lugar na fila lido do banco, com o seu id.
+export type QueueEntryRecord = QueueEntry & { id: string }
+
+// Multa lida do banco, com o seu id.
+export type FineRecord = Fine & { id: string }
