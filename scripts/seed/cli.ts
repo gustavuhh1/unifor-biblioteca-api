@@ -5,29 +5,38 @@ import { emulatorProblems } from '../lib/environment.js'
 export interface CliOptions {
   prod: boolean
   reset: boolean
-  googleBooks: boolean
+  // Completa capa, sinopse e editora pelas fontes externas (Open Library e
+  // BrasilAPI). Desligado por padrão: o seed é determinístico e funciona offline.
+  externalMetadata: boolean
   // Nenhuma chamada externa: os feriados vêm do arquivo local.
   offline: boolean
 }
 
-// Lê os argumentos da linha de comando (--prod, --reset, --no-google-books e
-// --offline); argumento desconhecido é erro.
+// Lê os argumentos da linha de comando (--prod, --reset, --with-external-metadata
+// e --offline); argumento desconhecido é erro, e --offline com
+// --with-external-metadata também (um pede rede, o outro proíbe).
 export function parseCliArgs(argv: string[]): CliOptions {
   const { values } = parseArgs({
     args: argv,
     options: {
       prod: { type: 'boolean' },
       reset: { type: 'boolean' },
-      'no-google-books': { type: 'boolean' },
+      'with-external-metadata': { type: 'boolean' },
       offline: { type: 'boolean' },
     },
     strict: true,
   })
   const offline = values.offline ?? false
+  const externalMetadata = values['with-external-metadata'] ?? false
+  if (offline && externalMetadata) {
+    throw new Error(
+      '--offline e --with-external-metadata não podem ser usados juntos.',
+    )
+  }
   return {
     prod: values.prod ?? false,
     reset: values.reset ?? false,
-    googleBooks: !offline && !values['no-google-books'],
+    externalMetadata,
     offline,
   }
 }

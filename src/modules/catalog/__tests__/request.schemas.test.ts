@@ -158,20 +158,15 @@ describe('cadastro do livro (createBookBodySchema)', () => {
     ).toBe(false)
   })
 
-  it('só aceita volumeId junto com o ISBN', () => {
+  it('ignora o antigo volumeId do Google Books: a API confere o ISBN nas fontes', () => {
     const result = createBookBodySchema.safeParse({
       ...validCreate,
+      isbn: '9788576082675',
       volumeId: 'vol1',
     })
 
-    expect(result.success).toBe(false)
-    expect(
-      createBookBodySchema.safeParse({
-        ...validCreate,
-        isbn: '9788576082675',
-        volumeId: 'vol1',
-      }).success,
-    ).toBe(true)
+    expect(result.success).toBe(true)
+    expect(result.data).not.toHaveProperty('volumeId')
   })
 })
 

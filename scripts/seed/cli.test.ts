@@ -7,29 +7,41 @@ const EMULATORS = {
 }
 
 describe('argumentos da linha de comando (parseCliArgs)', () => {
-  it('por padrão usa o emulador, com Google Books', () => {
+  it('por padrão usa o emulador, sem consultar as fontes externas', () => {
     expect(parseCliArgs([])).toEqual({
       prod: false,
       reset: false,
-      googleBooks: true,
+      externalMetadata: false,
       offline: false,
     })
   })
 
   it('lê as opções', () => {
-    expect(parseCliArgs(['--prod', '--reset', '--no-google-books'])).toEqual({
+    expect(
+      parseCliArgs(['--prod', '--reset', '--with-external-metadata']),
+    ).toEqual({
       prod: true,
       reset: true,
-      googleBooks: false,
+      externalMetadata: true,
       offline: false,
     })
   })
 
-  it('--offline também pula o Google Books', () => {
+  it('--offline não consulta as fontes externas', () => {
     expect(parseCliArgs(['--offline'])).toMatchObject({
       offline: true,
-      googleBooks: false,
+      externalMetadata: false,
     })
+  })
+
+  it('recusa --offline junto com --with-external-metadata', () => {
+    expect(() =>
+      parseCliArgs(['--offline', '--with-external-metadata']),
+    ).toThrow(/não podem ser usados juntos/)
+  })
+
+  it('recusa o antigo --no-google-books', () => {
+    expect(() => parseCliArgs(['--no-google-books'])).toThrow()
   })
 
   it('recusa uma opção desconhecida', () => {

@@ -95,11 +95,12 @@ export function toBookDetail(
 export function toBookRecordResponse(book: BookRecord): BookRecordResponse {
   return {
     ...displayFields(book),
-    googleBooks: book.googleBooks
+    externalMetadata: book.externalMetadata
       ? {
-          volumeId: book.googleBooks.volumeId,
-          lastSyncedAt: iso(book.googleBooks.lastSyncedAt ?? undefined),
-          found: book.googleBooks.found,
+          sources: book.externalMetadata.sources,
+          openLibraryKey: book.externalMetadata.openLibraryKey ?? null,
+          lastSyncedAt: iso(book.externalMetadata.lastSyncedAt ?? undefined),
+          found: book.externalMetadata.found,
         }
       : null,
     dataSource: book.dataSource,

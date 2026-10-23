@@ -11,8 +11,8 @@ export interface SearchableBook {
 
 // Monta o `searchText` do livro (docs/modelo-de-dados-firestore.md, seções 2.7 e
 // 6.4): título, subtítulo, autores, assuntos e ISBN, em minúsculas, sem acento e
-// com os espaços normalizados. Usada no cadastro, na edição, na atualização pelo
-// Google Books e no seed (RF-ACE-01).
+// com os espaços normalizados. Usada no cadastro, na edição, na atualização pelas
+// fontes externas e no seed (RF-ACE-01).
 export function buildSearchText(book: SearchableBook): string {
   return normalizeText(
     [book.title, book.subtitle, ...book.authors, ...book.subjects, book.isbn]

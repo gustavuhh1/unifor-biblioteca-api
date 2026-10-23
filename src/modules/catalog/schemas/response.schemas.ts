@@ -1,12 +1,13 @@
 import { z } from 'zod'
 import {
   BLOCKED_REASONS,
+  BOOK_METADATA_SOURCES,
   BOOK_STATUSES,
   COPY_STATUSES,
   DATA_SOURCES,
   ELIGIBILITY_ACTIONS,
 } from '../../../shared/types/index.js'
-import { COVER_TONE_COUNT, GOOGLE_SYNC_FIELDS } from '../catalog.constants.js'
+import { COVER_TONE_COUNT, METADATA_SYNC_FIELDS } from '../catalog.constants.js'
 
 // Schemas de saída do módulo do acervo. Também alimentam o Swagger. Data vai em
 // ISO 8601 (UTC); campo opcional que o livro não tem vai como null.
@@ -109,14 +110,15 @@ export const bookDetailSchema = z
 
 // --- Livro para o bibliotecário ------------------------------------------------
 
-// Dados da última consulta ao Google Books.
-export const googleBooksInfoSchema = z
+// Dados da última consulta às fontes externas (Open Library e BrasilAPI).
+export const externalMetadataInfoSchema = z
   .object({
-    volumeId: nullableText,
+    sources: z.array(z.enum(BOOK_METADATA_SOURCES)),
+    openLibraryKey: nullableText,
     lastSyncedAt: isoDate.nullable(),
     found: z.boolean(),
   })
-  .meta({ id: 'GoogleBooksInfo' })
+  .meta({ id: 'ExternalMetadataInfo' })
 
 // Registro completo do livro (tudo menos o searchText), que a tela de edição do
 // bibliotecário usa (RF-GAC-01).
@@ -144,7 +146,7 @@ export const bookRecordSchema = z
     cutter: z.string(),
     shelf: z.string(),
     location: z.string(),
-    googleBooks: googleBooksInfoSchema.nullable(),
+    externalMetadata: externalMetadataInfoSchema.nullable(),
     dataSource: z.enum(DATA_SOURCES),
     copiesTotal: z.number().int(),
     copiesAvailable: z.number().int(),
@@ -171,11 +173,11 @@ export const librarianBookListResponseSchema = z
   })
   .meta({ id: 'LibrarianBookListResponse' })
 
-// --- Google Books --------------------------------------------------------------
+// --- Fontes externas ------------------------------------------------------------
 
-// Dados do Google Books já no formato do livro; só vêm os campos que o Google
-// trouxe (RF-ACE-04).
-export const googleBookDataSchema = z
+// Dados das fontes externas já no formato do livro; só vêm os campos que as
+// fontes trouxeram (RF-ACE-04).
+export const bookMetadataSchema = z
   .object({
     title: z.string().optional(),
     subtitle: z.string().optional(),
@@ -184,26 +186,26 @@ export const googleBookDataSchema = z
     year: z.number().int().optional(),
     synopsis: z.string().optional(),
     subjects: z.array(z.string()).optional(),
-    language: z.string().optional(),
     coverUrl: z.string().optional(),
   })
-  .meta({ id: 'GoogleBookData' })
+  .meta({ id: 'BookMetadata' })
 
-// Resposta de GET /librarian/google-books/:isbn: os dados para pré-preencher o
-// cadastro. ISBN que o Google não conhece volta com found false (RF-GAC-02).
-export const googleBookLookupResponseSchema = z
+// Resposta de GET /librarian/books/isbn/:isbn: os dados para pré-preencher o
+// cadastro. ISBN que nenhuma fonte conhece volta com found false (RF-GAC-02).
+export const bookMetadataLookupResponseSchema = z
   .object({
     found: z.boolean(),
-    volumeId: nullableText,
-    book: googleBookDataSchema.nullable(),
+    sources: z.array(z.enum(BOOK_METADATA_SOURCES)),
+    openLibraryKey: nullableText,
+    book: bookMetadataSchema.nullable(),
   })
-  .meta({ id: 'GoogleBookLookupResponse' })
+  .meta({ id: 'BookMetadataLookupResponse' })
 
-// Resposta de POST /librarian/books/:bookId/sync-google (RF-GAC-04): o livro
-// depois da atualização e os campos que mudaram.
-export const syncGoogleResponseSchema = z
+// Resposta de POST /librarian/books/:bookId/sync (RF-GAC-04): o livro depois da
+// atualização e os campos que mudaram.
+export const syncBookResponseSchema = z
   .object({
     book: bookRecordSchema,
-    changedFields: z.array(z.enum(GOOGLE_SYNC_FIELDS)),
+    changedFields: z.array(z.enum(METADATA_SYNC_FIELDS)),
   })
-  .meta({ id: 'SyncGoogleResponse' })
+  .meta({ id: 'SyncBookResponse' })

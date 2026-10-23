@@ -282,7 +282,7 @@ describe('documentos', () => {
       coverTone: 1,
       shelf: 'Estante 005.1',
       dataSource: 'mixed',
-      googleBooks: { volumeId: null, lastSyncedAt: null, found: true },
+      externalMetadata: { sources: [], lastSyncedAt: null, found: true },
       searchText:
         'codigo limpo habilidades praticas do agile software robert c. martin desenvolvimento de software linguagem de programacao 9788576082675',
     })

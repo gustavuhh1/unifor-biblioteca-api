@@ -100,9 +100,9 @@ describe('edição do livro (applyBookUpdate)', () => {
     expect(result.changedFields).toEqual([])
   })
 
-  it('google_books vira mixed quando um campo de origem Google muda', () => {
+  it('external vira mixed quando um campo de origem externa muda', () => {
     const result = applyBookUpdate(
-      makeBook({ dataSource: 'google_books' }),
+      makeBook({ dataSource: 'external' }),
       { publisher: 'Outra Editora' },
       LIBRARIAN,
       LATER,

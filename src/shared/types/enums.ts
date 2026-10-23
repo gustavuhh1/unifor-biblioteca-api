@@ -66,11 +66,18 @@ export type BookStatus = (typeof BOOK_STATUSES)[number]
 // Valores com nome (cada texto escrito uma vez só): BOOK_STATUS.active, BOOK_STATUS.removed.
 export const BOOK_STATUS = constantsOf(BOOK_STATUSES)
 
-// De onde vieram os dados da edição (books.dataSource).
-export const DATA_SOURCES = ['google_books', 'manual', 'mixed'] as const
+// De onde vieram os dados da edição (books.dataSource): external (Open Library e
+// BrasilAPI), manual (à mão) ou mixed (as duas coisas).
+export const DATA_SOURCES = ['external', 'manual', 'mixed'] as const
 export type DataSource = (typeof DATA_SOURCES)[number]
-// Valores com nome (cada texto escrito uma vez só): DATA_SOURCE.googleBooks, DATA_SOURCE.manual.
+// Valores com nome (cada texto escrito uma vez só): DATA_SOURCE.external, DATA_SOURCE.manual.
 export const DATA_SOURCE = constantsOf(DATA_SOURCES)
+
+// Fontes externas dos dados do livro (books.externalMetadata.sources).
+export const BOOK_METADATA_SOURCES = ['open_library', 'brasil_api'] as const
+export type BookMetadataSource = (typeof BOOK_METADATA_SOURCES)[number]
+// Valores com nome (cada texto escrito uma vez só): BOOK_METADATA_SOURCE.openLibrary, BOOK_METADATA_SOURCE.brasilApi.
+export const BOOK_METADATA_SOURCE = constantsOf(BOOK_METADATA_SOURCES)
 
 // O que a página do livro sugere ao aluno: pedir o empréstimo (há exemplar
 // disponível) ou entrar na fila (não há).
@@ -247,7 +254,7 @@ export const AUDIT_ACTIONS = [
   'fine_paid',
   'book_create',
   'book_update',
-  'book_sync_google',
+  'book_sync_external',
   'book_remove',
   'book_set_unavailable',
   'passkey_create',

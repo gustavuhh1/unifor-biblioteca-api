@@ -1,8 +1,14 @@
 import type { z } from 'zod'
-import type { AuditActorRole, Book, Copy } from '../../shared/types/index.js'
+import type {
+  AuditActorRole,
+  Book,
+  BookMetadataSource,
+  Copy,
+} from '../../shared/types/index.js'
 import type {
   CATALOG_FILTERS,
-  GOOGLE_SYNC_FIELDS,
+  LOOKUP_STATUS,
+  METADATA_SYNC_FIELDS,
 } from './catalog.constants.js'
 import type {
   copyInputSchema,
@@ -14,11 +20,11 @@ import type {
 import type {
   actionBlockSchema,
   bookDetailSchema,
+  bookMetadataLookupResponseSchema,
+  bookMetadataSchema,
   bookRecordSchema,
   bookSummarySchema,
-  googleBookDataSchema,
-  googleBookLookupResponseSchema,
-  syncGoogleResponseSchema,
+  syncBookResponseSchema,
 } from './schemas/response.schemas.js'
 
 // Tipos exclusivos do módulo do acervo. Os documentos das coleções e os enums
@@ -46,14 +52,14 @@ export type BookDetail = z.infer<typeof bookDetailSchema>
 export type ActionBlock = z.infer<typeof actionBlockSchema>
 // Registro completo do livro, para o bibliotecário.
 export type BookRecordResponse = z.infer<typeof bookRecordSchema>
-// Dados do Google Books no formato do livro (só o que o Google trouxe).
-export type GoogleBookData = z.infer<typeof googleBookDataSchema>
-// Resposta de GET /librarian/google-books/:isbn.
-export type GoogleBookLookupResponse = z.infer<
-  typeof googleBookLookupResponseSchema
+// Dados das fontes externas no formato do livro (só o que elas trouxeram).
+export type BookMetadata = z.infer<typeof bookMetadataSchema>
+// Resposta de GET /librarian/books/isbn/:isbn.
+export type BookMetadataLookupResponse = z.infer<
+  typeof bookMetadataLookupResponseSchema
 >
-// Resposta de POST /librarian/books/:bookId/sync-google.
-export type SyncGoogleResponse = z.infer<typeof syncGoogleResponseSchema>
+// Resposta de POST /librarian/books/:bookId/sync.
+export type SyncBookResponse = z.infer<typeof syncBookResponseSchema>
 
 // --- Acervo ------------------------------------------------------------------
 
@@ -69,8 +75,8 @@ export interface Page<T> {
 // Filtro da lista do bibliotecário.
 export type CatalogFilter = (typeof CATALOG_FILTERS)[number]
 
-// Campo do livro que o Google Books pode trocar.
-export type GoogleSyncField = (typeof GOOGLE_SYNC_FIELDS)[number]
+// Campo do livro que as fontes externas podem trocar.
+export type MetadataSyncField = (typeof METADATA_SYNC_FIELDS)[number]
 
 // Quem faz a ação: o bibliotecário logado ou o sistema (script de importação).
 export interface Actor {
@@ -78,12 +84,32 @@ export interface Actor {
   role: AuditActorRole
 }
 
-// --- Google Books --------------------------------------------------------------
+// --- Fontes externas -----------------------------------------------------------
 
-// Resultado da consulta ao Google Books por ISBN: ISBN desconhecido ou o volume
-// com os dados já mapeados.
-export type GoogleLookup =
-  { found: false } | { found: true; volumeId: string; data: GoogleBookData }
+// Resultado da consulta a UMA fonte (Open Library ou BrasilAPI) por ISBN: achou
+// (com os dados já mapeados), o ISBN não existe ali, ou a fonte não respondeu.
+// A Open Library também devolve a chave do livro.
+export type SourceLookup =
+  | {
+      status: typeof LOOKUP_STATUS.found
+      data: BookMetadata
+      openLibraryKey?: string
+    }
+  | { status: typeof LOOKUP_STATUS.notFound }
+  | { status: typeof LOOKUP_STATUS.unavailable }
+
+// Resultado das duas fontes combinadas: achou em pelo menos uma (com as fontes
+// que contribuíram), nenhuma conhece o ISBN, ou nenhuma achou e alguma não
+// respondeu (não dá para dizer que o ISBN não existe).
+export type BookMetadataLookup =
+  | {
+      status: typeof LOOKUP_STATUS.found
+      sources: BookMetadataSource[]
+      data: BookMetadata
+      openLibraryKey?: string
+    }
+  | { status: typeof LOOKUP_STATUS.notFound }
+  | { status: typeof LOOKUP_STATUS.unavailable }
 
 // --- Cadastro ----------------------------------------------------------------
 

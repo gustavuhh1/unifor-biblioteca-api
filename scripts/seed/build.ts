@@ -182,8 +182,8 @@ export function buildSeed(options: BuildOptions): SeedData {
       cutter: spec.cutter,
       shelf: spec.cdu ? `Estante ${spec.cdu}` : '',
       location: LIBRARY_PLACE,
-      googleBooks: spec.isbn
-        ? { volumeId: null, lastSyncedAt: null, found: true }
+      externalMetadata: spec.isbn
+        ? { sources: [], lastSyncedAt: null, found: true }
         : undefined,
       dataSource: spec.isbn ? DATA_SOURCE.mixed : DATA_SOURCE.manual,
       copiesTotal: 0,

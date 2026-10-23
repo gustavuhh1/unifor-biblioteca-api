@@ -68,7 +68,6 @@ export const envSchema = z
     RESEND_API_KEY: optionalString,
     FERIADOS_API_KEY: optionalString,
     GEMINI_API_KEY: optionalString,
-    GOOGLE_BOOKS_API_KEY: optionalString,
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return

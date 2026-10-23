@@ -16,19 +16,13 @@ export function parseCliArgs(argv: string[]): CliOptions {
   return { prod: values.prod ?? false }
 }
 
-// Problemas que param o script antes de ele tocar em qualquer coisa: falta a
-// chave do Google Books, ou falta o host do emulador sem --prod (para nunca cair
-// na produção sem querer).
+// Problemas que param o script antes de ele tocar em qualquer coisa: falta o host
+// do emulador sem --prod (para nunca cair na produção sem querer).
 export function checkEnvironment(
   options: CliOptions,
   source: NodeJS.ProcessEnv,
 ): string[] {
   const problems: string[] = []
-  if (!source.GOOGLE_BOOKS_API_KEY) {
-    problems.push(
-      'GOOGLE_BOOKS_API_KEY não está definida. Coloque a chave no seu .env (veja .env.example).',
-    )
-  }
   if (!options.prod) {
     problems.push(...emulatorProblems(source, ['FIRESTORE_EMULATOR_HOST']))
   }

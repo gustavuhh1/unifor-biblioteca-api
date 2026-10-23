@@ -41,7 +41,7 @@ describe('importação do acervo (runCatalogSync)', () => {
     })
   })
 
-  it('conta os ISBN que o Google não encontrou', async () => {
+  it('conta os ISBN que nenhuma fonte encontrou', async () => {
     const sync = vi
       .fn<SyncDeps['sync']>()
       .mockResolvedValueOnce({ found: true, changedFields: [] })
@@ -53,7 +53,7 @@ describe('importação do acervo (runCatalogSync)', () => {
 
     expect(summary).toMatchObject({ updated: 3, notFound: 1 })
     expect(log).toHaveBeenCalledWith(
-      '[2/4] Refatoração (9788575227244): ISBN não encontrado no Google Books',
+      '[2/4] Refatoração (9788575227244): ISBN não encontrado nas fontes externas',
     )
   })
 
@@ -62,7 +62,7 @@ describe('importação do acervo (runCatalogSync)', () => {
       .fn<SyncDeps['sync']>()
       .mockResolvedValueOnce({ found: true, changedFields: [] })
       .mockRejectedValueOnce(
-        new AppError(502, 'google_books_unavailable', 'indisponível'),
+        new AppError(502, 'book_metadata_unavailable', 'indisponível'),
       )
       .mockRejectedValueOnce(new Error('https://x.test/?key=segredo'))
       .mockResolvedValue({ found: true, changedFields: [] })
@@ -78,7 +78,7 @@ describe('importação do acervo (runCatalogSync)', () => {
     })
     expect(sync).toHaveBeenCalledTimes(4)
     expect(log).toHaveBeenCalledWith(
-      '[2/4] Refatoração (9788575227244): falhou (google_books_unavailable)',
+      '[2/4] Refatoração (9788575227244): falhou (book_metadata_unavailable)',
     )
   })
 
@@ -116,7 +116,7 @@ describe('importação do acervo (runCatalogSync)', () => {
     expect(sleep).toHaveBeenCalledWith(250)
   })
 
-  it('não chama o Google quando o acervo não tem livro com ISBN', async () => {
+  it('não chama as fontes quando o acervo não tem livro com ISBN', async () => {
     const sync = vi.fn<SyncDeps['sync']>()
     const { deps } = makeDeps(sync)
 
@@ -147,40 +147,23 @@ describe('argumentos do catalog:sync (parseCliArgs)', () => {
 })
 
 describe('conferência do ambiente do catalog:sync (checkEnvironment)', () => {
-  const emulatorEnv = {
-    FIRESTORE_EMULATOR_HOST: '127.0.0.1:8085',
-    GOOGLE_BOOKS_API_KEY: 'chave-falsa',
-  }
-
-  it('aceita o emulador com a chave definida', () => {
-    expect(checkEnvironment({ prod: false }, emulatorEnv)).toEqual([])
-  })
-
-  it('para quando falta a chave do Google Books, sem mostrar valor algum', () => {
-    const problems = checkEnvironment(
-      { prod: false },
-      {
-        FIRESTORE_EMULATOR_HOST: '127.0.0.1:8085',
-      },
-    )
-
-    expect(problems).toHaveLength(1)
-    expect(problems[0]).toMatch(/GOOGLE_BOOKS_API_KEY não está definida/)
+  it('aceita o emulador sem nenhuma chave: as fontes não precisam de chave', () => {
+    expect(
+      checkEnvironment(
+        { prod: false },
+        { FIRESTORE_EMULATOR_HOST: '127.0.0.1:8085' },
+      ),
+    ).toEqual([])
   })
 
   it('nunca cai na produção quando falta o host do emulador', () => {
-    const problems = checkEnvironment(
-      { prod: false },
-      { GOOGLE_BOOKS_API_KEY: 'chave-falsa' },
-    )
+    const problems = checkEnvironment({ prod: false }, {})
 
     expect(problems).toHaveLength(1)
     expect(problems[0]).toMatch(/FIRESTORE_EMULATOR_HOST/)
   })
 
   it('não precisa do host do emulador com --prod', () => {
-    expect(
-      checkEnvironment({ prod: true }, { GOOGLE_BOOKS_API_KEY: 'chave-falsa' }),
-    ).toEqual([])
+    expect(checkEnvironment({ prod: true }, {})).toEqual([])
   })
 })

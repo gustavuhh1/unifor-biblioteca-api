@@ -4,27 +4,21 @@ import { MARK_UNAVAILABLE_SUGGESTION } from './catalog.constants.js'
 // Erros do módulo do acervo. O code é estável e em inglês; a mensagem é mostrada
 // ao usuário, em português.
 
-const GOOGLE_BOOKS_UNAVAILABLE_CODE = 'google_books_unavailable'
+const BOOK_METADATA_UNAVAILABLE_CODE = 'book_metadata_unavailable'
 
 // 404: o livro não existe ou foi removido do acervo.
 export function bookNotFound(): AppError {
   return new AppError(404, 'book_not_found', 'Livro não encontrado.')
 }
 
-// 502: o Google Books não respondeu (rede, tempo esgotado, 4xx ou 5xx). Nunca
-// leva a URL da consulta, que tem a chave da API (RNF-CON-03).
-export function googleBooksUnavailable(): AppError {
+// 502: nenhuma fonte externa achou o ISBN e alguma não respondeu (rede, tempo
+// esgotado, 429 ou 5xx), então não dá para dizer que o ISBN não existe
+// (RNF-CON-03).
+export function bookMetadataUnavailable(): AppError {
   return new AppError(
     502,
-    GOOGLE_BOOKS_UNAVAILABLE_CODE,
-    'O Google Books não respondeu agora. Tente novamente em instantes.',
-  )
-}
-
-// Diz se o erro é o google_books_unavailable.
-export function isGoogleBooksUnavailable(error: unknown): boolean {
-  return (
-    error instanceof AppError && error.code === GOOGLE_BOOKS_UNAVAILABLE_CODE
+    BOOK_METADATA_UNAVAILABLE_CODE,
+    'As fontes de dados de livros não responderam agora. Tente novamente em instantes.',
   )
 }
 
@@ -51,11 +45,11 @@ export function bookInCirculation(): AppError {
   )
 }
 
-// 422: atualizar pelo Google Books exige o ISBN do livro (RF-GAC-04).
+// 422: atualizar pelas fontes externas exige o ISBN do livro (RF-GAC-04).
 export function isbnRequired(): AppError {
   return new AppError(
     422,
     'isbn_required',
-    'Este livro não tem ISBN. Informe o ISBN para atualizar pelo Google Books.',
+    'Este livro não tem ISBN. Informe o ISBN para atualizar os dados do livro.',
   )
 }

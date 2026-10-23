@@ -8,50 +8,35 @@ import {
   COPY_STATUS,
   type BookRecord,
 } from '../../../shared/types/index.js'
+import { LOOKUP_STATUS } from '../catalog.constants.js'
 import {
   bookInCirculation,
   bookNotFound,
-  isGoogleBooksUnavailable,
   registrationTaken,
 } from '../catalog.errors.js'
 import type {
   Actor,
   BookRecordResponse,
   CreateBookBody,
-  GoogleBookData,
   UpdateBookBody,
 } from '../catalog.types.js'
-import * as googleBooksClient from '../google-books/google-books.client.js'
 import * as booksRepository from '../repositories/books.repository.js'
 import * as copiesRepository from '../repositories/copies.repository.js'
 import * as worksRepository from '../repositories/works.repository.js'
+import { externalMetadataOf } from '../rules/book-metadata.rules.js'
 import { toBookRecordResponse } from '../rules/book-response.rules.js'
 import { canRemoveBook } from '../rules/book-removal.rules.js'
 import { applyBookUpdate, applyToBook } from '../rules/book-update.rules.js'
 import { registrationConflicts } from '../rules/copies.rules.js'
 import { dataSourceForNewBook } from '../rules/data-source.rules.js'
-import {
-  buildNewBook,
-  buildNewCopy,
-  googleBooksInfoForNewBook,
-} from '../rules/new-book.rules.js'
+import { buildNewBook, buildNewCopy } from '../rules/new-book.rules.js'
+import { lookupBookMetadata } from './book-metadata.service.js'
 
-// Confere o volume do Google Books que o app informou no cadastro, para saber se
-// o bibliotecário alterou os dados à mão (books.dataSource). Se o Google falhar,
-// o cadastro segue sem a conferência (RNF-CON-03): a origem fica "mixed".
-async function verifyVolume(
-  volumeId: string | undefined,
-): Promise<GoogleBookData | undefined> {
-  if (!volumeId) return undefined
-  try {
-    return await googleBooksClient.fetchVolume(volumeId)
-  } catch (error) {
-    if (isGoogleBooksUnavailable(error)) return undefined
-    throw error
-  }
-}
-
-// Cadastra um livro e os seus exemplares (RF-GAC-02). Numa transação: confere que
+// Cadastra um livro e os seus exemplares (RF-GAC-02). Com ISBN, antes da
+// transação consulta as fontes externas, para saber se o bibliotecário alterou à
+// mão os dados que elas trouxeram (books.dataSource) e gravar books.externalMetadata;
+// se elas não responderem, o cadastro segue sem a conferência (RNF-CON-03), com a
+// origem "manual". Numa transação: confere que
 // nenhum registro de exemplar já existe, cria a obra (id = slug do título + "--"
 // + sobrenome do primeiro autor) ou acrescenta a edição a ela, e grava o livro, os
 // exemplares (todos disponíveis) e o auditLog book_create. Registro repetido, no
@@ -62,17 +47,16 @@ export async function createBook(
 ): Promise<BookRecordResponse> {
   const at = new Date()
   const workId = workIdOf(body.title, body.authors)
-  const volume = await verifyVolume(body.volumeId)
+  const lookup = body.isbn ? await lookupBookMetadata(body.isbn) : undefined
   const dataSource = dataSourceForNewBook({
-    hasVolumeId: body.volumeId !== undefined,
-    volume,
+    external: lookup?.status === LOOKUP_STATUS.found ? lookup.data : undefined,
     book: body,
   })
   const book = buildNewBook(body, {
     workId,
     createdBy: actor.uid,
     dataSource,
-    googleBooks: googleBooksInfoForNewBook(body, at),
+    externalMetadata: lookup && externalMetadataOf(lookup, at),
     at,
   })
 

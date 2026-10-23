@@ -1,31 +1,28 @@
 import { describe, expect, it } from 'vitest'
 import {
   dataSourceAfterEdit,
+  dataSourceAfterSync,
   dataSourceForNewBook,
 } from '../rules/data-source.rules.js'
 
-const volume = {
+const external = {
   title: 'Código Limpo',
   authors: ['Robert C. Martin'],
   publisher: 'Alta Books',
-  synopsis: 'Sinopse do Google.',
+  synopsis: 'Sinopse das fontes.',
 }
 
 describe('origem dos dados de um livro novo (dataSourceForNewBook)', () => {
-  it('é manual quando nada veio do Google Books', () => {
-    expect(
-      dataSourceForNewBook({
-        hasVolumeId: false,
-        volume: undefined,
-        book: volume,
-      }),
-    ).toBe('manual')
+  it('é manual quando nenhuma fonte externa trouxe dados', () => {
+    expect(dataSourceForNewBook({ external: undefined, book: external })).toBe(
+      'manual',
+    )
   })
 
-  it('é google_books quando veio do Google e nada foi alterado à mão', () => {
-    expect(
-      dataSourceForNewBook({ hasVolumeId: true, volume, book: { ...volume } }),
-    ).toBe('google_books')
+  it('é external quando as fontes acharam e nada foi alterado à mão', () => {
+    expect(dataSourceForNewBook({ external, book: { ...external } })).toBe(
+      'external',
+    )
   })
 
   it('é mixed quando o bibliotecário alterou título, autores, editora ou sinopse', () => {
@@ -36,48 +33,44 @@ describe('origem dos dados de um livro novo (dataSourceForNewBook)', () => {
       { synopsis: 'Minha sinopse' },
     ]) {
       expect(
-        dataSourceForNewBook({
-          hasVolumeId: true,
-          volume,
-          book: { ...volume, ...changed },
-        }),
+        dataSourceForNewBook({ external, book: { ...external, ...changed } }),
       ).toBe('mixed')
     }
   })
 
-  it('é mixed quando o bibliotecário preencheu à mão o que o Google não trouxe', () => {
+  it('é mixed quando o bibliotecário preencheu à mão o que as fontes não trouxeram', () => {
     expect(
       dataSourceForNewBook({
-        hasVolumeId: true,
-        volume: { title: 'A', authors: ['B'] },
+        external: { title: 'A', authors: ['B'] },
         book: { title: 'A', authors: ['B'], publisher: 'Preenchida à mão' },
       }),
     ).toBe('mixed')
   })
 
-  it('continua google_books quando o Google não trouxe um campo e ele ficou vazio', () => {
+  it('continua external quando as fontes não trouxeram um campo e ele ficou vazio', () => {
     expect(
       dataSourceForNewBook({
-        hasVolumeId: true,
-        volume: { title: 'A', authors: ['B'] },
+        external: { title: 'A', authors: ['B'] },
         book: { title: 'A', authors: ['B'] },
       }),
-    ).toBe('google_books')
+    ).toBe('external')
+  })
+})
+
+describe('origem dos dados depois da atualização (dataSourceAfterSync)', () => {
+  it('é external quando as fontes trouxeram título, autores, editora e sinopse', () => {
+    expect(dataSourceAfterSync(external)).toBe('external')
   })
 
-  it('é mixed quando o volume não pôde ser conferido no Google', () => {
+  it('é mixed quando falta algum dos quatro (por exemplo, a sinopse)', () => {
     expect(
-      dataSourceForNewBook({
-        hasVolumeId: true,
-        volume: undefined,
-        book: volume,
-      }),
+      dataSourceAfterSync({ title: 'A', authors: ['B'], publisher: 'C' }),
     ).toBe('mixed')
   })
 })
 
 describe('origem dos dados depois da edição (dataSourceAfterEdit)', () => {
-  it('google_books vira mixed quando um campo de origem Google muda', () => {
+  it('external vira mixed quando um campo de origem externa muda', () => {
     for (const field of [
       'title',
       'subtitle',
@@ -87,17 +80,15 @@ describe('origem dos dados depois da edição (dataSourceAfterEdit)', () => {
       'synopsis',
       'coverUrl',
       'subjects',
-      'language',
     ]) {
-      expect(dataSourceAfterEdit('google_books', [field])).toBe('mixed')
+      expect(dataSourceAfterEdit('external', [field])).toBe('mixed')
     }
   })
 
-  it('google_books continua quando só muda um campo do projeto', () => {
-    expect(dataSourceAfterEdit('google_books', ['cdu', 'shelf'])).toBe(
-      'google_books',
-    )
-    expect(dataSourceAfterEdit('google_books', [])).toBe('google_books')
+  it('external continua quando só muda um campo do projeto ou o idioma', () => {
+    expect(dataSourceAfterEdit('external', ['cdu', 'shelf'])).toBe('external')
+    expect(dataSourceAfterEdit('external', ['language'])).toBe('external')
+    expect(dataSourceAfterEdit('external', [])).toBe('external')
   })
 
   it('manual continua manual e mixed continua mixed', () => {

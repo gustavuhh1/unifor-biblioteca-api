@@ -13,7 +13,7 @@ import {
 import * as bookManagementService from './services/book-management.service.js'
 import * as bookPageService from './services/book-page.service.js'
 import * as catalogSearchService from './services/catalog-search.service.js'
-import * as googleBooksService from './services/google-books.service.js'
+import * as bookMetadataService from './services/book-metadata.service.js'
 
 // Cada handler valida a entrada com o schema, chama o serviço e responde. O erro
 // de validação (ZodError) sobe para o handler de erros, que responde 400.
@@ -52,10 +52,10 @@ export async function listLibrarianBooks(req: Request, res: Response) {
   res.json(await catalogSearchService.searchLibrarianCatalog(query))
 }
 
-// GET /librarian/google-books/:isbn: consulta o ISBN no Google Books (RF-GAC-02).
-export async function lookupGoogleBook(req: Request, res: Response) {
+// GET /librarian/books/isbn/:isbn: consulta o ISBN nas fontes externas (RF-GAC-02).
+export async function lookupBookByIsbn(req: Request, res: Response) {
   const { isbn } = isbnParamsSchema.parse(req.params)
-  res.json(await googleBooksService.lookupGoogleBook(isbn))
+  res.json(await bookMetadataService.lookupBookByIsbn(isbn))
 }
 
 // POST /librarian/books: cadastra um livro e os exemplares (RF-GAC-02).
@@ -73,10 +73,10 @@ export async function updateBook(req: Request, res: Response) {
   res.json(await bookManagementService.updateBook(bookId, body, actorOf(req)))
 }
 
-// POST /librarian/books/:bookId/sync-google: atualiza pelo Google Books (RF-GAC-04).
-export async function syncGoogle(req: Request, res: Response) {
+// POST /librarian/books/:bookId/sync: atualiza pelas fontes externas (RF-GAC-04).
+export async function syncBook(req: Request, res: Response) {
   const { bookId } = bookParamsSchema.parse(req.params)
-  res.json(await googleBooksService.syncBookFromGoogle(bookId, actorOf(req)))
+  res.json(await bookMetadataService.syncBookMetadata(bookId, actorOf(req)))
 }
 
 // DELETE /librarian/books/:bookId: remove um livro do acervo (RF-GAC-05).

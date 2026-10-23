@@ -90,7 +90,7 @@ describe('página do livro (getBookPage)', () => {
       'removedBy',
       'removedAt',
       'status',
-      'googleBooks',
+      'externalMetadata',
       'dataSource',
       'createdAt',
     ]) {

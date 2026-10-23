@@ -5,13 +5,12 @@ import type { AppError } from '../../../shared/errors.js'
 
 const h = vi.hoisted(() => ({
   db: undefined as unknown as FakeFirestore,
-  fetchVolume: vi.fn(),
+  lookupBookMetadata: vi.fn(),
 }))
 
 vi.mock('../../../config/firebase.js', () => ({ getDb: () => h.db }))
-vi.mock('../google-books/google-books.client.js', () => ({
-  fetchVolume: h.fetchVolume,
-  lookupIsbn: vi.fn(),
+vi.mock('../services/book-metadata.service.js', () => ({
+  lookupBookMetadata: h.lookupBookMetadata,
 }))
 
 const { FakeFirestore: Fake } =
@@ -22,7 +21,7 @@ const { createBookBodySchema, updateBookBodySchema } =
   await import('../schemas/request.schemas.js')
 const { getCachedActiveBooks, invalidateCatalogCache } =
   await import('../../../shared/catalog-cache.js')
-const { googleBooksUnavailable } = await import('../catalog.errors.js')
+const { LOOKUP_STATUS } = await import('../catalog.constants.js')
 const { makeBook, makeCopy } = await import('./book.fixtures.js')
 
 const LIBRARIAN = { uid: 'uid_ana', role: 'librarian' } as const
@@ -84,7 +83,8 @@ async function cacheWasInvalidated(run: () => Promise<unknown>) {
 
 beforeEach(() => {
   h.db = new Fake()
-  h.fetchVolume.mockReset()
+  h.lookupBookMetadata.mockReset()
+  h.lookupBookMetadata.mockResolvedValue({ status: LOOKUP_STATUS.notFound })
   invalidateCatalogCache()
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(START)
@@ -216,73 +216,86 @@ describe('cadastro de livro (createBook)', () => {
     expect(h.db.all('books')).toEqual([])
   })
 
-  describe('dados do Google Books', () => {
-    const volume = {
+  describe('dados das fontes externas', () => {
+    const metadata = {
       title: 'Código Limpo',
       authors: ['Robert C. Martin'],
       publisher: 'Alta Books',
-      synopsis: 'Sinopse do Google.',
+      synopsis: 'Sinopse das fontes.',
     }
-    const fromGoogle = {
-      volumeId: 'vol1',
+    const found = {
+      status: LOOKUP_STATUS.found,
+      sources: ['open_library', 'brasil_api'],
+      openLibraryKey: '/books/OL1M',
+      data: metadata,
+    }
+    const fromSources = {
       publisher: 'Alta Books',
-      synopsis: 'Sinopse do Google.',
+      synopsis: 'Sinopse das fontes.',
     }
 
-    it('com volumeId e nada alterado à mão grava google_books', async () => {
-      h.fetchVolume.mockResolvedValue(volume)
+    it('com ISBN, consulta as fontes e grava external se nada foi alterado à mão', async () => {
+      h.lookupBookMetadata.mockResolvedValue(found)
 
-      const response = await createBook(newBook(fromGoogle), LIBRARIAN)
+      const response = await createBook(newBook(fromSources), LIBRARIAN)
 
-      expect(h.fetchVolume).toHaveBeenCalledWith('vol1')
-      expect(response.dataSource).toBe('google_books')
-      expect(response.googleBooks).toEqual({
-        volumeId: 'vol1',
+      expect(h.lookupBookMetadata).toHaveBeenCalledWith('9788576082675')
+      expect(response.dataSource).toBe('external')
+      expect(response.externalMetadata).toEqual({
+        sources: ['open_library', 'brasil_api'],
+        openLibraryKey: '/books/OL1M',
         lastSyncedAt: START.toISOString(),
         found: true,
       })
     })
 
-    it('com volumeId e algum campo alterado à mão grava mixed', async () => {
-      h.fetchVolume.mockResolvedValue(volume)
+    it('com algum campo alterado à mão grava mixed', async () => {
+      h.lookupBookMetadata.mockResolvedValue(found)
 
       const response = await createBook(
-        newBook({ ...fromGoogle, publisher: 'Outra Editora' }),
+        newBook({ ...fromSources, publisher: 'Outra Editora' }),
         LIBRARIAN,
       )
 
       expect(response.dataSource).toBe('mixed')
-      expect(response.googleBooks?.found).toBe(true)
+      expect(response.externalMetadata?.found).toBe(true)
     })
 
-    it('segue com o cadastro, como mixed, se o Google falhar na conferência', async () => {
-      h.fetchVolume.mockRejectedValue(googleBooksUnavailable())
-
-      const response = await createBook(newBook(fromGoogle), LIBRARIAN)
-
-      expect(response.dataSource).toBe('mixed')
-      expect(response.googleBooks).toMatchObject({
-        volumeId: 'vol1',
-        found: true,
-      })
-    })
-
-    it('com ISBN e sem volumeId grava googleBooks.found false e dataSource manual', async () => {
+    it('ISBN que nenhuma fonte conhece grava found false e dataSource manual', async () => {
       const response = await createBook(newBook(), LIBRARIAN)
 
-      expect(h.fetchVolume).not.toHaveBeenCalled()
-      expect(response.googleBooks).toEqual({
-        volumeId: null,
-        lastSyncedAt: null,
+      expect(response.externalMetadata).toEqual({
+        sources: [],
+        openLibraryKey: null,
+        lastSyncedAt: START.toISOString(),
         found: false,
       })
       expect(response.dataSource).toBe('manual')
     })
 
-    it('sem ISBN omite o googleBooks', async () => {
+    it('segue com o cadastro, como manual, se as fontes não responderem', async () => {
+      h.lookupBookMetadata.mockResolvedValue({
+        status: LOOKUP_STATUS.unavailable,
+      })
+
+      const response = await createBook(newBook(fromSources), LIBRARIAN)
+
+      expect(response.dataSource).toBe('manual')
+      expect(response.externalMetadata).toEqual({
+        sources: [],
+        openLibraryKey: null,
+        lastSyncedAt: null,
+        found: false,
+      })
+      expect(h.db.all('books')).toHaveLength(1)
+    })
+
+    it('sem ISBN não consulta as fontes e omite o externalMetadata', async () => {
       const response = await createBook(newBook({ isbn: undefined }), LIBRARIAN)
 
-      expect(response.googleBooks).toBeNull()
+      expect(h.lookupBookMetadata).not.toHaveBeenCalled()
+      expect(response.externalMetadata).toBeNull()
+      expect(response.dataSource).toBe('manual')
       expect(response.isbn).toBeNull()
     })
   })
@@ -423,8 +436,8 @@ describe('edição de livro (updateBook)', () => {
     expect(h.db.read('books', 'book1')).not.toHaveProperty('subtitle')
   })
 
-  it('google_books vira mixed quando um campo de origem Google muda', async () => {
-    seedBook('book3', { dataSource: 'google_books' })
+  it('external vira mixed quando um campo de origem externa muda', async () => {
+    seedBook('book3', { dataSource: 'external' })
 
     const response = await updateBook(
       'book3',

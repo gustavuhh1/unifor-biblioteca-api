@@ -1,4 +1,10 @@
-import type { BookStatus, CopyStatus, DataSource, Timestamps } from './enums.js'
+import type {
+  BookMetadataSource,
+  BookStatus,
+  CopyStatus,
+  DataSource,
+  Timestamps,
+} from './enums.js'
 
 // Documentos do acervo (docs/modelo-de-dados-firestore.md, seções 2.6 a 2.8).
 
@@ -12,11 +18,15 @@ export interface Work extends Timestamps {
   editionCount: number
 }
 
-// Dados da última consulta ao Google Books.
-export interface GoogleBooksInfo {
-  volumeId: string | null
+// Dados da última consulta às fontes externas (Open Library e BrasilAPI).
+export interface ExternalMetadataInfo {
+  // As fontes que trouxeram dados nessa consulta; vazio quando não achou.
+  sources: BookMetadataSource[]
+  // Chave do livro na Open Library (ex.: "/books/OL26449397M").
+  openLibraryKey?: string
+  // null quando nenhuma fonte chegou a responder.
   lastSyncedAt: Date | null
-  // false quando o ISBN não foi encontrado.
+  // false quando o ISBN não foi encontrado em nenhuma fonte.
   found: boolean
 }
 
@@ -44,12 +54,12 @@ export interface Book extends Timestamps {
   coverUrl?: string | null
   // De 1 a 6: cor da capa gerada.
   coverTone: number
-  // CDU, Cutter, estante e local são dados do projeto, não do Google Books.
+  // CDU, Cutter, estante e local são dados do projeto, não das fontes externas.
   cdu: string
   cutter: string
   shelf: string
   location: string
-  googleBooks?: GoogleBooksInfo
+  externalMetadata?: ExternalMetadataInfo
   dataSource: DataSource
   // Exemplares não retirados do acervo.
   copiesTotal: number

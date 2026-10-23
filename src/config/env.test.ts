@@ -11,7 +11,6 @@ describe('variáveis de ambiente (parseEnv)', () => {
     expect(env.RESEND_API_KEY).toBeUndefined()
     expect(env.FERIADOS_API_KEY).toBeUndefined()
     expect(env.GEMINI_API_KEY).toBeUndefined()
-    expect(env.GOOGLE_BOOKS_API_KEY).toBeUndefined()
   })
 
   it('converte PORT em número', () => {

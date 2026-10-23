@@ -1,8 +1,8 @@
 import { AppError } from '../../src/shared/errors.js'
 
-// Pausa entre uma atualização e a seguinte, em milissegundos. Cada livro faz 2
-// chamadas ao Google Books; a cota real da Books API ainda será conferida, então
-// ajuste este número aqui.
+// Pausa entre uma atualização e a seguinte, em milissegundos. Cada livro faz uma
+// chamada à Open Library e uma à BrasilAPI (em paralelo); ajuste este número
+// aqui se alguma delas limitar as chamadas.
 export const SYNC_PAUSE_MS = 1000
 
 // O que o script precisa saber de cada livro ativo.
@@ -17,8 +17,8 @@ export interface SyncCandidate {
 export interface SyncDeps {
   // Livros ativos do acervo.
   listBooks: () => Promise<readonly SyncCandidate[]>
-  // A mesma atualização da rota POST /librarian/books/:bookId/sync-google. Devolve
-  // se o Google encontrou o ISBN e os campos que mudaram.
+  // A mesma atualização da rota POST /librarian/books/:bookId/sync. Devolve se
+  // alguma fonte encontrou o ISBN e os campos que mudaram.
   sync: (
     bookId: string,
   ) => Promise<{ found: boolean; changedFields: readonly string[] }>
@@ -35,13 +35,12 @@ export interface SyncSummary {
   withoutIsbn: number
 }
 
-// Texto curto do motivo da falha, sem a mensagem do erro (uma mensagem de rede
-// poderia carregar a URL da consulta, que tem a chave).
+// Texto curto do motivo da falha, sem a mensagem do erro.
 function failureReason(error: unknown): string {
   return error instanceof AppError ? error.code : 'erro inesperado'
 }
 
-// Percorre os livros ativos com ISBN e atualiza cada um pelo Google Books, com
+// Percorre os livros ativos com ISBN e atualiza cada um pelas fontes externas, com
 // uma pausa entre as chamadas (RF-ACE-05). Livro sem ISBN é ignorado. Uma falha
 // em um livro não para os outros. Devolve o resumo.
 export async function runCatalogSync(deps: SyncDeps): Promise<SyncSummary> {
@@ -67,7 +66,7 @@ export async function runCatalogSync(deps: SyncDeps): Promise<SyncSummary> {
         )
       } else {
         summary.notFound++
-        log(`${label}: ISBN não encontrado no Google Books`)
+        log(`${label}: ISBN não encontrado nas fontes externas`)
       }
     } catch (error) {
       summary.failed++

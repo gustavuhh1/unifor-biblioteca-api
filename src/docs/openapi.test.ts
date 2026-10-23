@@ -37,10 +37,10 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'GET /books',
         'GET /books/{bookId}',
         'GET /librarian/books',
-        'GET /librarian/google-books/{isbn}',
+        'GET /librarian/books/isbn/{isbn}',
         'POST /librarian/books',
         'PATCH /librarian/books/{bookId}',
-        'POST /librarian/books/{bookId}/sync-google',
+        'POST /librarian/books/{bookId}/sync',
         'DELETE /librarian/books/{bookId}',
       ].sort(),
     )
@@ -52,10 +52,10 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
       paths['/books']?.get,
       paths['/books/{bookId}']?.get,
       paths['/librarian/books']?.get,
-      paths['/librarian/google-books/{isbn}']?.get,
+      paths['/librarian/books/isbn/{isbn}']?.get,
       paths['/librarian/books']?.post,
       paths['/librarian/books/{bookId}']?.patch,
-      paths['/librarian/books/{bookId}/sync-google']?.post,
+      paths['/librarian/books/{bookId}/sync']?.post,
       paths['/librarian/books/{bookId}']?.delete,
     ]
 
@@ -83,10 +83,10 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
       paths['/librarian/books/{bookId}']?.delete?.responses?.['409'],
     ).toBeDefined()
     expect(
-      paths['/librarian/google-books/{isbn}']?.get?.responses?.['502'],
+      paths['/librarian/books/isbn/{isbn}']?.get?.responses?.['502'],
     ).toBeDefined()
     expect(
-      paths['/librarian/books/{bookId}/sync-google']?.post?.responses?.['502'],
+      paths['/librarian/books/{bookId}/sync']?.post?.responses?.['502'],
     ).toBeDefined()
   })
 

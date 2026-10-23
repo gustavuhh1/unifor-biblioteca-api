@@ -14,7 +14,7 @@ import {
 import { paginate, searchBooks } from '../rules/catalog-search.rules.js'
 
 // Livros ativos do cache em memória (RNF-DES-01); só recarrega do Firestore
-// quando o cache venceu ou foi invalidado. Nunca chama o Google Books
+// quando o cache venceu ou foi invalidado. Nunca chama as fontes externas
 // (RNF-CON-03).
 const activeBooks = () => getCachedActiveBooks(booksRepository.listActive)
 

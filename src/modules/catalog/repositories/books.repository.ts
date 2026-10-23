@@ -15,7 +15,7 @@ import {
   BOOK_STATUS,
   type Book,
   type BookRecord,
-  type GoogleBooksInfo,
+  type ExternalMetadataInfo,
 } from '../../../shared/types/index.js'
 import { DELETE_FIELD } from '../rules/book-update.rules.js'
 
@@ -36,20 +36,20 @@ const BOOK_DATE_FIELDS = [
 ] as const
 
 // Converte o documento lido em BookRecord (com o id), trocando os Timestamps por
-// Date, inclusive o googleBooks.lastSyncedAt.
+// Date, inclusive o externalMetadata.lastSyncedAt.
 function toRecord(snapshot: DocumentSnapshot): BookRecord {
   const data = dataWithDates(snapshot, BOOK_DATE_FIELDS)
-  const googleBooks = data.googleBooks as
-    | (Omit<GoogleBooksInfo, 'lastSyncedAt'> & { lastSyncedAt?: unknown })
+  const externalMetadata = data.externalMetadata as
+    | (Omit<ExternalMetadataInfo, 'lastSyncedAt'> & { lastSyncedAt?: unknown })
     | undefined
   return {
     id: snapshot.id,
     ...data,
-    ...(googleBooks
+    ...(externalMetadata
       ? {
-          googleBooks: {
-            ...googleBooks,
-            lastSyncedAt: optionalDate(googleBooks.lastSyncedAt),
+          externalMetadata: {
+            ...externalMetadata,
+            lastSyncedAt: optionalDate(externalMetadata.lastSyncedAt),
           },
         }
       : {}),

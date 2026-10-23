@@ -3,11 +3,7 @@ import { createBookBodySchema } from '../schemas/request.schemas.js'
 import { coverToneOf } from '../rules/cover-tone.rules.js'
 import { registrationConflicts } from '../rules/copies.rules.js'
 import { normalizeIsbn } from '../rules/isbn.rules.js'
-import {
-  buildNewBook,
-  buildNewCopy,
-  googleBooksInfoForNewBook,
-} from '../rules/new-book.rules.js'
+import { buildNewBook, buildNewCopy } from '../rules/new-book.rules.js'
 import { AT } from './book.fixtures.js'
 
 const body = createBookBodySchema.parse({
@@ -98,38 +94,12 @@ describe('registro de exemplar duplicado (registrationConflicts)', () => {
   })
 })
 
-describe('dados do Google Books do livro novo (googleBooksInfoForNewBook)', () => {
-  it('com volumeId, grava o volume como encontrado', () => {
-    expect(
-      googleBooksInfoForNewBook(
-        { isbn: '9788576082675', volumeId: 'vol1' },
-        AT,
-      ),
-    ).toEqual({ volumeId: 'vol1', lastSyncedAt: AT, found: true })
-  })
-
-  it('com ISBN e sem volumeId, grava found false', () => {
-    expect(
-      googleBooksInfoForNewBook(
-        { isbn: '9788576082675', volumeId: undefined },
-        AT,
-      ),
-    ).toEqual({ volumeId: null, lastSyncedAt: null, found: false })
-  })
-
-  it('sem ISBN, omite', () => {
-    expect(
-      googleBooksInfoForNewBook({ isbn: undefined, volumeId: undefined }, AT),
-    ).toBeUndefined()
-  })
-})
-
 describe('documento do livro novo (buildNewBook)', () => {
   const book = buildNewBook(body, {
     workId: 'codigo-limpo--martin',
     createdBy: 'uid_ana',
     dataSource: 'manual',
-    googleBooks: undefined,
+    externalMetadata: undefined,
     at: AT,
   })
 
@@ -165,7 +135,7 @@ describe('documento do livro novo (buildNewBook)', () => {
 
   it('não leva campos opcionais sem valor para o documento', () => {
     expect(book.translators).toBeUndefined()
-    expect(book.googleBooks).toBeUndefined()
+    expect(book.externalMetadata).toBeUndefined()
   })
 })
 

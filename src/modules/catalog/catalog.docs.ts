@@ -12,10 +12,10 @@ import {
 import {
   bookDetailSchema,
   bookListResponseSchema,
+  bookMetadataLookupResponseSchema,
   bookRecordSchema,
-  googleBookLookupResponseSchema,
   librarianBookListResponseSchema,
-  syncGoogleResponseSchema,
+  syncBookResponseSchema,
 } from './schemas/response.schemas.js'
 
 const body = (schema: ZodType) => ({
@@ -39,8 +39,8 @@ const notLibrarian = error(
 const bookNotFound = error(
   'O livro não existe ou foi removido do acervo (`book_not_found`).',
 )
-const googleUnavailable = error(
-  'O Google Books não respondeu: rede, tempo esgotado, 4xx ou 5xx (`google_books_unavailable`). Nada é alterado.',
+const metadataUnavailable = error(
+  'Nenhuma fonte achou o ISBN e alguma não respondeu: rede, tempo esgotado, 429 ou 5xx (`book_metadata_unavailable`). Nada é alterado.',
 )
 
 // --- Busca e página do livro (aluno e bibliotecário) --------------------------
@@ -51,7 +51,7 @@ registry.registerPath({
   tags: ['Acervo'],
   summary: 'Busca livros no acervo',
   description:
-    'Busca por título, subtítulo, autor, assunto e ISBN, ignorando acento e maiúsculas. Todos os termos de `q` precisam aparecer; `q` vazio lista tudo. Ordena por título. Livros removidos nunca aparecem; livros marcados como indisponíveis para novos pedidos aparecem. Roda em memória, com cache de cerca de 60 segundos por instância, e nunca consulta o Google Books.',
+    'Busca por título, subtítulo, autor, assunto e ISBN, ignorando acento e maiúsculas. Todos os termos de `q` precisam aparecer; `q` vazio lista tudo. Ordena por título. Livros removidos nunca aparecem; livros marcados como indisponíveis para novos pedidos aparecem. Roda em memória, com cache de cerca de 60 segundos por instância, e nunca consulta as fontes externas.',
   security,
   request: { query: listBooksQuerySchema },
   responses: {
@@ -107,22 +107,22 @@ registry.registerPath({
 
 registry.registerPath({
   method: 'get',
-  path: '/librarian/google-books/{isbn}',
+  path: '/librarian/books/isbn/{isbn}',
   tags: ['Acervo (bibliotecário)'],
-  summary: 'Consulta um ISBN no Google Books',
+  summary: 'Consulta um ISBN nas fontes externas',
   description:
-    'Só consulta: não grava nada. Devolve os dados já no formato do livro, para pré-preencher o cadastro, e o `volumeId`, que o cadastro devolve em `POST /librarian/books`. ISBN que o Google Books não conhece responde 200 com `found: false`, e o app avisa em vermelho para preencher à mão. O ISBN aceita hífens e espaços.',
+    'Consulta a Open Library e a BrasilAPI ao mesmo tempo (5 s para cada) e combina as respostas: a Open Library vem primeiro em título, autores, capa e assuntos; a BrasilAPI traz a sinopse e preenche o que faltar. Só consulta: não grava nada. Devolve os dados já no formato do livro, para pré-preencher o cadastro, e as `sources` que responderam com dados. ISBN que nenhuma fonte conhece responde 200 com `found: false`, e o app avisa em vermelho para preencher à mão. Se nenhuma fonte achou e alguma não respondeu, responde 502. O ISBN aceita hífens e espaços.',
   security,
   request: { params: isbnParamsSchema },
   responses: {
     200: {
       description: 'ISBN encontrado ou não.',
-      content: jsonContent(googleBookLookupResponseSchema),
+      content: jsonContent(bookMetadataLookupResponseSchema),
     },
     400: invalidData,
     401: noSession,
     403: notLibrarian,
-    502: googleUnavailable,
+    502: metadataUnavailable,
   },
 })
 
@@ -132,7 +132,7 @@ registry.registerPath({
   tags: ['Acervo (bibliotecário)'],
   summary: 'Cadastra um livro e os exemplares',
   description:
-    'Numa transação: cria a obra (ou acrescenta a edição à obra do mesmo título e primeiro autor), o livro e os exemplares (todos `available`). CDU, Cutter e estante são sempre informados à mão. Com `volumeId` (da consulta ao Google Books) grava os dados do Google e `dataSource` fica `google_books` se nada foi alterado à mão, ou `mixed`. ISBN sem `volumeId` grava `googleBooks.found: false`. Sem nada do Google, `dataSource` é `manual`. O registro de cada exemplar é único.',
+    'Numa transação: cria a obra (ou acrescenta a edição à obra do mesmo título e primeiro autor), o livro e os exemplares (todos `available`). CDU, Cutter e estante são sempre informados à mão. Com ISBN, consulta as fontes externas (Open Library e BrasilAPI) antes de gravar: se elas acharam, grava `externalMetadata` e `dataSource` fica `external` quando título, autores, editora e sinopse estão como elas mandaram, ou `mixed` se foram alterados à mão. Se nenhuma achou, ou não responderam, o cadastro segue e `dataSource` é `manual` (`externalMetadata.found: false`). Sem ISBN, `dataSource` é `manual`. O registro de cada exemplar é único.',
   security,
   request: { body: body(createBookBodySchema) },
   responses: {
@@ -155,7 +155,7 @@ registry.registerPath({
   tags: ['Acervo (bibliotecário)'],
   summary: 'Edita um livro',
   description:
-    'Muda só os campos enviados (pelo menos um); `null` apaga um campo opcional. `workId`, contadores, `status` e exemplares não são editáveis. `unavailableForNewRequests` marca ou desmarca o livro como "Indisponível para novos pedidos": pedidos, empréstimos e filas que já existem não mudam. Se o livro era `google_books` e algum campo de origem Google muda, `dataSource` passa a `mixed`.',
+    'Muda só os campos enviados (pelo menos um); `null` apaga um campo opcional. `workId`, contadores, `status` e exemplares não são editáveis. `unavailableForNewRequests` marca ou desmarca o livro como "Indisponível para novos pedidos": pedidos, empréstimos e filas que já existem não mudam. Se o livro era `external` e algum campo de origem externa muda, `dataSource` passa a `mixed`.',
   security,
   request: { params: bookParamsSchema, body: body(updateBookBodySchema) },
   responses: {
@@ -172,23 +172,23 @@ registry.registerPath({
 
 registry.registerPath({
   method: 'post',
-  path: '/librarian/books/{bookId}/sync-google',
+  path: '/librarian/books/{bookId}/sync',
   tags: ['Acervo (bibliotecário)'],
-  summary: 'Atualiza um livro pelo Google Books',
+  summary: 'Atualiza um livro pelas fontes externas',
   description:
-    'Usa o ISBN salvo. Troca só título, subtítulo, autores, editora, ano, sinopse, capa, assuntos e idioma, e só os que o Google trouxe; CDU, Cutter, estante e exemplares nunca mudam. ISBN que o Google não conhece grava só `googleBooks.found: false`. Falha do Google responde 502 sem alterar o livro. `changedFields` lista o que mudou.',
+    'Usa o ISBN salvo e consulta a Open Library e a BrasilAPI. Troca só título, subtítulo, autores, editora, ano, sinopse, capa e assuntos, e só os que as fontes trouxeram; CDU, Cutter, estante, idioma e exemplares nunca mudam. ISBN que nenhuma fonte conhece grava só `externalMetadata.found: false`. Se nenhuma achou e alguma não respondeu, responde 502 sem alterar o livro. `changedFields` lista o que mudou.',
   security,
   request: { params: bookParamsSchema },
   responses: {
     200: {
       description: 'Livro depois da atualização, com os campos que mudaram.',
-      content: jsonContent(syncGoogleResponseSchema),
+      content: jsonContent(syncBookResponseSchema),
     },
     401: noSession,
     403: notLibrarian,
     404: bookNotFound,
     422: error('O livro não tem ISBN (`isbn_required`).'),
-    502: googleUnavailable,
+    502: metadataUnavailable,
   },
 })
 

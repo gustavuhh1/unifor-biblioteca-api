@@ -28,7 +28,7 @@ export async function getCachedActiveBooks(
 
 // Descarta o cache: o próximo acesso recarrega o acervo. Chame depois de gravar
 // qualquer coisa que a busca mostra: cadastrar, editar, remover, marcar
-// indisponível, atualizar pelo Google Books e, nos módulos de empréstimo e fila,
+// indisponível, atualizar pelas fontes externas e, nos módulos de empréstimo e fila,
 // tudo que muda copiesAvailable, queueLength ou nextReturnAt.
 export function invalidateCatalogCache(): void {
   entry = undefined

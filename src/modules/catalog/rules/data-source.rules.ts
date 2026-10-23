@@ -1,53 +1,54 @@
 import { DATA_SOURCE, type DataSource } from '../../../shared/types/index.js'
-import { DATA_SOURCE_FIELDS, GOOGLE_SYNC_FIELDS } from '../catalog.constants.js'
-import type { GoogleBookData } from '../catalog.types.js'
+import {
+  DATA_SOURCE_FIELDS,
+  METADATA_SYNC_FIELDS,
+} from '../catalog.constants.js'
+import type { BookMetadata } from '../catalog.types.js'
 import { sameValue } from './same-value.rules.js'
 
 // Os campos do cadastro que dão a origem dos dados.
-type DataSourceInput = Pick<GoogleBookData, (typeof DATA_SOURCE_FIELDS)[number]>
+type DataSourceInput = Pick<BookMetadata, (typeof DATA_SOURCE_FIELDS)[number]>
 
-// Origem dos dados depois de atualizar pelo Google Books (RF-GAC-04):
-// google_books se o Google trouxe título, autores, editora e sinopse; senão mixed.
-export function dataSourceAfterSync(data: GoogleBookData): DataSource {
+// Origem dos dados depois de atualizar pelas fontes externas (RF-GAC-04):
+// external se elas trouxeram título, autores, editora e sinopse; senão mixed.
+export function dataSourceAfterSync(data: BookMetadata): DataSource {
   return DATA_SOURCE_FIELDS.every((field) => data[field] !== undefined)
-    ? DATA_SOURCE.googleBooks
+    ? DATA_SOURCE.external
     : DATA_SOURCE.mixed
 }
 
 // Origem dos dados de um livro novo (books.dataSource, RF-GAC-02):
-//   manual        nada veio do Google Books (sem volumeId);
-//   google_books  veio do Google e título, autores, editora e sinopse estão como
-//                 o Google os mandou (nada foi alterado à mão);
-//   mixed         nos demais casos, inclusive quando o volume não pôde ser
-//                 conferido no Google.
-// `volume` é o volume do Google conferido agora, ou undefined se a conferência
-// falhou. Campo que o Google não trouxe e continua vazio conta como igual.
+//   manual    nenhuma fonte externa achou o ISBN (ou o livro não tem ISBN, ou as
+//             fontes não responderam);
+//   external  as fontes acharam e título, autores, editora e sinopse estão como
+//             elas os mandaram (nada foi alterado à mão);
+//   mixed     as fontes acharam, mas algum desses campos foi alterado à mão.
+// `external` são os dados combinados das fontes agora, ou undefined se nada foi
+// achado. Campo que as fontes não trouxeram e continua vazio conta como igual.
 export function dataSourceForNewBook(input: {
-  hasVolumeId: boolean
-  volume: GoogleBookData | undefined
+  external: BookMetadata | undefined
   book: DataSourceInput
 }): DataSource {
-  if (!input.hasVolumeId) return DATA_SOURCE.manual
-  const { volume, book } = input
-  if (!volume) return DATA_SOURCE.mixed
+  const { external, book } = input
+  if (!external) return DATA_SOURCE.manual
   return DATA_SOURCE_FIELDS.every((field) =>
-    sameValue(book[field], volume[field]),
+    sameValue(book[field], external[field]),
   )
-    ? DATA_SOURCE.googleBooks
+    ? DATA_SOURCE.external
     : DATA_SOURCE.mixed
 }
 
-// Origem dos dados depois de uma edição (RF-GAC-03): um livro google_books vira
-// mixed quando algum campo de origem Google muda; manual continua manual e mixed
+// Origem dos dados depois de uma edição (RF-GAC-03): um livro external vira mixed
+// quando algum campo de origem externa muda; manual continua manual e mixed
 // continua mixed.
 export function dataSourceAfterEdit(
   current: DataSource,
   changedFields: readonly string[],
 ): DataSource {
-  const touchedGoogleField = changedFields.some((field) =>
-    (GOOGLE_SYNC_FIELDS as readonly string[]).includes(field),
+  const touchedExternalField = changedFields.some((field) =>
+    (METADATA_SYNC_FIELDS as readonly string[]).includes(field),
   )
-  return current === DATA_SOURCE.googleBooks && touchedGoogleField
+  return current === DATA_SOURCE.external && touchedExternalField
     ? DATA_SOURCE.mixed
     : current
 }

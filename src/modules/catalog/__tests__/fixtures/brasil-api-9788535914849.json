@@ -1,0 +1,21 @@
+{
+  "isbn": "9788535914849",
+  "title": "1984",
+  "subtitle": null,
+  "authors": ["George Orwell", "Alexandre Hubner", "Heloisa Jahn"],
+  "publisher": "Companhia das Letras",
+  "synopsis": "Publicada originalmente em 1949, a distopia futurista 1984 é um dos romances mais influentes do século XX, um inquestionável clássico moderno. Lançada poucos meses antes da morte do autor, é uma obra magistral que ainda se impõe como uma poderosa reflexão ficcional sobre a essência nefasta de qualquer forma de poder totalitário.\n",
+  "dimensions": {
+    "width": 13,
+    "height": 21,
+    "unit": "CENTIMETER"
+  },
+  "year": 2009,
+  "format": "PHYSICAL",
+  "page_count": 416,
+  "subjects": ["Literatura", "Literatura"],
+  "location": "São Paulo, SP",
+  "retail_price": null,
+  "cover_url": null,
+  "provider": "cbl"
+}

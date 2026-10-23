@@ -119,8 +119,9 @@ describe('lista do bibliotecário (searchLibrarianCatalog)', () => {
       shelf: 'Estante 005.1',
       status: 'active',
       dataSource: 'mixed',
-      googleBooks: {
-        volumeId: 'vol123',
+      externalMetadata: {
+        sources: ['open_library'],
+        openLibraryKey: '/books/OL123M',
         found: true,
       },
     })

@@ -2,7 +2,8 @@
 //   npm run seed                      só no Emulator Suite (padrão)
 //   npm run seed -- --prod            produção, com confirmação digitada
 //   npm run seed -- --prod --reset    produção, apagando as coleções antes
-//   npm run seed -- --no-google-books pula as requisições ao Google Books
+//   npm run seed -- --with-external-metadata completa capa, sinopse e editora pela
+//                                     Open Library e BrasilAPI (padrão: desligado)
 //   npm run seed -- --offline         nenhuma chamada externa (feriados do arquivo local)
 import { getAdminAuth, getDb } from '../src/config/firebase.js'
 import { env } from '../src/config/env.js'
@@ -17,12 +18,12 @@ import { checkEnvironment, parseCliArgs, type CliOptions } from './seed/cli.js'
 import { AUTH_EMAIL_DOMAIN, BASE_DATE, USERS } from './seed/data.js'
 import { publishFirestoreConfig } from './seed/deploy.js'
 import { clearDatabase, writeAll } from './seed/firestore.js'
-import { enrichFromGoogleBooks } from './seed/google-books.js'
 import {
   fetchHolidays,
   loadHolidaysFile,
   type HolidaysDocument,
 } from './seed/holidays.js'
+import { enrichFromExternalSources } from './seed/external-metadata.js'
 import { daysBetween, localDate } from './seed/time.js'
 import { countDocuments, runChecks } from './seed/verify.js'
 
@@ -128,16 +129,13 @@ async function main(): Promise<number> {
 
   console.log('5. a 7. Dados')
   const data = buildSeed({ holidays, tokenSecret: password, today })
-  if (options.googleBooks && process.env.GOOGLE_BOOKS_API_KEY) {
-    const result = await enrichFromGoogleBooks(
-      data.books,
-      process.env.GOOGLE_BOOKS_API_KEY,
-    )
+  if (options.externalMetadata) {
+    const result = await enrichFromExternalSources(data.books)
     console.log(
-      `  Google Books: ${result.enriched} completados, ${result.notFound} sem resultado, ${result.failed} com falha`,
+      `  Fontes externas: ${result.enriched} completados, ${result.notFound} sem resultado, ${result.failed} sem resposta`,
     )
   } else {
-    console.log('  Google Books: pulado')
+    console.log('  Fontes externas: puladas (use --with-external-metadata)')
   }
   const writes = toWrites(data)
   await writeAll(db, writes)

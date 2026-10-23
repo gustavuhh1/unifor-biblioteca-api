@@ -13,9 +13,10 @@ export const MAX_PAGE_SIZE = 50
 // Quantidade de cores da capa gerada (books.coverTone vai de 1 a este número).
 export const COVER_TONE_COUNT = 6
 
-// Campos do livro que o Google Books pode trocar (RF-GAC-04, seção 2.7). Nunca
-// cdu, cutter, shelf, location, exemplares, contadores, workId nem status.
-export const GOOGLE_SYNC_FIELDS = [
+// Campos do livro que as fontes externas podem trocar (RF-GAC-04, seção 2.7).
+// Nunca cdu, cutter, shelf, location, exemplares, contadores, workId, status nem
+// idioma (nenhuma das fontes informa o idioma).
+export const METADATA_SYNC_FIELDS = [
   'title',
   'subtitle',
   'authors',
@@ -24,7 +25,6 @@ export const GOOGLE_SYNC_FIELDS = [
   'synopsis',
   'coverUrl',
   'subjects',
-  'language',
 ] as const
 
 // Campos que dão a origem dos dados do livro (books.dataSource): título,
@@ -39,17 +39,21 @@ export const DATA_SOURCE_FIELDS = [
 // Sugestão devolvida quando o livro não pode ser removido (RF-GAC-05).
 export const MARK_UNAVAILABLE_SUGGESTION = 'mark_unavailable'
 
-// Google Books: endereço da API e tempo máximo de cada chamada (RNF-CON-03).
-export const GOOGLE_BOOKS_BASE_URL = 'https://www.googleapis.com/books/v1'
-export const GOOGLE_BOOKS_TIMEOUT_MS = 4000
+// Fontes externas dos dados do livro: endereço de cada API, tempo máximo de cada
+// chamada (RNF-CON-03) e o User-Agent que a Open Library pede.
+export const OPEN_LIBRARY_BASE_URL = 'https://openlibrary.org'
+export const BRASIL_API_BASE_URL = 'https://brasilapi.com.br/api'
+export const BOOK_METADATA_TIMEOUT_MS = 5000
+export const BOOK_METADATA_USER_AGENT = 'UniBooks/1.0 (+https://uni-books.app)'
 
-// Código de idioma do Google Books -> texto de books.language. Código fora desta
-// lista não troca o idioma salvo.
-export const GOOGLE_LANGUAGE_NAMES: Readonly<Record<string, string>> = {
-  pt: 'Português',
-  en: 'Inglês',
-  es: 'Espanhol',
-}
+// Quantos assuntos entram no livro: a Open Library chega a mandar mais de cem,
+// e o cadastro aceita no máximo 50.
+export const MAX_METADATA_SUBJECTS = 10
+
+// Resultado de uma consulta a uma fonte (ou às duas combinadas): achou, o ISBN
+// não existe ali, ou a fonte não respondeu (rede, tempo esgotado, 429, 5xx...).
+export const LOOKUP_STATUSES = ['found', 'not_found', 'unavailable'] as const
+export const LOOKUP_STATUS = constantsOf(LOOKUP_STATUSES)
 
 // Quem faz a ação no auditLog quando é o sistema (script de importação,
 // RF-ACE-05).

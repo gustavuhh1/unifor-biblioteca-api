@@ -29,7 +29,12 @@ export function makeBook(overrides: Partial<BookRecord> = {}): BookRecord {
     cutter: 'M386c',
     shelf: 'Estante 005.1',
     location: 'Biblioteca (Praça Central)',
-    googleBooks: { volumeId: 'vol123', lastSyncedAt: AT, found: true },
+    externalMetadata: {
+      sources: ['open_library'],
+      openLibraryKey: '/books/OL123M',
+      lastSyncedAt: AT,
+      found: true,
+    },
     dataSource: 'mixed',
     copiesTotal: 3,
     copiesAvailable: 0,

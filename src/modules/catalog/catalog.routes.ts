@@ -26,9 +26,9 @@ catalogRouter.get(
   controller.listLibrarianBooks,
 )
 catalogRouter.get(
-  '/librarian/google-books/:isbn',
+  '/librarian/books/isbn/:isbn',
   ...librarianSession,
-  controller.lookupGoogleBook,
+  controller.lookupBookByIsbn,
 )
 catalogRouter.post(
   '/librarian/books',
@@ -41,9 +41,9 @@ catalogRouter.patch(
   controller.updateBook,
 )
 catalogRouter.post(
-  '/librarian/books/:bookId/sync-google',
+  '/librarian/books/:bookId/sync',
   ...librarianSession,
-  controller.syncGoogle,
+  controller.syncBook,
 )
 catalogRouter.delete(
   '/librarian/books/:bookId',

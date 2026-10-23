@@ -93,7 +93,7 @@ export const bookParamsSchema = z.object({
   bookId: z.string().min(1).max(200),
 })
 
-// Parâmetro :isbn de GET /librarian/google-books/:isbn.
+// Parâmetro :isbn de GET /librarian/books/isbn/:isbn.
 export const isbnParamsSchema = z.object({ isbn: isbnSchema })
 
 // Texto buscado e página: o que a busca do aluno e a do bibliotecário têm em comum.
@@ -154,13 +154,10 @@ export const copyInputSchema = z
   .meta({ id: 'CopyInput' })
 
 // Corpo de POST /librarian/books (RF-GAC-02). CDU, Cutter e estante são sempre
-// preenchidos à mão; o resto pode vir da consulta ao Google Books.
+// preenchidos à mão; o resto pode vir da consulta às fontes externas.
 export const createBookBodySchema = z
   .object({
     isbn: z.preprocess(blankToUndefined, isbnSchema.optional()),
-    volumeId: optionalText('o id do volume', 100).meta({
-      description: 'Vem de GET /librarian/google-books/:isbn.',
-    }),
     title: text('o título', 300),
     subtitle: optionalText('o subtítulo', 300),
     authors: authorsSchema,
@@ -189,10 +186,6 @@ export const createBookBodySchema = z
       .array(copyInputSchema, 'Informe os exemplares.')
       .min(1, 'Informe ao menos um exemplar.')
       .max(50, 'Informe até 50 exemplares.'),
-  })
-  .refine((body) => body.volumeId === undefined || body.isbn !== undefined, {
-    path: ['isbn'],
-    error: 'Informe o ISBN do volume do Google Books.',
   })
   .meta({ id: 'CreateBookBody' })
 
