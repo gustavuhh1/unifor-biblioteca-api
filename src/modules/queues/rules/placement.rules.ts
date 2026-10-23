@@ -134,6 +134,33 @@ export function passesAhead(placement: Pick<Placement, 'movedDown'>): boolean {
   return placement.movedDown.length > 0
 }
 
+// O que fazer com a mudança pedida (RF-BAL-07): aplicar já (`apply`), pedir a
+// confirmação mostrando quem desce (`confirm`) ou recusar por falta do motivo
+// (`reason_required`).
+export const PLACEMENT_DECISION = {
+  apply: 'apply',
+  confirm: 'confirm',
+  reasonRequired: 'reason_required',
+} as const
+
+export type PlacementDecision =
+  (typeof PLACEMENT_DECISION)[keyof typeof PLACEMENT_DECISION]
+
+// Decide o que fazer com a mudança, a partir do que o bibliotecário enviou. Sem
+// passar à frente de ninguém (no fim da fila, ou para trás), aplica sem perguntar
+// e sem exigir motivo. Passando à frente: primeiro pede a confirmação; confirmada,
+// exige o motivo.
+export function decidePlacement(
+  placement: Pick<Placement, 'movedDown'>,
+  input: { confirmed: boolean; reason?: string | undefined },
+): PlacementDecision {
+  if (!passesAhead(placement)) return PLACEMENT_DECISION.apply
+  if (!input.confirmed) return PLACEMENT_DECISION.confirm
+  return input.reason
+    ? PLACEMENT_DECISION.apply
+    : PLACEMENT_DECISION.reasonRequired
+}
+
 // O `order` de quem entra no fim da fila: o maior atual + o passo (seção 2.10),
 // ou o primeiro passo numa fila vazia.
 export function nextOrderAtEnd(queue: readonly Pick<QueueSlot, 'order'>[]) {

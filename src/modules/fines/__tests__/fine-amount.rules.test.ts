@@ -6,6 +6,8 @@ import {
   fineAmountCents,
   freezeFields,
   openTotalDelta,
+  payDenialOf,
+  payFields,
 } from '../rules/fine-amount.rules.js'
 import { CLOSED_DATES, NOW, makeFine } from './fine.fixtures.js'
 
@@ -187,5 +189,29 @@ describe('total em aberto do aluno (openTotalDelta)', () => {
 
   it('multa paga na devolução não soma nada', () => {
     expect(openTotalDelta({ status: 'paid', amountCents: 600 })).toBe(0)
+  })
+})
+
+describe('registrar o pagamento no balcão (payDenialOf e payFields, RF-BAL-09)', () => {
+  it('só a multa em aberto pode ser paga', () => {
+    expect(payDenialOf({ status: 'open' })).toBeNull()
+  })
+
+  it('multa contando é recusada: o livro ainda não voltou', () => {
+    expect(payDenialOf({ status: 'accruing' })).toBe('accruing')
+  })
+
+  it('multa já paga é recusada', () => {
+    expect(payDenialOf({ status: 'paid' })).toBe('paid')
+  })
+
+  it('grava a hora e quem recebeu', () => {
+    expect(payFields({ uid: 'uid_ana', name: 'Ana Souza' }, NOW)).toEqual({
+      status: 'paid',
+      paidAt: NOW,
+      receivedBy: 'uid_ana',
+      receivedByName: 'Ana Souza',
+      updatedAt: NOW,
+    })
   })
 })

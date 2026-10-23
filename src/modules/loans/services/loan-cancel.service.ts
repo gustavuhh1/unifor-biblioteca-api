@@ -15,7 +15,7 @@ import { applyCopyRelease, planCopyRelease } from './copy-release.service.js'
 // Cancela um pedido antes da retirada (RF-EMP-05). Só o dono do pedido (outro aluno
 // recebe 404) e só enquanto aguarda a retirada (senão 409). Numa transação: o pedido
 // vira cancelled, activeLoanCount do aluno cai 1 e o exemplar volta (função única
-// de copy-release.service: estante ou, no futuro, o 1º da fila).
+// de copy-release.service: o 1º da fila, se houver, ou a estante).
 export async function cancelLoan(
   uid: string,
   loanId: string,
@@ -50,7 +50,7 @@ export async function cancelLoan(
       Math.max(0, student.activeLoanCount - 1),
       at,
     )
-    applyCopyRelease(tx, plan, at)
+    applyCopyRelease(tx, plan, at, settings)
     return { ...loan, ...update }
   })
 

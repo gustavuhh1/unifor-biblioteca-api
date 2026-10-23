@@ -28,7 +28,7 @@ export function turnStartFields(input: {
   copyId: string
   at: Date
   confirmHours: number
-}): Partial<QueueEntry> {
+}): Partial<QueueEntry> & { confirmDeadline: Date } {
   const { copyId, at, confirmHours } = input
   return {
     status: QUEUE_ENTRY_STATUS.yourTurn,

@@ -140,3 +140,25 @@ export function buildFrozenFine(input: {
 export function openTotalDelta(frozen: Pick<Fine, 'status' | 'amountCents'>) {
   return frozen.status === FINE_STATUS.open ? (frozen.amountCents ?? 0) : 0
 }
+
+// Por que o pagamento não pode ser registrado (RF-BAL-09): a multa ainda está
+// contando (`accruing`, o livro não voltou) ou já foi paga (`paid`).
+export function payDenialOf(
+  fine: Pick<Fine, 'status'>,
+): typeof FINE_STATUS.accruing | typeof FINE_STATUS.paid | null {
+  if (fine.status === FINE_STATUS.accruing) return FINE_STATUS.accruing
+  if (fine.status === FINE_STATUS.paid) return FINE_STATUS.paid
+  return null
+}
+
+// O que gravar na multa quando o bibliotecário registra o pagamento no balcão
+// (RF-BAL-09): `paid`, com a hora e quem recebeu.
+export function payFields(receiver: FineReceiver, at: Date): Partial<Fine> {
+  return {
+    status: FINE_STATUS.paid,
+    paidAt: at,
+    receivedBy: receiver.uid,
+    receivedByName: receiver.name,
+    updatedAt: at,
+  }
+}

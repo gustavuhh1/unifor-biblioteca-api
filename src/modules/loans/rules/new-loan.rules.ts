@@ -2,6 +2,7 @@ import {
   LOAN_ORIGIN,
   LOAN_STATUS,
   type Loan,
+  type LoanOrigin,
 } from '../../../shared/types/index.js'
 
 // O que o pedido copia do aluno, do livro e do exemplar (seção 2.9).
@@ -13,13 +14,17 @@ export interface NewLoanInput {
   qrToken: string
   loanDays: number
   pickupDeadline: Date
+  // Como o pedido nasceu; sem ele, é um pedido direto (`request`).
+  origin?: LoanOrigin
+  // O lugar da fila que virou este pedido (origem `queue`, RF-FIL-06).
+  queueEntryId?: string
   // Quando o pedido foi feito; também é createdAt e updatedAt.
   at: Date
 }
 
-// Monta o documento loans de um pedido direto (RF-EMP-01): aguardando retirada,
-// com o prazo de retirada, o código curto e o segredo do QR, ainda sem retirada,
-// vencimento nem renovação.
+// Monta o documento loans de um pedido (RF-EMP-01) ou da vez confirmada na fila
+// (RF-FIL-06): aguardando retirada, com o prazo de retirada, o código curto e o
+// segredo do QR, ainda sem retirada, vencimento nem renovação.
 export function buildNewLoan(input: NewLoanInput): Loan {
   const { student, book, at } = input
   return {
@@ -32,7 +37,8 @@ export function buildNewLoan(input: NewLoanInput): Loan {
     bookTitle: book.title,
     bookShelf: book.shelf,
     status: LOAN_STATUS.awaitingPickup,
-    origin: LOAN_ORIGIN.request,
+    origin: input.origin ?? LOAN_ORIGIN.request,
+    ...(input.queueEntryId ? { queueEntryId: input.queueEntryId } : {}),
     pickupCode: input.pickupCode,
     qrToken: input.qrToken,
     requestedAt: at,

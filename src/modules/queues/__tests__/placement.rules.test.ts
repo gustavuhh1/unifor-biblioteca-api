@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  decidePlacement,
   nextOrderAtEnd,
   passesAhead,
   planPlacement,
@@ -187,5 +188,39 @@ describe('ordem de quem entra no fim (nextOrderAtEnd)', () => {
 
   it('numa fila vazia é 1000', () => {
     expect(nextOrderAtEnd([])).toBe(1000)
+  })
+})
+
+describe('o que fazer com a mudança (decidePlacement, RF-BAL-07)', () => {
+  const ahead = place({ queue, entryId: 'marina', position: 2 })
+  const toEnd = place({ queue, position: 5 })
+  const back = place({ queue, entryId: 'ana', position: 3 })
+
+  it('no fim da fila aplica sem confirmação nem motivo', () => {
+    expect(decidePlacement(toEnd, { confirmed: false })).toBe('apply')
+  })
+
+  it('para trás também aplica direto', () => {
+    expect(decidePlacement(back, { confirmed: false })).toBe('apply')
+  })
+
+  it('à frente de outros, sem confirmação, pede a confirmação', () => {
+    expect(decidePlacement(ahead, { confirmed: false })).toBe('confirm')
+    expect(
+      decidePlacement(ahead, { confirmed: false, reason: 'Pediu no balcão' }),
+    ).toBe('confirm')
+  })
+
+  it('à frente de outros, confirmado, exige o motivo', () => {
+    expect(decidePlacement(ahead, { confirmed: true })).toBe('reason_required')
+    expect(decidePlacement(ahead, { confirmed: true, reason: '' })).toBe(
+      'reason_required',
+    )
+  })
+
+  it('à frente de outros, confirmado e com motivo, aplica', () => {
+    expect(
+      decidePlacement(ahead, { confirmed: true, reason: 'Pediu no balcão' }),
+    ).toBe('apply')
   })
 })
