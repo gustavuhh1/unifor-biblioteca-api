@@ -110,6 +110,8 @@ export async function findAvailableByBook(
 }
 
 // Separa o exemplar para um pedido: reserved, ligado ao empréstimo (RF-EMP-01).
+// Se o exemplar estava guardado para a vez de alguém da fila, a reserva da fila
+// termina aqui (RF-FIL-06).
 export function reserve(
   tx: Transaction,
   id: string,
@@ -119,6 +121,24 @@ export function reserve(
   tx.update(copies().doc(id), {
     status: COPY_STATUS.reserved,
     currentLoanId: loanId,
+    reservedForQueueEntryId: FieldValue.delete(),
+    updatedAt: at,
+  })
+}
+
+// Guarda o exemplar para a vez do 1º da fila: reserved, ligado ao lugar dele na
+// fila, sem empréstimo nem vencimento (RF-FIL-06).
+export function reserveForQueue(
+  tx: Transaction,
+  id: string,
+  queueEntryId: string,
+  at: Date,
+): void {
+  tx.update(copies().doc(id), {
+    status: COPY_STATUS.reserved,
+    reservedForQueueEntryId: queueEntryId,
+    currentLoanId: FieldValue.delete(),
+    dueAt: FieldValue.delete(),
     updatedAt: at,
   })
 }

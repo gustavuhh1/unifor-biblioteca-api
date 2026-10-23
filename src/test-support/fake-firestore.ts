@@ -60,12 +60,24 @@ export class FakeDocRef {
   }
 }
 
-type Operator = '==' | 'in'
+type Operator = '==' | 'in' | '<'
 type Filter = { field: string; op: Operator; value: unknown }
 
-// Diz se o valor do campo passa no filtro (igualdade ou "está na lista").
+// Valor comparável: datas viram milissegundos.
+const comparable = (value: unknown) =>
+  value instanceof Date ? value.getTime() : value
+
+// Diz se o valor do campo passa no filtro (igualdade, "está na lista" ou "menor
+// que"). Campo ausente nunca é menor que nada.
 function matches(actual: unknown, { op, value }: Filter): boolean {
-  return op === 'in' ? (value as unknown[]).includes(actual) : actual === value
+  if (op === 'in') return (value as unknown[]).includes(actual)
+  if (op === '<') {
+    return (
+      actual !== undefined &&
+      (comparable(actual) as number) < (comparable(value) as number)
+    )
+  }
+  return actual === value
 }
 
 // Consulta com where, orderBy e limit, como a Query do Firestore.

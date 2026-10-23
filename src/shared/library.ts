@@ -40,4 +40,8 @@ export const DEFAULT_LOAN_RULES = {
   pickupBusinessDays: 2,
   // "Vence em breve": faltam até este número de dias.
   dueSoonDays: 2,
+  // Horas corridas que o 1º da fila tem para confirmar a vez (RF-FIL-06).
+  queueConfirmHours: 24,
+  // Multa por dia útil de atraso, em centavos (RF-MUL-01): R$ 2,00.
+  fineCentsPerBusinessDay: 200,
 }

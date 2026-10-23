@@ -33,6 +33,7 @@ export interface EligibilityBook {
 
 // Um pedido aguardando retirada ou um empréstimo ativo do aluno.
 export interface StudentOpenLoan {
+  bookId: string
   workId: string
   status: LoanStatus
   dueAt?: Date | undefined
@@ -73,8 +74,10 @@ export function suggestedActionOf(
 const isUnavailable = (book: EligibilityBook) =>
   book.status !== BOOK_STATUS.active || book.unavailableForNewRequests
 
-// Algum empréstimo ativo com o vencimento já passado (RF-EMP-04).
-const hasOverdueLoan = (student: StudentCirculation, at: Date) =>
+// Algum empréstimo ativo com o vencimento já passado (RF-EMP-04). É o único
+// bloqueio por atraso: multa em aberto sem empréstimo atrasado nunca bloqueia
+// (RF-MUL-04).
+export const hasOverdueLoan = (student: StudentCirculation, at: Date) =>
   student.openLoans.some(
     (loan) =>
       loan.status === LOAN_STATUS.active &&
@@ -97,17 +100,19 @@ const hasSameTitle = (book: EligibilityBook, student: StudentCirculation) =>
 // bloqueia, nesta ordem:
 //   pedido (request):    unavailable, overdue, same_title, loan_limit
 //   fila (join_queue):   unavailable, overdue, queue_limit, not_queueable
-// A fila só abre sem exemplar disponível (not_queueable). `at` é o "agora" das
-// regras de negócio. A página do livro, o empréstimo e a fila usam esta mesma
-// função.
+// A fila só abre sem exemplar disponível (not_queueable). `queueSlots` é quantas
+// filas a entrada ocupa (1 por edição marcada, RF-FIL-04); o padrão é 1. `at` é
+// o "agora" das regras de negócio. A página do livro, o empréstimo e a fila usam
+// esta mesma função.
 export function checkRequestEligibility(input: {
   action: EligibilityAction
   book: EligibilityBook
   student: StudentCirculation
   limits: RequestLimits
   at: Date
+  queueSlots?: number
 }): EligibilityResult {
-  const { action, book, student, limits, at } = input
+  const { action, book, student, limits, at, queueSlots = 1 } = input
 
   if (isUnavailable(book)) return blocked(BLOCKED_REASON.unavailable)
   if (hasOverdueLoan(student, at)) return blocked(BLOCKED_REASON.overdue)
@@ -120,7 +125,7 @@ export function checkRequestEligibility(input: {
     return ALLOWED
   }
 
-  if (student.activeQueueCount >= limits.maxActiveQueues) {
+  if (student.activeQueueCount + queueSlots > limits.maxActiveQueues) {
     return blocked(BLOCKED_REASON.queueLimit)
   }
   if (book.copiesAvailable > 0) return blocked(BLOCKED_REASON.notQueueable)

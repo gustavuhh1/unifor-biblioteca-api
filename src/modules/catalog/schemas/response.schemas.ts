@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isoDateSchema as isoDate } from '../../../shared/iso-date.js'
 import {
   BLOCKED_REASONS,
   BOOK_METADATA_SOURCES,
@@ -12,7 +13,6 @@ import { COVER_TONE_COUNT, METADATA_SYNC_FIELDS } from '../catalog.constants.js'
 // Schemas de saída do módulo do acervo. Também alimentam o Swagger. Data vai em
 // ISO 8601 (UTC); campo opcional que o livro não tem vai como null.
 
-const isoDate = z.iso.datetime()
 const nullableText = z.string().nullable()
 
 // --- Livro para o aluno --------------------------------------------------------

@@ -43,6 +43,12 @@ export function localDate(instant: Date): DateOnly {
   return format(new TZDate(instant, LIBRARY_TIMEZONE), DATE_FORMAT)
 }
 
+// Dia e hora de um instante como o aluno lê num aviso, em America/Fortaleza:
+// "16/10 às 09:12".
+export function formatLocalDateTime(instant: Date): string {
+  return format(new TZDate(instant, LIBRARY_TIMEZONE), "dd/MM 'às' HH:mm")
+}
+
 // Soma dias corridos a uma data "AAAA-MM-DD".
 export function plusDays(date: DateOnly, days: number): DateOnly {
   const [year, month, day] = parts(date)

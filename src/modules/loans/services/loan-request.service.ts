@@ -3,6 +3,7 @@ import { getDb } from '../../../config/firebase.js'
 import { addBusinessDays } from '../../../shared/calendar/business-days.js'
 import { nowOf } from '../../../shared/clock.js'
 import { invalidateCatalogCache } from '../../../shared/catalog-cache.js'
+import { displayNameOf } from '../../../shared/domain/user.js'
 import { forbidden } from '../../../shared/errors.js'
 import { readLibraryCalendar } from '../../../shared/firestore/calendar.js'
 import { readLoanSettings } from '../../../shared/firestore/settings.js'
@@ -79,7 +80,7 @@ export async function requestLoan(
       student: {
         uid,
         matricula: student.matricula,
-        name: student.fullName ?? student.matricula,
+        name: displayNameOf(student),
       },
       book: {
         id: book.id,

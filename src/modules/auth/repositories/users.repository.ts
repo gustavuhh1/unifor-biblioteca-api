@@ -179,3 +179,26 @@ export function setActiveLoanCount(
 ): void {
   tx.update(usersRef(uid), { activeLoanCount: count, updatedAt: at })
 }
+
+// Grava quantos lugares em fila ativa o aluno tem (entrar, sair, confirmar a vez,
+// perder a vez e remoção, seção 3). Chame depois de todas as leituras da
+// transação.
+export function setActiveQueueCount(
+  tx: Transaction,
+  uid: string,
+  count: number,
+  at: Date,
+): void {
+  tx.update(usersRef(uid), { activeQueueCount: count, updatedAt: at })
+}
+
+// Grava o total das multas em aberto do aluno, em centavos (devolução com multa
+// e pagamento, seção 3). Chame depois de todas as leituras da transação.
+export function setOpenFineTotalCents(
+  tx: Transaction,
+  uid: string,
+  cents: number,
+  at: Date,
+): void {
+  tx.update(usersRef(uid), { openFineTotalCents: cents, updatedAt: at })
+}

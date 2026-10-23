@@ -1,43 +1,31 @@
 import type { Transaction } from 'firebase-admin/firestore'
+import type { LoanSettings } from '../../../shared/firestore/settings.js'
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
 import * as copiesRepository from '../../catalog/repositories/copies.repository.js'
+import {
+  applyQueueHandoff,
+  findQueueHandoffTarget,
+  type QueueHandoffTarget,
+} from '../../queues/services/queue-handoff.service.js'
 import {
   COPY_STATUS,
   type BookRecord,
   type CopyRecord,
 } from '../../../shared/types/index.js'
 
-// "O exemplar volta" (RF-EMP-05, RF-EMP-06, RF-BAL-04): quando um pedido é cancelado
-// ou expira, ou quando o livro é devolvido, o exemplar vai para o 1º da fila ou, se
-// não há fila, de volta para a estante. É uma função só, em duas fases, porque a
-// transação do Firestore exige todas as leituras antes de qualquer gravação:
+// "O exemplar volta" (RF-EMP-05, RF-EMP-06, RF-BAL-04, RF-FIL-05, RF-FIL-07): quando
+// um pedido é cancelado ou expira, quando o livro é devolvido ou quando quem estava
+// na vez sai da fila, o exemplar vai para o 1º da fila ou, se não há fila, de volta
+// para a estante. É uma função só, em duas fases, porque a transação do Firestore
+// exige todas as leituras antes de qualquer gravação:
 //
 //   1. planCopyRelease  (leitura)  decide para onde o exemplar vai;
 //   2. applyCopyRelease (gravação) faz o exemplar e o contador do livro mudarem.
 //
-// O cancelamento usa estas duas funções; o balcão (devolução) e a rotina de
-// expiração vão usar as mesmas.
-
-// Quem está na frente da fila do livro e recebe o exemplar (a vez dele, RF-FIL-06).
-export interface QueueHandoffTarget {
-  entryId: string
-}
-
-// PONTO DE EXTENSÃO DA FILA. A fila ainda não foi implementada (RF-FIL-*), então
-// aqui nunca há 1º da fila e o exemplar sempre volta para a estante. Quando o módulo
-// da fila existir, esta função passa a ler, dentro da transação, o 1º lugar
-// `waiting` da edição (menor `order`), e applyCopyRelease passa a reservar o
-// exemplar para ele (copies.reserved + reservedForQueueEntryId, lugar your_turn,
-// confirmDeadline e aviso). Nada mais no cancelamento, na devolução e na expiração
-// precisa mudar.
-/* eslint-disable @typescript-eslint/no-unused-vars -- parâmetros do ponto de extensão */
-export async function findQueueHandoffTarget(
-  _tx: Transaction,
-  _book: Pick<BookRecord, 'id' | 'queueLength'>,
-): Promise<QueueHandoffTarget | undefined> {
-  return undefined
-}
-/* eslint-enable @typescript-eslint/no-unused-vars */
+// Quem chama: o cancelamento do pedido (loan-cancel.service), a devolução do balcão
+// (por onCopyReturned), a rotina que expira pedidos não retirados e as saídas da
+// fila de quem estava na vez (módulo de filas). Com fila, o 1º lugar `waiting` da
+// edição fica com o exemplar (a vez dele); sem fila, o exemplar volta à estante.
 
 // O que a fase de gravação precisa saber, decidido na fase de leitura.
 export interface CopyReleasePlan {
@@ -57,18 +45,27 @@ export async function planCopyRelease(
   return { book, copy, queueTarget: await findQueueHandoffTarget(tx, book) }
 }
 
-// Fase 2 (gravação): faz o exemplar voltar. Para a estante: o exemplar fica
-// `available`, sem empréstimo ligado, e `copiesAvailable` do livro sobe 1. Um
-// exemplar que não está `reserved` (por exemplo, retirado do acervo) não é mexido.
+// Fase 2 (gravação): faz o exemplar voltar. Com fila, o exemplar fica guardado
+// (`reserved`) para o 1º da fila, que passa a ter a vez e é avisado; sem fila, o
+// exemplar fica `available`, sem empréstimo ligado, e `copiesAvailable` do livro
+// sobe 1. Só mexe em exemplar reservado ou emprestado: um exemplar retirado do
+// acervo, por exemplo, não é mexido.
 export function applyCopyRelease(
   tx: Transaction,
   plan: CopyReleasePlan,
   at: Date,
+  settings: Pick<LoanSettings, 'queueConfirmHours'>,
 ): void {
   const { book, copy, queueTarget } = plan
-  if (copy.status !== COPY_STATUS.reserved) return
+  if (
+    copy.status !== COPY_STATUS.reserved &&
+    copy.status !== COPY_STATUS.onLoan
+  ) {
+    return
+  }
   if (queueTarget) {
-    throw new Error('A entrega do exemplar ao 1º da fila ainda não existe.')
+    applyQueueHandoff(tx, queueTarget, copy.id, at, settings.queueConfirmHours)
+    return
   }
 
   copiesRepository.makeAvailable(tx, copy.id, at)
