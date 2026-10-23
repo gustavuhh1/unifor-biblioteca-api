@@ -613,7 +613,7 @@ Todas em **transação** (Firestore `runTransaction`), para os contadores e os e
 | Sair da fila | `queueEntries` → `left`; `books.queueLength −1`; `users.activeQueueCount −1` |
 | Confirmar a vez | `queueEntries` → `fulfilled`; cria `loans` (`origin: queue`); outras edições do grupo → `cancelled_other_edition`; contadores |
 | Registrar retirada (RF-BAL-02) | `loans` → `active`, `pickedUpAt`, `dueAt`; `copies` → `on_loan`, `dueAt`; `books.nextReturnAt` |
-| Renovar | `loans.dueAt`, `originalDueAt`, `renewalCount`, `renewedAt`; `copies.dueAt` |
+| Renovar | `loans.dueAt`, `originalDueAt`, `renewalCount`, `renewedAt`; `copies.dueAt`; `books.nextReturnAt` (volta a ser o menor `dueAt` entre os exemplares emprestados) |
 | Registrar devolução (RF-BAL-04) | `loans` → `returned`; `users.activeLoanCount −1`; `users.booksReadByYear +1`; multa → `open` (congela) ou `paid` se "Multa paga agora"; exemplar → 1º da fila (`your_turn`, aviso na hora) ou `available` |
 | Registrar pagamento | `fines` → `paid`, `receivedBy`; `users.openFineTotalCents` −valor |
 | Gestão da fila pelo bibliotecário | `queueEntries.order` ou status; `auditLog` com motivo; avisos aos afetados |
