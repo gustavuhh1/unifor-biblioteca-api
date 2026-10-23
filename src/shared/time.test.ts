@@ -1,18 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { isOverdue, now } from './time.js'
-
-afterEach(() => {
-  vi.useRealTimers()
-})
-
-describe('agora das regras de negócio (now)', () => {
-  it('devolve o instante atual', () => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date('2026-10-21T15:00:00Z'))
-
-    expect(now()).toEqual(new Date('2026-10-21T15:00:00Z'))
-  })
-})
+import { describe, expect, it } from 'vitest'
+import { isOverdue } from './time.js'
 
 describe('atraso do empréstimo (isOverdue)', () => {
   const dueAt = new Date('2026-10-20T00:55:00Z')

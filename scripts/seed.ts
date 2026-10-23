@@ -12,19 +12,19 @@ import {
   confirmProduction,
   useProductionDatabase,
 } from './lib/environment.js'
+import { daysBetween, localDate } from '../src/shared/calendar/dates.js'
+import {
+  fetchHolidays,
+  type HolidaysDocument,
+} from '../src/shared/calendar/holidays-api.js'
 import { upsertAccounts } from './seed/accounts.js'
 import { buildSeed, toWrites, uidOf } from './seed/build.js'
 import { checkEnvironment, parseCliArgs, type CliOptions } from './seed/cli.js'
 import { AUTH_EMAIL_DOMAIN, BASE_DATE, USERS } from './seed/data.js'
 import { publishFirestoreConfig } from './seed/deploy.js'
 import { clearDatabase, writeAll } from './seed/firestore.js'
-import {
-  fetchHolidays,
-  loadHolidaysFile,
-  type HolidaysDocument,
-} from './seed/holidays.js'
 import { enrichFromExternalSources } from './seed/external-metadata.js'
-import { daysBetween, localDate } from './seed/time.js'
+import { loadHolidaysFile } from './seed/holidays.js'
 import { countDocuments, runChecks } from './seed/verify.js'
 
 async function loadHolidays(

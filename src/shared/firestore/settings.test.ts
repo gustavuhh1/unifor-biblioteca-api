@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_OPENING_HOURS } from '../library.js'
 import type { FakeFirestore } from '../../test-support/fake-firestore.js'
 
 const h = vi.hoisted(() => ({ db: undefined as unknown as FakeFirestore }))
@@ -7,7 +8,8 @@ vi.mock('../../config/firebase.js', () => ({ getDb: () => h.db }))
 
 const { FakeFirestore: Fake } =
   await import('../../test-support/fake-firestore.js')
-const { positiveNumberOr, readRequestLimits } = await import('./settings.js')
+const { positiveNumberOr, readLoanSettings, readRequestLimits } =
+  await import('./settings.js')
 
 beforeEach(() => {
   h.db = new Fake()
@@ -49,5 +51,74 @@ describe('limites de empréstimos e filas (readRequestLimits)', () => {
       maxActiveLoans: 10,
       maxActiveQueues: 5,
     })
+  })
+})
+
+describe('números das regras de empréstimo (readLoanSettings)', () => {
+  it('lê os números e o horário de settings/library', async () => {
+    h.db.put('settings', 'library', {
+      maxActiveLoans: 8,
+      maxActiveQueues: 5,
+      loanDays: 21,
+      renewalDays: 7,
+      maxRenewals: 2,
+      pickupBusinessDays: 3,
+      dueSoonDays: 4,
+      openingHours: {
+        mon: { open: '08:00', close: '18:00' },
+        tue: null,
+        wed: null,
+        thu: null,
+        fri: null,
+        sat: null,
+        sun: null,
+      },
+    })
+
+    expect(await readLoanSettings()).toMatchObject({
+      maxActiveLoans: 8,
+      maxActiveQueues: 5,
+      loanDays: 21,
+      renewalDays: 7,
+      maxRenewals: 2,
+      pickupBusinessDays: 3,
+      dueSoonDays: 4,
+      openingHours: { mon: { open: '08:00', close: '18:00' }, tue: null },
+      simulatedNow: null,
+    })
+  })
+
+  it('usa os padrões da seção 2.21 quando o documento não existe', async () => {
+    const settings = await readLoanSettings()
+
+    expect(settings).toEqual({
+      maxActiveLoans: 10,
+      maxActiveQueues: 7,
+      loanDays: 14,
+      renewalDays: 14,
+      maxRenewals: 1,
+      pickupBusinessDays: 2,
+      dueSoonDays: 2,
+      openingHours: DEFAULT_OPENING_HOURS,
+      simulatedNow: null,
+    })
+  })
+
+  it('usa o horário padrão quando o openingHours está incompleto ou inválido', async () => {
+    h.db.put('settings', 'library', { openingHours: { mon: { open: '7' } } })
+
+    expect((await readLoanSettings()).openingHours).toEqual(
+      DEFAULT_OPENING_HOURS,
+    )
+  })
+
+  it('lê a data simulada como Date', async () => {
+    h.db.put('settings', 'library', {
+      simulatedNow: new Date('2026-10-15T15:00:00Z'),
+    })
+
+    expect((await readLoanSettings()).simulatedNow).toEqual(
+      new Date('2026-10-15T15:00:00Z'),
+    )
   })
 })

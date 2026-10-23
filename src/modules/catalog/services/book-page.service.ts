@@ -3,7 +3,7 @@ import {
   checkRequestEligibility,
   suggestedActionOf,
 } from '../../../shared/rules/request-eligibility.js'
-import { now } from '../../../shared/time.js'
+import { now } from '../../../shared/clock.js'
 import { BOOK_STATUS, USER_ROLE } from '../../../shared/types/index.js'
 import type { BookRecord, UserRole } from '../../../shared/types/index.js'
 import { bookNotFound } from '../catalog.errors.js'
@@ -29,7 +29,7 @@ async function actionBlockFor(
     book,
     student,
     limits,
-    at: now(),
+    at: await now(),
   })
   return {
     suggestedAction: action,
