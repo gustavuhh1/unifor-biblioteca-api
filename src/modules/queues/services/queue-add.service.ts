@@ -2,6 +2,7 @@ import { getDb } from '../../../config/firebase.js'
 import { writeAuditLog } from '../../../shared/audit-log.js'
 import { invalidateCatalogCache } from '../../../shared/catalog-cache.js'
 import { nowOf } from '../../../shared/clock.js'
+import { displayNameOf } from '../../../shared/domain/user.js'
 import { readLoanSettings } from '../../../shared/firestore/settings.js'
 import {
   AUDIT_ACTION,
@@ -111,7 +112,7 @@ export async function addToQueue(
       student: {
         uid: account.uid,
         matricula: student.matricula,
-        name: student.fullName ?? student.matricula,
+        name: displayNameOf(student),
       },
       order: placement.order,
       origin: QUEUE_ORIGIN.librarian,

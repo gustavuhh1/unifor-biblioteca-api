@@ -1,5 +1,6 @@
 import type { Transaction } from 'firebase-admin/firestore'
 import type { LibraryCalendar } from '../../../shared/calendar/business-days.js'
+import { displayNameOf } from '../../../shared/domain/user.js'
 import { normalizeText } from '../../../shared/text.js'
 import {
   FINE_STATUS,
@@ -85,7 +86,7 @@ export async function planFineFreeze(
   }
 
   if (!loan.dueAt) return { kind: 'none' }
-  const name = student.fullName ?? student.matricula
+  const name = displayNameOf(student)
   const fine = buildFrozenFine({
     loan: { ...loan, dueAt: loan.dueAt },
     student: {

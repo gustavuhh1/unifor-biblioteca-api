@@ -83,3 +83,12 @@ export function buildUserDocument(input: NewUserInput): User {
     updatedAt: input.updatedAt ?? input.createdAt,
   }
 }
+
+// O nome que as listas e os avisos mostram do usuário: o nome do Perfil ou, sem
+// ele, a matrícula (o nome não vem no cadastro). Os documentos de pedido, fila e
+// multa copiam este valor.
+export function displayNameOf(
+  user: Pick<User, 'fullName' | 'matricula'>,
+): string {
+  return user.fullName ?? user.matricula
+}

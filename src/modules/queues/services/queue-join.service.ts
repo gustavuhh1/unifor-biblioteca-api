@@ -1,6 +1,7 @@
 import { getDb } from '../../../config/firebase.js'
 import { invalidateCatalogCache } from '../../../shared/catalog-cache.js'
 import { nowOf } from '../../../shared/clock.js'
+import { displayNameOf } from '../../../shared/domain/user.js'
 import { forbidden } from '../../../shared/errors.js'
 import { readLoanSettings } from '../../../shared/firestore/settings.js'
 import {
@@ -81,7 +82,7 @@ export async function joinQueue(
         student: {
           uid,
           matricula: student.matricula,
-          name: student.fullName ?? student.matricula,
+          name: displayNameOf(student),
         },
         order: nextOrderAtEnd(queues[index] ?? []),
         origin: QUEUE_ORIGIN.student,
