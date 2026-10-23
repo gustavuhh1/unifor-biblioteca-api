@@ -1,10 +1,15 @@
-import type { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
+import {
+  FieldValue,
+  type DocumentSnapshot,
+  type Transaction,
+} from 'firebase-admin/firestore'
 import { getDb } from '../../../config/firebase.js'
 import { COLLECTIONS } from '../../../shared/firestore/collections.js'
 import {
   dataWithDates,
   withoutUndefined,
 } from '../../../shared/firestore/converters.js'
+import { readDocument } from '../../../shared/firestore/read.js'
 import {
   COPY_STATUS,
   type Copy,
@@ -77,4 +82,65 @@ export function withdraw(
       updatedAt: at,
     })
   }
+}
+
+// Lê um exemplar. Com tx, a leitura entra na transação. Não devolve nada se ele
+// não existir.
+export async function findById(
+  id: string,
+  tx?: Transaction,
+): Promise<CopyRecord | undefined> {
+  const snapshot = await readDocument(copies().doc(id), tx)
+  return snapshot.exists ? toRecord(snapshot) : undefined
+}
+
+// Lê um exemplar disponível do livro (status available), se houver (RF-EMP-01).
+export async function findAvailableByBook(
+  bookId: string,
+  tx: Transaction,
+): Promise<CopyRecord | undefined> {
+  const result = await tx.get(
+    copies()
+      .where('bookId', '==', bookId)
+      .where('status', '==', COPY_STATUS.available)
+      .limit(1),
+  )
+  const [doc] = result.docs
+  return doc ? toRecord(doc) : undefined
+}
+
+// Separa o exemplar para um pedido: reserved, ligado ao empréstimo (RF-EMP-01).
+export function reserve(
+  tx: Transaction,
+  id: string,
+  loanId: string,
+  at: Date,
+): void {
+  tx.update(copies().doc(id), {
+    status: COPY_STATUS.reserved,
+    currentLoanId: loanId,
+    updatedAt: at,
+  })
+}
+
+// Devolve o exemplar à estante: available, sem empréstimo, reserva nem vencimento
+// (cancelamento do pedido, RF-EMP-05).
+export function makeAvailable(tx: Transaction, id: string, at: Date): void {
+  tx.update(copies().doc(id), {
+    status: COPY_STATUS.available,
+    currentLoanId: FieldValue.delete(),
+    reservedForQueueEntryId: FieldValue.delete(),
+    dueAt: FieldValue.delete(),
+    updatedAt: at,
+  })
+}
+
+// Grava o vencimento no exemplar emprestado (renovação, RF-EMP-09).
+export function setDueAt(
+  tx: Transaction,
+  id: string,
+  dueAt: Date,
+  at: Date,
+): void {
+  tx.update(copies().doc(id), { dueAt, updatedAt: at })
 }
