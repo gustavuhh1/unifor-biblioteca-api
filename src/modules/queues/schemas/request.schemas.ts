@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { matriculaSchema } from '../../auth/schemas/request.schemas.js'
+import { matriculaSchema } from '../../../shared/matricula.js'
 import { bookParamsSchema } from '../../catalog/schemas/request.schemas.js'
 import {
   MAX_EDITIONS_PER_JOIN,

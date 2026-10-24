@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { matriculaSchema } from '../../../shared/matricula.js'
 
 // Schemas de entrada do módulo de acesso: corpo, parâmetros e os campos que
 // eles reutilizam. As mensagens de erro são mostradas ao usuário, em português.
@@ -8,22 +9,12 @@ import { z } from 'zod'
 // RF-AUT-02: só o formato do e-mail é conferido; a API nunca consulta a Unifor.
 export const INSTITUTIONAL_EMAIL = /^[^\s@]+@edu\.unifor\.br$/i
 
-// Sete dígitos; os dois primeiros são o ano de ingresso.
-export const MATRICULA = /^\d{7}$/
-
 // A senha da Unifor é só de números, com no mínimo 8 (decidido em 19/10). O
 // limite de 128 serve só para limitar a entrada.
 export const PASSWORD = /^\d{8,128}$/
 
 // O token de e-mail tem 6 dígitos.
 export const TOKEN_CODE = /^\d{6}$/
-
-// Matrícula de 7 dígitos (RF-AUT-01).
-export const matriculaSchema = z
-  .string('Informe a matrícula.')
-  .trim()
-  .regex(MATRICULA, 'A matrícula deve ter exatamente 7 dígitos.')
-  .meta({ example: '2412858' })
 
 // E-mail institucional @edu.unifor.br, guardado em minúsculas (RF-AUT-02).
 export const institutionalEmailSchema = z
