@@ -1,4 +1,4 @@
-import { atLocalTime, weekdayOf } from '../../src/shared/calendar/dates.js'
+import { weekdayOf } from '../../src/shared/calendar/dates.js'
 import type { WeekdayKey } from '../../src/shared/calendar/dates.js'
 import { DEFAULT_OPENING_HOURS } from '../../src/shared/library.js'
 
@@ -21,16 +21,10 @@ export function formatDayMonth(date: string): string {
   return `${WEEKDAY_NAMES[weekdayOf(date)]}, ${date.slice(8, 10)}/${date.slice(5, 7)}`
 }
 
-// Horário de fechamento da biblioteca naquele dia: onde caem prazos e
-// vencimentos. Domingo é fechado; como as datas agora seguem o dia em que o seed
-// roda, uma data que cai num domingo usa só o fechamento de dia de semana (sem
-// refinamento).
+// Horário de fechamento da biblioteca naquele dia da semana (21h55 ou, no sábado,
+// 14h10). Domingo é fechado e usa o fechamento de dia de semana; o seed nunca
+// dá a um vencimento um domingo (build.ts ajusta para o próximo dia aberto).
 export function closingTime(date: string): string {
   return (DEFAULT_OPENING_HOURS[weekdayOf(date)] ?? DEFAULT_OPENING_HOURS.mon!)
     .close
-}
-
-// Instante do fechamento da biblioteca no dia informado.
-export function atClosing(date: string): Date {
-  return atLocalTime(date, closingTime(date))
 }

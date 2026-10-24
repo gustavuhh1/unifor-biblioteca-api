@@ -59,8 +59,15 @@ import {
   type UserNotification,
   type Work,
 } from '../../src/shared/types/index.js'
-import type { HolidaysDocument } from '../../src/shared/calendar/holidays-api.js'
-import { atClosing, closingTime, formatDayMonth } from './time.js'
+import {
+  addCalendarDaysToClosing,
+  buildLibraryCalendar,
+} from '../../src/shared/calendar/business-days.js'
+import {
+  holidayDates,
+  type HolidaysDocument,
+} from '../../src/shared/calendar/holidays-api.js'
+import { closingTime, formatDayMonth } from './time.js'
 import {
   atLocalTime,
   daysBetween,
@@ -136,6 +143,12 @@ export function buildSeed(options: BuildOptions): SeedData {
   // partir desse dia, aplicado a hoje (ex.: retirado em 02/10 = hoje - 13 dias).
   const dayShift = daysBetween(BASE_DATE, today)
   const shift = (date: string) => plusDays(date, dayShift)
+  // Calendário da biblioteca: horários padrão e os feriados carregados.
+  const calendar = buildLibraryCalendar({
+    openingHours: DEFAULT_OPENING_HOURS,
+    holidays: holidayDates(options.holidays),
+    recesses: [],
+  })
   const atShifted = ([date, time]: [string, string]) =>
     atLocalTime(shift(date), time)
   const now = atLocalTime(today, NOW_TIME)
@@ -265,12 +278,22 @@ export function buildSeed(options: BuildOptions): SeedData {
       }
     }
 
-    // Já retirado: vencimento = retirada + 14 dias (+14 se renovado), no horário
-    // de fechamento.
+    // Já retirado: vencimento = retirada + 14 dias (+14 se renovado), no horário de
+    // fechamento. Como na API (retirada e renovação), um vencimento que cairia em
+    // domingo, feriado ou recesso passa para o próximo dia em que a biblioteca abre.
     const pickedUpOn = shift(required(spec.pickedUpOn, 'pickedUpOn'))
-    const originalDueOn = plusDays(pickedUpOn, 14)
-    const dueOn = spec.renewedOn ? plusDays(originalDueOn, 14) : originalDueOn
-    const pickedUpAt = atLocalTime(pickedUpOn, closingTime(originalDueOn))
+    const originalDueAt = addCalendarDaysToClosing(
+      atLocalTime(pickedUpOn, '12:00'),
+      14,
+      calendar,
+    )
+    const dueAt = spec.renewedOn
+      ? addCalendarDaysToClosing(originalDueAt, 14, calendar)
+      : originalDueAt
+    const pickedUpAt = atLocalTime(
+      pickedUpOn,
+      closingTime(localDate(originalDueAt)),
+    )
     const renewedAt = spec.renewedOn
       ? atLocalTime(shift(spec.renewedOn), '12:00')
       : undefined
@@ -283,8 +306,8 @@ export function buildSeed(options: BuildOptions): SeedData {
       pickupDeadline: pickedUpAt,
       pickedUpAt,
       pickedUpBy: uidOf('ana'),
-      dueAt: atClosing(dueOn),
-      originalDueAt: spec.renewedOn ? atClosing(originalDueOn) : undefined,
+      dueAt,
+      originalDueAt: spec.renewedOn ? originalDueAt : undefined,
       renewedAt,
       returnedAt,
       returnedTo: returnedAt ? uidOf('ana') : undefined,
