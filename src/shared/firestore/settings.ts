@@ -45,14 +45,18 @@ function openingHoursOr(value: unknown): OpeningHours {
   return parsed.success ? parsed.data : DEFAULT_OPENING_HOURS
 }
 
-// Os números de settings/library que as regras de empréstimo, renovação e prazo
-// usam, já com os padrões no lugar do que faltar ou estiver inválido.
+// Os números de settings/library que as regras de empréstimo, renovação, prazo,
+// fila e multa usam, já com os padrões no lugar do que faltar ou estiver inválido.
 export interface LoanSettings extends RequestLimits {
   loanDays: number
   renewalDays: number
   maxRenewals: number
   pickupBusinessDays: number
   dueSoonDays: number
+  // Horas corridas para confirmar a vez na fila (RF-FIL-06).
+  queueConfirmHours: number
+  // Multa por dia útil de atraso, em centavos (RF-MUL-01).
+  fineCentsPerBusinessDay: number
   openingHours: OpeningHours
   // Só no ambiente de teste (RF-SIS-04); quem usa é o relógio (shared/clock.ts).
   simulatedNow: Date | null
@@ -82,6 +86,14 @@ export async function readLoanSettings(): Promise<LoanSettings> {
       DEFAULT_LOAN_RULES.pickupBusinessDays,
     ),
     dueSoonDays: number('dueSoonDays', DEFAULT_LOAN_RULES.dueSoonDays),
+    queueConfirmHours: number(
+      'queueConfirmHours',
+      DEFAULT_LOAN_RULES.queueConfirmHours,
+    ),
+    fineCentsPerBusinessDay: number(
+      'fineCentsPerBusinessDay',
+      DEFAULT_LOAN_RULES.fineCentsPerBusinessDay,
+    ),
     openingHours: openingHoursOr(snapshot.get('openingHours')),
     simulatedNow: optionalDate(snapshot.get('simulatedNow')),
   }

@@ -21,6 +21,7 @@ import { withoutUndefined } from '../../src/shared/firestore/converters.js'
 import {
   DEFAULT_BOOK_LANGUAGE,
   DEFAULT_COPY_FORMAT,
+  DEFAULT_LOAN_RULES,
   DEFAULT_MATERIAL_TYPE,
   LIBRARY_PLACE,
 } from '../../src/shared/library.js'
@@ -111,7 +112,7 @@ export interface SeedData {
 }
 
 // Valor da multa por dia útil de atraso, em centavos (R$ 2,00).
-export const FINE_RATE_CENTS = 200
+export const FINE_RATE_CENTS = DEFAULT_LOAN_RULES.fineCentsPerBusinessDay
 // Seção 6.4: o único qrToken que o documento informa.
 const RET_4821_QR_TOKEN = 'q9Zr0bH6v3S1kT8xY2mW4pLc'
 
@@ -561,7 +562,7 @@ export function buildSeed(options: BuildOptions): SeedData {
     renewalDays: 14,
     maxRenewals: 1,
     pickupBusinessDays: 2,
-    queueConfirmHours: 24,
+    queueConfirmHours: DEFAULT_LOAN_RULES.queueConfirmHours,
     fineCentsPerBusinessDay: FINE_RATE_CENTS,
     dueSoonDays: 2,
     emailTokenMinutes: 20,

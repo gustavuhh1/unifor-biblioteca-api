@@ -33,6 +33,7 @@ export async function readStudentCirculation(
     activeLoanCount: (user.get('activeLoanCount') as number | undefined) ?? 0,
     activeQueueCount: (user.get('activeQueueCount') as number | undefined) ?? 0,
     openLoans: loans.docs.map((doc): StudentOpenLoan => ({
+      bookId: doc.get('bookId') as string,
       workId: doc.get('workId') as string,
       status: doc.get('status') as LoanStatus,
       dueAt: optionalDate(doc.get('dueAt')) ?? undefined,

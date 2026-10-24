@@ -9,7 +9,7 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     expect(document.paths?.['/health']?.get?.summary).toBeTruthy()
   })
 
-  it('documenta todas as rotas dos módulos de acesso, do acervo e de empréstimos', () => {
+  it('documenta todas as rotas dos módulos de acesso, do acervo, de empréstimos, de filas e de multas', () => {
     const operations = Object.entries(document.paths ?? {}).flatMap(
       ([path, item]) =>
         ['get', 'post', 'patch', 'delete']
@@ -46,6 +46,19 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'GET /me/loans',
         'POST /loans/{loanId}/cancel',
         'POST /loans/{loanId}/renew',
+        'GET /books/{bookId}/queue/preview',
+        'POST /queues',
+        'GET /me/queues',
+        'POST /queues/{entryId}/leave',
+        'POST /queues/{entryId}/confirm',
+        'GET /librarian/books/{bookId}/queue',
+        'POST /librarian/books/{bookId}/queue',
+        'PATCH /librarian/queues/{entryId}/position',
+        'POST /librarian/queues/{entryId}/resend',
+        'POST /librarian/queues/{entryId}/remove',
+        'GET /me/fines',
+        'GET /librarian/fines',
+        'POST /librarian/fines/{fineId}/pay',
       ].sort(),
     )
   })
@@ -118,6 +131,58 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     ).toBeDefined()
     expect(document.components?.schemas?.Loan).toMatchObject({
       type: 'object',
+    })
+  })
+
+  it('documenta as rotas de fila e de multa com sessão e o perfil certo', () => {
+    const paths = document.paths ?? {}
+    const studentRoutes = [
+      paths['/books/{bookId}/queue/preview']?.get,
+      paths['/queues']?.post,
+      paths['/me/queues']?.get,
+      paths['/queues/{entryId}/leave']?.post,
+      paths['/queues/{entryId}/confirm']?.post,
+      paths['/me/fines']?.get,
+    ]
+    const librarianRoutes = [
+      paths['/librarian/books/{bookId}/queue']?.get,
+      paths['/librarian/books/{bookId}/queue']?.post,
+      paths['/librarian/queues/{entryId}/position']?.patch,
+      paths['/librarian/queues/{entryId}/resend']?.post,
+      paths['/librarian/queues/{entryId}/remove']?.post,
+      paths['/librarian/fines']?.get,
+      paths['/librarian/fines/{fineId}/pay']?.post,
+    ]
+
+    for (const operation of [...studentRoutes, ...librarianRoutes]) {
+      expect(operation?.security).toEqual([{ bearerAuth: [] }])
+      expect(operation?.responses?.['401']).toBeDefined()
+      expect(operation?.responses?.['403']).toBeDefined()
+    }
+  })
+
+  it('não documenta nenhuma rota de pagamento de multa para o aluno (RF-MUL-03)', () => {
+    const payRoutes = Object.keys(document.paths ?? {}).filter((path) =>
+      path.includes('/pay'),
+    )
+
+    expect(payRoutes).toEqual(['/librarian/fines/{fineId}/pay'])
+  })
+
+  it('documenta a confirmação de quem passa à frente na fila (RF-BAL-07)', () => {
+    const schemas = document.components?.schemas ?? {}
+
+    expect(schemas.MoveEntryBody).toMatchObject({
+      properties: {
+        position: { type: 'integer' },
+        confirmed: { type: 'boolean' },
+      },
+    })
+    expect(schemas.QueueChangeResponse).toMatchObject({
+      required: expect.arrayContaining(['applied', 'movedDown', 'queue']),
+    })
+    expect(schemas.RemoveFromQueueBody).toMatchObject({
+      required: ['reason'],
     })
   })
 

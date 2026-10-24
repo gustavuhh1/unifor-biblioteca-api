@@ -121,6 +121,13 @@ export type QueueEntryStatus = (typeof QUEUE_ENTRY_STATUSES)[number]
 // Valores com nome (cada texto escrito uma vez só): QUEUE_ENTRY_STATUS.waiting, QUEUE_ENTRY_STATUS.yourTurn.
 export const QUEUE_ENTRY_STATUS = constantsOf(QUEUE_ENTRY_STATUSES)
 
+// Os dois status de uma fila ativa (waiting + your_turn): contam nas 7 filas do
+// aluno e em books.queueLength.
+export const ACTIVE_QUEUE_STATUSES = [
+  QUEUE_ENTRY_STATUS.waiting,
+  QUEUE_ENTRY_STATUS.yourTurn,
+] as const
+
 // Quem colocou o aluno na fila (queueEntries.origin).
 export const QUEUE_ORIGINS = ['student', 'assistant', 'librarian'] as const
 export type QueueOrigin = (typeof QUEUE_ORIGINS)[number]

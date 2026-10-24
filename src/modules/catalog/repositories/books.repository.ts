@@ -67,6 +67,16 @@ export async function listActive(): Promise<BookRecord[]> {
   return result.docs.map(toRecord)
 }
 
+// Lê as edições ativas de uma obra (índice workId + status): é o grupo de edições
+// da fila (RF-FIL-04).
+export async function listActiveByWork(workId: string): Promise<BookRecord[]> {
+  const result = await books()
+    .where('workId', '==', workId)
+    .where('status', '==', BOOK_STATUS.active)
+    .get()
+  return result.docs.map(toRecord)
+}
+
 // Lê um livro, ativo ou removido. Não devolve nada se ele não existir.
 export async function findById(
   id: string,
