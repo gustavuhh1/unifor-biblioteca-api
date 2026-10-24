@@ -50,7 +50,11 @@ export function seedStudent(
   db.put(
     'users',
     STUDENT_UID,
-    makeStudent({ activeLoanCount: 1, ...overrides }),
+    makeStudent({
+      activeLoanCount: 1,
+      booksReadByYear: { '2026': 17 },
+      ...overrides,
+    }),
   )
   db.put('matriculaIndex', '2412858', { uid: STUDENT_UID, role: 'student' })
 }

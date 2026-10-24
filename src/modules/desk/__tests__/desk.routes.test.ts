@@ -22,6 +22,7 @@ const librarianRoutes: RouteCall[] = [
     body: { matricula: '2412858' },
   },
   { method: 'POST', path: '/librarian/loans/loan1/pickup' },
+  { method: 'POST', path: '/librarian/loans/loan1/return' },
 ]
 
 const label = (route: RouteCall) => `${route.method} ${route.path}`

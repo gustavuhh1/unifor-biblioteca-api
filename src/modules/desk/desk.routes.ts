@@ -20,3 +20,10 @@ deskRouter.post(
   ...librarianSession,
   controller.pickup,
 )
+
+// Registrar a devolução de um livro, com "Multa paga agora" (RF-BAL-04, RF-BAL-08).
+deskRouter.post(
+  '/librarian/loans/:loanId/return',
+  ...librarianSession,
+  controller.returnLoan,
+)
