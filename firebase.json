@@ -5,7 +5,13 @@
   },
   "hosting": {
     "public": "hosting/public",
-    "ignore": ["firebase.json", "**/node_modules/**"]
+    "ignore": ["firebase.json", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "**",
+        "run": { "serviceId": "unibooks-api", "region": "southamerica-east1" }
+      }
+    ]
   },
   "emulators": {
     "auth": { "host": "127.0.0.1", "port": 9099 },

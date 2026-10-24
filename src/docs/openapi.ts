@@ -4,6 +4,7 @@ import '../modules/catalog/catalog.docs.js'
 import '../modules/loans/loans.docs.js'
 import '../modules/queues/queues.docs.js'
 import '../modules/fines/fines.docs.js'
+import { env } from '../config/env.js'
 import { healthResponseSchema } from '../shared/health.js'
 import { jsonContent, registry } from './registry.js'
 
@@ -20,8 +21,20 @@ registry.registerPath({
   },
 })
 
-// Gera o documento OpenAPI 3.1 com todas as rotas registradas até aqui.
-export function buildOpenApiDocument() {
+const PRODUCTION_SERVER = {
+  url: 'https://api.uni-books.app',
+  description: 'Produção',
+}
+const LOCAL_SERVER = { url: 'http://localhost:8080', description: 'Local' }
+
+// Gera o documento OpenAPI 3.1 com todas as rotas registradas até aqui. O
+// Swagger UI chama o primeiro servidor da lista: em produção é a própria API;
+// no desenvolvimento é a local, para ninguém testar na produção sem querer.
+export function buildOpenApiDocument(nodeEnv: string = env.NODE_ENV) {
+  const servers =
+    nodeEnv === 'production'
+      ? [PRODUCTION_SERVER, LOCAL_SERVER]
+      : [LOCAL_SERVER, PRODUCTION_SERVER]
   return new OpenApiGeneratorV31(registry.definitions).generateDocument({
     openapi: '3.1.0',
     info: {
@@ -29,5 +42,6 @@ export function buildOpenApiDocument() {
       version: '0.1.0',
       description: 'API REST do app de biblioteca universitária Unifor Biblioteca.',
     },
+    servers,
   })
 }
