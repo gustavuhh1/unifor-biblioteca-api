@@ -2,7 +2,7 @@
 
 Este repositório é a API REST do Unifor Biblioteca, um app de biblioteca universitária com dois perfis (aluno e bibliotecário). O dono é o Gustavo, estudante da Unifor. A API é o projeto de conclusão de duas cadeiras:
 
-- **Técnicas de Integração de Sistemas:** entrega e apresentação em **29/10/2026** (tag `integration-delivery`). Nessa data **todo o escopo** precisa estar pronto, porque a API é demonstrada ao vivo pelo app.
+- **Técnicas de Integração de Sistemas:** entrega e apresentação em **27/10/2026** (tag `integration-delivery`). Nessa data **todo o escopo** precisa estar pronto, porque a API é demonstrada ao vivo pelo app.
 - **Desenvolvimento Mobile:** entrega em **09/11/2026** (tag `mobile-delivery`). O app fica no repositório `unifor-biblioteca-app`.
 
 Fale com o Gustavo em **português**, de forma direta, um passo por vez.

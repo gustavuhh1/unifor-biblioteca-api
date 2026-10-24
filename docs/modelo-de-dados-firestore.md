@@ -984,4 +984,4 @@ O script fica no repositório `unifor-biblioteca-api` (ex.: `scripts/seed.ts`), 
 8. **Publica os índices e as regras:** `firestore.indexes.json` e `firestore.rules` da seção 4 e 5 (`firebase deploy --only firestore`) e as políticas de TTL da seção 4.3 (`gcloud firestore fields ttls update`).
 9. **Confere** e imprime um resumo: quantos documentos por coleção e se as checagens passam (Lucas com 4 de 10, Marina com 3 dias úteis e R$ 6,00, Arquitetura Limpa com 4 na fila, R$ 28,00 em aberto).
 
-O script deve poder rodar várias vezes seguidas e chegar sempre ao mesmo resultado (idempotente), para recarregar o banco antes da demonstração de 29/10.
+O script deve poder rodar várias vezes seguidas e chegar sempre ao mesmo resultado (idempotente), para recarregar o banco antes da demonstração de 27/10.

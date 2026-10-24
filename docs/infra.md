@@ -105,7 +105,7 @@ As 2 requisições usadas são a da Open Library (`api/books?bibkeys=ISBN:{isbn}
 
 ## Ordem de execução
 
-Protótipo de passkey na **terça, 20/10**. Código a partir de quarta, 21/10. Entrega de Integração em 29/10.
+Protótipo de passkey na **terça, 20/10**. Código a partir de quarta, 21/10. Entrega de Integração em 27/10.
 
 1. **Sáb 17/10 — feito:** domínio, faturamento, Firestore, domínios `uni-books.app` e `api.uni-books.app` conectados no Hosting, domínio do Resend verificado, e as chaves do Resend, FeriadosAPI e Gemini guardadas no Secret Manager e no `.env` local. Escopo fechado.
 2. **Dom 18/10 (Gustavo, ~20 min):**
