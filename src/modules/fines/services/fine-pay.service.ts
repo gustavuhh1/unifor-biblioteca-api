@@ -15,7 +15,11 @@ import {
 } from '../fines.errors.js'
 import type { LibrarianFineResponse } from '../fines.types.js'
 import * as finesRepository from '../repositories/fines.repository.js'
-import { payDenialOf, payFields } from '../rules/fine-amount.rules.js'
+import {
+  fineReceiverOf,
+  payDenialOf,
+  payFields,
+} from '../rules/fine-amount.rules.js'
 import { toLibrarianFineResponse } from '../rules/fine-view.rules.js'
 
 // O bibliotecário registra o pagamento de uma multa em aberto (RF-BAL-09). O
@@ -45,13 +49,7 @@ export async function payFine(
     if (!librarian) throw new Error('Bibliotecário da sessão não encontrado.')
     if (!student) throw new Error('Aluno da multa não encontrado.')
 
-    const fields = payFields(
-      {
-        uid: librarianUid,
-        name: librarian.fullName ?? librarian.deskLabel ?? librarian.matricula,
-      },
-      at,
-    )
+    const fields = payFields(fineReceiverOf(librarianUid, librarian), at)
     const amountCents = fine.amountCents ?? 0
     finesRepository.update(tx, fine.id, fields)
     usersRepository.setOpenFineTotalCents(

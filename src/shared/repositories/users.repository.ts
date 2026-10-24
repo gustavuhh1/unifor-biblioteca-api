@@ -83,3 +83,14 @@ export function setOpenFineTotalCents(
 ): void {
   tx.update(userRef(uid), { openFineTotalCents: cents, updatedAt: at })
 }
+
+// Grava quantos livros o aluno leu em cada ano (a devolução soma 1 ao ano da
+// devolução, seção 3). Chame depois de todas as leituras da transação.
+export function setBooksReadByYear(
+  tx: Transaction,
+  uid: string,
+  booksReadByYear: Record<string, number>,
+  at: Date,
+): void {
+  tx.update(userRef(uid), { booksReadByYear, updatedAt: at })
+}

@@ -148,6 +148,22 @@ export function makeAvailable(tx: Transaction, id: string, at: Date): void {
   })
 }
 
+// Registra a retirada no exemplar: de reserved (separado no pedido) para on_loan,
+// com o vencimento. O empréstimo ligado (currentLoanId) continua o mesmo
+// (RF-BAL-02).
+export function markOnLoan(
+  tx: Transaction,
+  id: string,
+  dueAt: Date,
+  at: Date,
+): void {
+  tx.update(copies().doc(id), {
+    status: COPY_STATUS.onLoan,
+    dueAt,
+    updatedAt: at,
+  })
+}
+
 // Grava o vencimento no exemplar emprestado (renovação, RF-EMP-09).
 export function setDueAt(
   tx: Transaction,

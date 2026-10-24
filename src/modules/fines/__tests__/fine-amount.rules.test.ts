@@ -4,6 +4,7 @@ import {
   buildFrozenFine,
   calculateFine,
   fineAmountCents,
+  fineReceiverOf,
   freezeFields,
   openTotalDelta,
   payDenialOf,
@@ -213,5 +214,27 @@ describe('registrar o pagamento no balcão (payDenialOf e payFields, RF-BAL-09)'
       receivedByName: 'Ana Souza',
       updatedAt: NOW,
     })
+  })
+})
+
+describe('quem recebeu o valor (fineReceiverOf)', () => {
+  it('usa o nome do Perfil do bibliotecário', () => {
+    expect(
+      fineReceiverOf('uid_ana', {
+        fullName: 'Ana Souza',
+        deskLabel: 'Balcão 1',
+        matricula: '1000001',
+      }),
+    ).toEqual({ uid: 'uid_ana', name: 'Ana Souza' })
+  })
+
+  it('sem nome, usa o rótulo do balcão; sem os dois, a matrícula', () => {
+    expect(
+      fineReceiverOf('uid_ana', { deskLabel: 'Balcão 1', matricula: '1000001' })
+        .name,
+    ).toBe('Balcão 1')
+    expect(fineReceiverOf('uid_ana', { matricula: '1000001' }).name).toBe(
+      '1000001',
+    )
   })
 })

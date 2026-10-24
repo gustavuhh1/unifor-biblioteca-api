@@ -134,6 +134,29 @@ describe('próxima devolução do livro (nextReturnAtOf)', () => {
     )
   })
 
+  it('na devolução, o exemplar devolvido deixa de contar', () => {
+    const other = atLocalTime('2026-10-20', '21:55')
+    const copies = [copy('a', 'on_loan', DUE), copy('b', 'on_loan', other)]
+
+    expect(nextReturnAtOf(copies, { copyId: 'a', dueAt: undefined })).toEqual(
+      other,
+    )
+  })
+
+  it('devolvido o único exemplar emprestado, não sobra próxima devolução', () => {
+    const copies = [copy('a', 'on_loan', DUE), copy('b', 'available')]
+
+    expect(
+      nextReturnAtOf(copies, { copyId: 'a', dueAt: undefined }),
+    ).toBeUndefined()
+  })
+
+  it('na retirada, o exemplar separado passa a contar com o vencimento novo', () => {
+    const copies = [copy('a', 'reserved'), copy('b', 'available')]
+
+    expect(nextReturnAtOf(copies, { copyId: 'a', dueAt: DUE })).toEqual(DUE)
+  })
+
   it('ignora exemplar que não está emprestado', () => {
     const copies = [
       copy('a', 'on_loan', DUE),

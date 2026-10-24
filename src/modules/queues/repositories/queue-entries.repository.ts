@@ -11,6 +11,7 @@ import {
   QUEUE_ENTRY_STATUS,
   type QueueEntry,
   type QueueEntryRecord,
+  type QueueEntryStatus,
 } from '../../../shared/types/index.js'
 
 // Acesso ao Firestore da coleção queueEntries (seção 2.10). Toda função que grava
@@ -84,6 +85,13 @@ export async function findNextWaiting(
   )
   const [doc] = result.docs
   return doc ? toRecord(doc) : undefined
+}
+
+// Quantos lugares da fila têm o estado dado, em todos os livros (Painel do
+// balcão: `your_turn` = esperando o aluno confirmar, RF-BAL-01).
+export async function countByStatus(status: QueueEntryStatus): Promise<number> {
+  const result = await entries().where('status', '==', status).count().get()
+  return result.data().count
 }
 
 // Os lugares ativos do aluno, dos mais antigos para os mais novos (Minhas filas,

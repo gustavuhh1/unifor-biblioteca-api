@@ -86,6 +86,65 @@ export async function listByStudent(uid: string): Promise<LoanRecord[]> {
   return result.docs.map(toRecord)
 }
 
+// Acha o pedido pelo segredo do QR (RF-BAL-02). O QR é lido no balcão e só vale
+// para o pedido de que saiu; o segredo é único. Não devolve nada se não existir.
+export async function findByQrToken(
+  qrToken: string,
+): Promise<LoanRecord | undefined> {
+  const result = await loans().where('qrToken', '==', qrToken).limit(1).get()
+  const [doc] = result.docs
+  return doc ? toRecord(doc) : undefined
+}
+
+// Acha o pedido aguardando retirada pelo código curto "RET-4821" (RF-BAL-03). O
+// código só é único entre os pedidos aguardando retirada (seção 2.9).
+export async function findAwaitingByPickupCode(
+  pickupCode: string,
+): Promise<LoanRecord | undefined> {
+  const result = await loans()
+    .where('pickupCode', '==', pickupCode)
+    .where('status', '==', LOAN_STATUS.awaitingPickup)
+    .limit(1)
+    .get()
+  const [doc] = result.docs
+  return doc ? toRecord(doc) : undefined
+}
+
+// Os pedidos aguardando retirada, do prazo mais curto ao mais longo (lista
+// Retiradas, RF-BAL-05; índice status + pickupDeadline), até `limit`.
+export async function listAwaitingPickup(limit: number): Promise<LoanRecord[]> {
+  const result = await loans()
+    .where('status', '==', LOAN_STATUS.awaitingPickup)
+    .orderBy('pickupDeadline', 'asc')
+    .limit(limit)
+    .get()
+  return result.docs.map(toRecord)
+}
+
+// Quantos pedidos aguardam retirada (Painel, RF-BAL-01).
+export async function countAwaitingPickup(): Promise<number> {
+  const result = await loans()
+    .where('status', '==', LOAN_STATUS.awaitingPickup)
+    .count()
+    .get()
+  return result.data().count
+}
+
+// Quantas devoluções foram registradas de `from` (inclusive) até `to` (exclusive),
+// pelo índice status + returnedAt (Painel, RF-BAL-01).
+export async function countReturnedBetween(
+  from: Date,
+  to: Date,
+): Promise<number> {
+  const result = await loans()
+    .where('status', '==', LOAN_STATUS.returned)
+    .where('returnedAt', '>=', from)
+    .where('returnedAt', '<', to)
+    .count()
+    .get()
+  return result.data().count
+}
+
 // Grava um pedido novo (RF-EMP-01).
 export function create(tx: Transaction, id: string, loan: Loan): void {
   tx.set(loans().doc(id), withoutUndefined(loan))
