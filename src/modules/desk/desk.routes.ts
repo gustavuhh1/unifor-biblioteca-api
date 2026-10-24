@@ -13,3 +13,10 @@ deskRouter.post(
   ...librarianSession,
   controller.lookup,
 )
+
+// Registrar a retirada de um pedido (RF-BAL-02).
+deskRouter.post(
+  '/librarian/loans/:loanId/pickup',
+  ...librarianSession,
+  controller.pickup,
+)
