@@ -4,6 +4,7 @@ import { errorHandler, notFoundHandler } from './middlewares/error-handler.js'
 import { createRequestLogger } from './middlewares/request-logger.js'
 import { authRouter } from './modules/auth/auth.routes.js'
 import { catalogRouter } from './modules/catalog/catalog.routes.js'
+import { deskRouter } from './modules/desk/desk.routes.js'
 import { finesRouter } from './modules/fines/fines.routes.js'
 import { loansRouter } from './modules/loans/loans.routes.js'
 import { queuesRouter } from './modules/queues/queues.routes.js'
@@ -25,6 +26,7 @@ app.use(catalogRouter)
 app.use(loansRouter)
 app.use(queuesRouter)
 app.use(finesRouter)
+app.use(deskRouter)
 
 // Os routers dos módulos são montados acima desta linha, para que a
 // documentação deles seja registrada antes de o Swagger ser gerado.

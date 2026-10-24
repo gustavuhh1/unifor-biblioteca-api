@@ -8,7 +8,7 @@ import {
   AUDIT_ACTOR_ROLE,
   QUEUE_ENTRY_STATUS,
 } from '../../../shared/types/index.js'
-import * as usersRepository from '../../auth/repositories/users.repository.js'
+import * as usersRepository from '../../../shared/repositories/users.repository.js'
 import * as notificationsRepository from '../../notifications/repositories/notifications.repository.js'
 import { queueEntryNotActive, queueEntryNotFound } from '../queues.errors.js'
 import type {

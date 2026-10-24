@@ -1,8 +1,7 @@
-import type { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
+import type { Transaction } from 'firebase-admin/firestore'
 import { getDb } from '../../../config/firebase.js'
 import { COLLECTIONS } from '../../../shared/firestore/collections.js'
-import { dataWithDates } from '../../../shared/firestore/converters.js'
-import { readDocument } from '../../../shared/firestore/read.js'
+import * as usersRepository from '../../../shared/repositories/users.repository.js'
 import {
   USER_ROLE,
   USER_STATUS,
@@ -12,28 +11,16 @@ import {
 } from '../../../shared/types/index.js'
 import type { IndexOwners, PendingStudent, UserAccount } from '../auth.types.js'
 
-// Acesso ao Firestore das coleções users, matriculaIndex e emailIndex. O
-// parâmetro tx é opcional nas leituras: com ele, a leitura entra na transação.
+// Acesso ao Firestore do que só o cadastro e o acesso usam: os índices
+// matriculaIndex e emailIndex e o ciclo da conta (aluno pendente, ativação,
+// login). Ler o documento do usuário e os contadores está em
+// shared/repositories/users.repository. O parâmetro tx é opcional nas leituras:
+// com ele, a leitura entra na transação.
 
-const usersRef = (uid: string) => getDb().collection(COLLECTIONS.users).doc(uid)
 const matriculaRef = (matricula: string) =>
   getDb().collection(COLLECTIONS.matriculaIndex).doc(matricula)
 const emailRef = (email: string) =>
   getDb().collection(COLLECTIONS.emailIndex).doc(email)
-
-// Campos de data do documento users que o Firestore devolve como Timestamp.
-const USER_DATE_FIELDS = [
-  'createdAt',
-  'updatedAt',
-  'emailVerifiedAt',
-  'onboardingSeenAt',
-  'lastLoginAt',
-] as const
-
-// Converte o documento lido em User, trocando os Timestamps por Date.
-function toUser(snapshot: DocumentSnapshot): User {
-  return dataWithDates(snapshot, USER_DATE_FIELDS) as unknown as User
-}
 
 // Gera o id de um usuário novo, sem gravar nada.
 export function newUid(): string {
@@ -66,17 +53,11 @@ export async function findByMatricula(
   matricula: string,
   tx?: Transaction,
 ): Promise<UserAccount | undefined> {
-  const index = await readDocument(matriculaRef(matricula), tx)
-  if (!index.exists) return undefined
-  const uid = index.get('uid') as string
-  const user = await readDocument(usersRef(uid), tx)
-  if (!user.exists) return undefined
-  return {
-    uid,
-    role: user.get('role') as UserAccount['role'],
-    status: user.get('status') as UserAccount['status'],
-    email: user.get('email') as string,
-  }
+  const uid = await usersRepository.findUidByMatricula(matricula, tx)
+  if (!uid) return undefined
+  const user = await usersRepository.findById(uid, tx)
+  if (!user) return undefined
+  return { uid, role: user.role, status: user.status, email: user.email }
 }
 
 // Acha o aluno que se cadastrou e ainda não confirmou o e-mail (pending_email).
@@ -89,15 +70,6 @@ export async function findPendingByMatricula(
     account.status === USER_STATUS.pendingEmail
     ? { uid: account.uid, email: account.email }
     : undefined
-}
-
-// Lê o documento do usuário. Não devolve nada se ele não existir.
-export async function findById(
-  uid: string,
-  tx?: Transaction,
-): Promise<User | undefined> {
-  const snapshot = await readDocument(usersRef(uid), tx)
-  return snapshot.exists ? toUser(snapshot) : undefined
 }
 
 // Cria o aluno pendente com os seus dois índices, de uma vez (RF-AUT-01).
@@ -114,7 +86,7 @@ export function createPendingStudent(
   const emailIndex: EmailIndex = { uid, createdAt: now, updatedAt: now }
   tx.set(matriculaRef(user.matricula), index)
   tx.set(emailRef(user.email), emailIndex)
-  tx.set(usersRef(uid), user)
+  tx.set(usersRepository.userRef(uid), user)
 }
 
 // Troca o e-mail de um aluno pendente (RF-AUT-03): move o emailIndex e atualiza
@@ -133,7 +105,10 @@ export function replacePendingEmail(
     }
     tx.set(emailRef(input.newEmail), emailIndex)
   }
-  tx.update(usersRef(input.uid), { email: input.newEmail, updatedAt: now })
+  tx.update(usersRepository.userRef(input.uid), {
+    email: input.newEmail,
+    updatedAt: now,
+  })
 }
 
 // Apaga o aluno pendente e os seus dois índices (desfaz um cadastro que falhou).
@@ -141,14 +116,14 @@ export function deletePendingStudent(
   tx: Transaction,
   input: { uid: string; matricula: string; email: string },
 ): void {
-  tx.delete(usersRef(input.uid))
+  tx.delete(usersRepository.userRef(input.uid))
   tx.delete(matriculaRef(input.matricula))
   tx.delete(emailRef(input.email))
 }
 
 // Ativa a conta depois do token confirmado (RF-AUT-03).
 export function activate(tx: Transaction, uid: string, now: Date): void {
-  tx.update(usersRef(uid), {
+  tx.update(usersRepository.userRef(uid), {
     status: USER_STATUS.active,
     emailVerifiedAt: now,
     updatedAt: now,
@@ -157,7 +132,7 @@ export function activate(tx: Transaction, uid: string, now: Date): void {
 
 // Grava o último login conhecido pela API (login com passkey).
 export function recordLogin(tx: Transaction, uid: string, now: Date): void {
-  tx.update(usersRef(uid), { lastLoginAt: now, updatedAt: now })
+  tx.update(usersRepository.userRef(uid), { lastLoginAt: now, updatedAt: now })
 }
 
 // Grava o nome informado no Perfil, com o nome normalizado e as iniciais.
@@ -166,39 +141,5 @@ export async function updateFullName(
   fields: Pick<User, 'fullName' | 'fullNameNormalized' | 'initials'>,
   now: Date,
 ): Promise<void> {
-  await usersRef(uid).update({ ...fields, updatedAt: now })
-}
-
-// Grava quantos pedidos e empréstimos o aluno tem em andamento (pedido, cancelamento
-// e devolução, seção 3). Chame depois de todas as leituras da transação.
-export function setActiveLoanCount(
-  tx: Transaction,
-  uid: string,
-  count: number,
-  at: Date,
-): void {
-  tx.update(usersRef(uid), { activeLoanCount: count, updatedAt: at })
-}
-
-// Grava quantos lugares em fila ativa o aluno tem (entrar, sair, confirmar a vez,
-// perder a vez e remoção, seção 3). Chame depois de todas as leituras da
-// transação.
-export function setActiveQueueCount(
-  tx: Transaction,
-  uid: string,
-  count: number,
-  at: Date,
-): void {
-  tx.update(usersRef(uid), { activeQueueCount: count, updatedAt: at })
-}
-
-// Grava o total das multas em aberto do aluno, em centavos (devolução com multa
-// e pagamento, seção 3). Chame depois de todas as leituras da transação.
-export function setOpenFineTotalCents(
-  tx: Transaction,
-  uid: string,
-  cents: number,
-  at: Date,
-): void {
-  tx.update(usersRef(uid), { openFineTotalCents: cents, updatedAt: at })
+  await usersRepository.userRef(uid).update({ ...fields, updatedAt: now })
 }

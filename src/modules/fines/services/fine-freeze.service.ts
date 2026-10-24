@@ -9,8 +9,8 @@ import {
   type LoanRecord,
   type User,
 } from '../../../shared/types/index.js'
-import * as usersRepository from '../../auth/repositories/users.repository.js'
-import * as loansRepository from '../../loans/repositories/loans.repository.js'
+import * as usersRepository from '../../../shared/repositories/users.repository.js'
+import * as loansRepository from '../../../shared/repositories/loans.repository.js'
 import * as finesRepository from '../repositories/fines.repository.js'
 import {
   buildFrozenFine,

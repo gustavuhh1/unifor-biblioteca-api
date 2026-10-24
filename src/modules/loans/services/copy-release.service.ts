@@ -1,7 +1,7 @@
 import type { Transaction } from 'firebase-admin/firestore'
 import type { LoanSettings } from '../../../shared/firestore/settings.js'
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
-import * as copiesRepository from '../../catalog/repositories/copies.repository.js'
+import * as copiesRepository from '../../../shared/repositories/copies.repository.js'
 import {
   applyQueueHandoff,
   findQueueHandoffTarget,

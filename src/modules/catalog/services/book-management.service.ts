@@ -21,7 +21,7 @@ import type {
   UpdateBookBody,
 } from '../catalog.types.js'
 import * as booksRepository from '../repositories/books.repository.js'
-import * as copiesRepository from '../repositories/copies.repository.js'
+import * as copiesRepository from '../../../shared/repositories/copies.repository.js'
 import * as worksRepository from '../repositories/works.repository.js'
 import { externalMetadataOf } from '../rules/book-metadata.rules.js'
 import { toBookRecordResponse } from '../rules/book-response.rules.js'

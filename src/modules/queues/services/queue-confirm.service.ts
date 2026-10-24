@@ -12,12 +12,12 @@ import {
   LOAN_ORIGIN,
   QUEUE_ENTRY_STATUS,
 } from '../../../shared/types/index.js'
-import * as usersRepository from '../../auth/repositories/users.repository.js'
+import * as usersRepository from '../../../shared/repositories/users.repository.js'
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
-import * as copiesRepository from '../../catalog/repositories/copies.repository.js'
+import * as copiesRepository from '../../../shared/repositories/copies.repository.js'
 import { readStudentCirculation } from '../../catalog/repositories/student-circulation.repository.js'
 import { requestRefused } from '../../loans/loans.errors.js'
-import * as loansRepository from '../../loans/repositories/loans.repository.js'
+import * as loansRepository from '../../../shared/repositories/loans.repository.js'
 import { toLoanResponse } from '../../loans/rules/loan-view.rules.js'
 import { buildNewLoan } from '../../loans/rules/new-loan.rules.js'
 import {

@@ -23,7 +23,7 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     ])
   })
 
-  it('documenta todas as rotas dos módulos de acesso, do acervo, de empréstimos, de filas e de multas', () => {
+  it('documenta todas as rotas dos módulos de acesso, do acervo, de empréstimos, de filas, de multas e do balcão', () => {
     const operations = Object.entries(document.paths ?? {}).flatMap(
       ([path, item]) =>
         ['get', 'post', 'patch', 'delete']
@@ -73,6 +73,11 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'GET /me/fines',
         'GET /librarian/fines',
         'POST /librarian/fines/{fineId}/pay',
+        'POST /librarian/desk/lookup',
+        'POST /librarian/loans/{loanId}/pickup',
+        'POST /librarian/loans/{loanId}/return',
+        'GET /librarian/pickups',
+        'GET /librarian/desk/summary',
       ].sort(),
     )
   })
@@ -96,6 +101,43 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     }
     for (const operation of catalogRoutes.slice(2)) {
       expect(operation?.responses?.['403']).toBeDefined()
+    }
+  })
+
+  it('documenta as rotas do balcão com sessão, perfil do bibliotecário e sem o qrToken nas respostas', () => {
+    const paths = document.paths ?? {}
+    const deskRoutes = [
+      paths['/librarian/desk/lookup']?.post,
+      paths['/librarian/loans/{loanId}/pickup']?.post,
+      paths['/librarian/loans/{loanId}/return']?.post,
+      paths['/librarian/pickups']?.get,
+      paths['/librarian/desk/summary']?.get,
+    ]
+
+    for (const operation of deskRoutes) {
+      expect(operation?.security).toEqual([{ bearerAuth: [] }])
+      expect(operation?.responses?.['401']).toBeDefined()
+      expect(operation?.responses?.['403']).toBeDefined()
+    }
+    expect(
+      paths['/librarian/loans/{loanId}/pickup']?.post?.responses?.['409'],
+    ).toBeDefined()
+    expect(
+      paths['/librarian/loans/{loanId}/return']?.post?.responses?.['409'],
+    ).toBeDefined()
+    // O segredo do QR só entra no corpo da ficha (nunca nas respostas do balcão).
+    for (const name of [
+      'DeskLoan',
+      'DeskLookupResponse',
+      'PickupResponse',
+      'ReturnResponse',
+      'PickupItem',
+      'PickupsResponse',
+    ]) {
+      expect(
+        JSON.stringify(document.components?.schemas?.[name]),
+        name,
+      ).not.toContain('qrToken')
     }
   })
 

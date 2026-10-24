@@ -1,6 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildSeed, toWrites, type SeedData } from './build.js'
-import { lateBusinessDays } from '../../src/shared/calendar/business-days.js'
+import {
+  buildLibraryCalendar,
+  isOpenDay,
+  lateBusinessDays,
+  type LibraryCalendar,
+} from '../../src/shared/calendar/business-days.js'
 import {
   atLocalTime,
   localDate,
@@ -10,15 +15,30 @@ import {
   holidayDates,
   type HolidaysDocument,
 } from '../../src/shared/calendar/holidays-api.js'
+import { DEFAULT_OPENING_HOURS } from '../../src/shared/library.js'
 import { loadHolidaysFile } from './holidays.js'
 
 const BASE_DAY = '2026-10-15'
 
 let data: SeedData
 let holidays: HolidaysDocument
+// Calendário da biblioteca com os feriados do seed (sem recesso).
+let calendar: LibraryCalendar
+
+// Primeiro dia em que a biblioteca abre, a partir de `from` (inclusive).
+function firstOpenDay(from: string): string {
+  let day = from
+  while (!isOpenDay(day, calendar)) day = plusDays(day, 1)
+  return day
+}
 
 beforeAll(async () => {
   holidays = await loadHolidaysFile(2026)
+  calendar = buildLibraryCalendar({
+    openingHours: DEFAULT_OPENING_HOURS,
+    holidays: holidayDates(holidays),
+    recesses: [],
+  })
   // O dia de exemplo dos documentos (15/10): o deslocamento é zero, então as
   // tabelas das seções 6.1 a 6.5 podem ser conferidas data por data.
   data = buildSeed({ holidays, tokenSecret: 'test-secret', today: BASE_DAY })
@@ -184,6 +204,23 @@ describe('consistência dos dados', () => {
     expect(due('loan_rafael_algoritmos')).toEqual(
       atLocalTime('2026-10-23', '21:55'),
     )
+  })
+
+  it('nunca dá um vencimento em domingo, feriado ou recesso, qualquer que seja o dia em que o seed roda', () => {
+    // Um mês de "hoje" diferentes: passa por domingos e pelo feriado de 02/11.
+    for (let offset = 0; offset < 31; offset++) {
+      const today = plusDays(BASE_DAY, offset)
+      const seed = buildSeed({ holidays, tokenSecret: 'test-secret', today })
+      for (const [id, loan] of Object.entries(seed.loans)) {
+        for (const due of [loan.dueAt, loan.originalDueAt]) {
+          if (!due) continue
+          expect(
+            isOpenDay(localDate(due), calendar),
+            `${id} vence em ${localDate(due)} (seed de ${today})`,
+          ).toBe(true)
+        }
+      }
+    }
   })
 
   it('renova só os dois empréstimos documentados e retira 14 dias antes do vencimento', () => {
@@ -431,7 +468,11 @@ describe.each([
   })
 
   it('mantém Engenharia de Software do Lucas perto de vencer, com 2 pessoas na fila', () => {
-    expect(day(run.loans.loan_lucas_engenharia!.dueAt)).toBe(plusDays(today, 1))
+    // Vence amanhã; se amanhã a biblioteca fecha (domingo, feriado), no próximo
+    // dia aberto.
+    expect(day(run.loans.loan_lucas_engenharia!.dueAt)).toBe(
+      firstOpenDay(plusDays(today, 1)),
+    )
     expect(run.books.book_engenharia_de_software).toMatchObject({
       queueLength: 2,
     })

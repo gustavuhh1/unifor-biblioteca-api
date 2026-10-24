@@ -47,14 +47,16 @@ export function renewalUpdate(
 }
 
 // Menor vencimento entre os exemplares emprestados do livro (books.nextReturnAt,
-// seção 2.7), já com o novo vencimento do exemplar renovado no lugar do antigo.
-// Sem nenhum emprestado, devolve undefined.
+// seção 2.7), já com a mudança de um exemplar aplicada: `dueAt` é o novo vencimento
+// dele (renovação, ou retirada de um exemplar que estava separado) ou undefined se
+// ele deixou de estar emprestado (devolução). Sem nenhum emprestado, devolve
+// undefined.
 export function nextReturnAtOf(
   copies: readonly Pick<CopyRecord, 'id' | 'status' | 'dueAt'>[],
-  renewed: { copyId: string; dueAt: Date },
+  changed: { copyId: string; dueAt: Date | undefined },
 ): Date | undefined {
   const dueDates = copies.flatMap((copy) => {
-    if (copy.id === renewed.copyId) return [renewed.dueAt]
+    if (copy.id === changed.copyId) return changed.dueAt ? [changed.dueAt] : []
     return copy.status === COPY_STATUS.onLoan && copy.dueAt ? [copy.dueAt] : []
   })
   return dueDates.length > 0

@@ -5,6 +5,7 @@ import {
   type DateOnly,
   type Fine,
   type LoanRecord,
+  type User,
 } from '../../../shared/types/index.js'
 
 // Cálculo e congelamento da multa (RF-MUL-01, RF-MUL-02, seção 2.11). Funções
@@ -53,6 +54,18 @@ export function calculateFine(input: {
 export interface FineReceiver {
   uid: string
   name: string
+}
+
+// Quem recebeu o valor, a partir do bibliotecário logado: o nome do Perfil, ou o
+// rótulo do balcão, ou a matrícula (quando ele ainda não tem nome).
+export function fineReceiverOf(
+  uid: string,
+  librarian: Pick<User, 'fullName' | 'deskLabel' | 'matricula'>,
+): FineReceiver {
+  return {
+    uid,
+    name: librarian.fullName ?? librarian.deskLabel ?? librarian.matricula,
+  }
 }
 
 // Os campos que o congelamento sempre grava, mais os do pagamento na devolução.

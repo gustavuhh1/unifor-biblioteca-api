@@ -10,7 +10,7 @@ import { tokenError, tokenExpiredOrUsed } from '../auth.errors.js'
 import type { PasswordResetBody } from '../auth.types.js'
 import { sendTokenEmail } from '../mail/mailer.js'
 import * as emailTokensRepository from '../repositories/email-tokens.repository.js'
-import * as usersRepository from '../repositories/users.repository.js'
+import * as accountsRepository from '../repositories/accounts.repository.js'
 import {
   createTokenSecret,
   resendWaitSeconds,
@@ -30,7 +30,7 @@ export async function requestPasswordRecovery(matricula: string) {
   const secret = createTokenSecret()
 
   const sentTo = await db.runTransaction(async (tx) => {
-    const account = await usersRepository.findByMatricula(matricula, tx)
+    const account = await accountsRepository.findByMatricula(matricula, tx)
     if (!account || account.status !== USER_STATUS.active) return undefined
 
     const previous = await emailTokensRepository.findRecent(
@@ -83,7 +83,10 @@ export async function resetPassword(input: PasswordResetBody) {
   const settings = await emailTokensRepository.readTokenSettings()
 
   const result = await db.runTransaction(async (tx) => {
-    const account = await usersRepository.findByMatricula(input.matricula, tx)
+    const account = await accountsRepository.findByMatricula(
+      input.matricula,
+      tx,
+    )
     if (!account || account.status !== USER_STATUS.active) {
       throw tokenExpiredOrUsed()
     }

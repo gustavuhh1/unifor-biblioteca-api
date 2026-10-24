@@ -3,7 +3,7 @@ import { readLoanSettings } from '../../../shared/firestore/settings.js'
 import { LOAN_STATUS, type BookRecord } from '../../../shared/types/index.js'
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
 import type { LoanView, MyLoansResponse } from '../loans.types.js'
-import * as loansRepository from '../repositories/loans.repository.js'
+import * as loansRepository from '../../../shared/repositories/loans.repository.js'
 import { belongsToView, toLoanResponse } from '../rules/loan-view.rules.js'
 import { renewalDenialOf } from '../rules/renewal.rules.js'
 

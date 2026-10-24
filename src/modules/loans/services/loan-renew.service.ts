@@ -6,10 +6,10 @@ import { readLibraryCalendar } from '../../../shared/firestore/calendar.js'
 import { readLoanSettings } from '../../../shared/firestore/settings.js'
 import { LOAN_STATUS } from '../../../shared/types/index.js'
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
-import * as copiesRepository from '../../catalog/repositories/copies.repository.js'
+import * as copiesRepository from '../../../shared/repositories/copies.repository.js'
 import { loanNotActive, loanNotFound, renewalDenied } from '../loans.errors.js'
 import type { LoanResponse } from '../loans.types.js'
-import * as loansRepository from '../repositories/loans.repository.js'
+import * as loansRepository from '../../../shared/repositories/loans.repository.js'
 import { toLoanResponse } from '../rules/loan-view.rules.js'
 import {
   nextReturnAtOf,

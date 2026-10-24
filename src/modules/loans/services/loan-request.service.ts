@@ -13,14 +13,14 @@ import {
   USER_ROLE,
   USER_STATUS,
 } from '../../../shared/types/index.js'
-import * as usersRepository from '../../auth/repositories/users.repository.js'
+import * as usersRepository from '../../../shared/repositories/users.repository.js'
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
-import * as copiesRepository from '../../catalog/repositories/copies.repository.js'
+import * as copiesRepository from '../../../shared/repositories/copies.repository.js'
 import { readStudentCirculation } from '../../catalog/repositories/student-circulation.repository.js'
 import { bookNotFound } from '../../catalog/catalog.errors.js'
 import { noCopyAvailable, requestRefused } from '../loans.errors.js'
 import type { CreateLoanBody, LoanResponse } from '../loans.types.js'
-import * as loansRepository from '../repositories/loans.repository.js'
+import * as loansRepository from '../../../shared/repositories/loans.repository.js'
 import { toLoanResponse } from '../rules/loan-view.rules.js'
 import { buildNewLoan } from '../rules/new-loan.rules.js'
 import {

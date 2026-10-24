@@ -36,7 +36,8 @@ import type {
   PasskeySummary,
 } from '../auth.types.js'
 import * as passkeysRepository from '../repositories/passkeys.repository.js'
-import * as usersRepository from '../repositories/users.repository.js'
+import * as usersRepository from '../../../shared/repositories/users.repository.js'
+import * as accountsRepository from '../repositories/accounts.repository.js'
 import {
   buildAuthenticationOptionsInput,
   buildExpectedOrigins,
@@ -184,7 +185,7 @@ export async function createLoginOptions(
   const now = new Date()
   const { rpId } = getPasskeyConfig()
 
-  const account = await usersRepository.findByMatricula(matricula)
+  const account = await accountsRepository.findByMatricula(matricula)
   const passkeys =
     account?.role === USER_ROLE.student
       ? await passkeysRepository.listByUser(account.uid)
@@ -257,7 +258,7 @@ export async function verifyLogin(input: PasskeyLoginVerifyBody) {
       verified.authenticationInfo.newCounter,
       now,
     )
-    usersRepository.recordLogin(tx, uid, now)
+    accountsRepository.recordLogin(tx, uid, now)
     return Promise.resolve()
   })
 

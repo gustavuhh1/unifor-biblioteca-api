@@ -2,7 +2,8 @@ import { getAdminAuth } from '../../../config/firebase.js'
 import { initialsOf, normalizeText } from '../../../shared/text.js'
 import type { User } from '../../../shared/types/index.js'
 import type { MeResponse } from '../auth.types.js'
-import * as usersRepository from '../repositories/users.repository.js'
+import * as usersRepository from '../../../shared/repositories/users.repository.js'
+import * as accountsRepository from '../repositories/accounts.repository.js'
 
 // Campo ausente vira null na resposta.
 const orNull = <T>(value: T | undefined): T | null => value ?? null
@@ -43,7 +44,7 @@ export async function updateFullName(
   uid: string,
   fullName: string,
 ): Promise<MeResponse> {
-  await usersRepository.updateFullName(
+  await accountsRepository.updateFullName(
     uid,
     {
       fullName,

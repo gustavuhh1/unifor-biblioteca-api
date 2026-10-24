@@ -90,6 +90,13 @@ export async function listByStatus(status: FineStatus): Promise<FineRecord[]> {
   return result.docs.map(toRecord)
 }
 
+// Quantas multas têm o estado dado (Painel do balcão: `open` = devolvidas, falta
+// pagar, RF-BAL-01).
+export async function countByStatus(status: FineStatus): Promise<number> {
+  const result = await fines().where('status', '==', status).count().get()
+  return result.data().count
+}
+
 // Grava uma multa nova (devolução de um empréstimo atrasado, RF-MUL-02).
 export function create(tx: Transaction, id: string, fine: Fine): void {
   tx.set(fines().doc(id), withoutUndefined(fine))

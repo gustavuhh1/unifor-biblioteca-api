@@ -1,16 +1,11 @@
 import { Router, type RequestHandler } from 'express'
 import { authenticate } from '../../middlewares/auth.js'
-import { requireRole } from '../../middlewares/require-role.js'
-import { USER_ROLE } from '../../shared/types/index.js'
+import { librarianSession } from '../../middlewares/session.js'
 import * as controller from './catalog.controller.js'
 
 // Só o caminho e os middlewares de cada rota; a lógica fica no controller.
 
 const session: RequestHandler[] = [authenticate]
-const librarianSession: RequestHandler[] = [
-  authenticate,
-  requireRole(USER_ROLE.librarian),
-]
 
 // Router do módulo do acervo.
 export const catalogRouter = Router()

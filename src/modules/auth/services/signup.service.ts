@@ -29,7 +29,7 @@ import type {
 } from '../auth.types.js'
 import { sendTokenEmail } from '../mail/mailer.js'
 import * as emailTokensRepository from '../repositories/email-tokens.repository.js'
-import * as usersRepository from '../repositories/users.repository.js'
+import * as accountsRepository from '../repositories/accounts.repository.js'
 import { createTokenSecret } from '../rules/email-token.rules.js'
 import {
   assertCanSendToken,
@@ -88,14 +88,14 @@ function savePendingStudent(
 ): void {
   const { uid, pending, input, authEmail } = data
   if (pending) {
-    usersRepository.replacePendingEmail(
+    accountsRepository.replacePendingEmail(
       tx,
       { uid, oldEmail: pending.email, newEmail: input.email },
       now,
     )
     return
   }
-  usersRepository.createPendingStudent(
+  accountsRepository.createPendingStudent(
     tx,
     uid,
     buildUserDocument({
@@ -120,15 +120,15 @@ export async function startSignup(input: SignupStartBody) {
   const settings = await emailTokensRepository.readTokenSettings()
   const secret = createTokenSecret()
   const authEmail = authEmailOf(input.matricula)
-  const newUid = usersRepository.newUid()
+  const newUid = accountsRepository.newUid()
 
   const outcome = await db.runTransaction(async (tx) => {
-    const owners = await usersRepository.findIndexOwners(
+    const owners = await accountsRepository.findIndexOwners(
       tx,
       input.matricula,
       input.email,
     )
-    const pending = await usersRepository.findPendingByMatricula(
+    const pending = await accountsRepository.findPendingByMatricula(
       tx,
       input.matricula,
     )
@@ -192,7 +192,7 @@ async function undoSignup(
 ): Promise<void> {
   try {
     await getDb().runTransaction(async (tx) => {
-      usersRepository.deletePendingStudent(tx, {
+      accountsRepository.deletePendingStudent(tx, {
         uid: created.uid,
         matricula: input.matricula,
         email: input.email,
@@ -214,7 +214,10 @@ export async function resendSignupToken(matricula: string) {
   const secret = createTokenSecret()
 
   const sentTo = await db.runTransaction(async (tx) => {
-    const pending = await usersRepository.findPendingByMatricula(tx, matricula)
+    const pending = await accountsRepository.findPendingByMatricula(
+      tx,
+      matricula,
+    )
     if (!pending) throw signupNotFound()
 
     const previous = await emailTokensRepository.findRecent(
@@ -259,7 +262,10 @@ export async function confirmSignup(input: SignupConfirmBody) {
   const options = { now, maxAttempts: settings.maxAttempts }
 
   const checked = await db.runTransaction(async (tx) => {
-    const account = await usersRepository.findByMatricula(input.matricula, tx)
+    const account = await accountsRepository.findByMatricula(
+      input.matricula,
+      tx,
+    )
     // Mesma resposta de um token antigo: não diz que a matrícula é desconhecida.
     if (!account || account.status !== USER_STATUS.pendingEmail) {
       throw tokenExpiredOrUsed()
@@ -289,7 +295,7 @@ export async function confirmSignup(input: SignupConfirmBody) {
       consume: true,
     })
     if (check.result !== TOKEN_CHECK_RESULT.valid) throw tokenError(check)
-    usersRepository.activate(tx, uid, now)
+    accountsRepository.activate(tx, uid, now)
   })
 
   return { passkeyOptions: await createRegistrationOptions(uid) }
