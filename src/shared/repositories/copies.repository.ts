@@ -3,18 +3,11 @@ import {
   type DocumentSnapshot,
   type Transaction,
 } from 'firebase-admin/firestore'
-import { getDb } from '../../../config/firebase.js'
-import { COLLECTIONS } from '../../../shared/firestore/collections.js'
-import {
-  dataWithDates,
-  withoutUndefined,
-} from '../../../shared/firestore/converters.js'
-import { readDocument } from '../../../shared/firestore/read.js'
-import {
-  COPY_STATUS,
-  type Copy,
-  type CopyRecord,
-} from '../../../shared/types/index.js'
+import { getDb } from '../../config/firebase.js'
+import { COLLECTIONS } from '../firestore/collections.js'
+import { dataWithDates, withoutUndefined } from '../firestore/converters.js'
+import { readDocument } from '../firestore/read.js'
+import { COPY_STATUS, type Copy, type CopyRecord } from '../types/index.js'
 
 // Acesso ao Firestore da coleção copies (seção 2.8). Toda função que grava
 // recebe tx e deve ser chamada depois de todas as leituras da transação.

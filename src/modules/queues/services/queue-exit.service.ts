@@ -6,7 +6,7 @@ import {
   type QueueEntryRecord,
 } from '../../../shared/types/index.js'
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
-import * as copiesRepository from '../../catalog/repositories/copies.repository.js'
+import * as copiesRepository from '../../../shared/repositories/copies.repository.js'
 import {
   applyCopyRelease,
   planCopyRelease,

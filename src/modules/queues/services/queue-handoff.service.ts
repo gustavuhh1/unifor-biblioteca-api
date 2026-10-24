@@ -3,7 +3,7 @@ import {
   type BookRecord,
   type QueueEntryRecord,
 } from '../../../shared/types/index.js'
-import * as copiesRepository from '../../catalog/repositories/copies.repository.js'
+import * as copiesRepository from '../../../shared/repositories/copies.repository.js'
 import * as notificationsRepository from '../../notifications/repositories/notifications.repository.js'
 import * as queueEntriesRepository from '../repositories/queue-entries.repository.js'
 import { turnNotice } from '../rules/queue-notices.rules.js'

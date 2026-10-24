@@ -1,21 +1,19 @@
 import type { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
-import { getDb } from '../../../config/firebase.js'
-import { COLLECTIONS } from '../../../shared/firestore/collections.js'
+import { getDb } from '../../config/firebase.js'
+import { COLLECTIONS } from '../firestore/collections.js'
 import {
   dataWithDates,
   optionalDate,
   withoutUndefined,
-} from '../../../shared/firestore/converters.js'
-import { readDocument } from '../../../shared/firestore/read.js'
-import {
-  LOAN_STATUS,
-  type Loan,
-  type LoanRecord,
-} from '../../../shared/types/index.js'
-import { LOAN_LIST_LIMIT } from '../loans.constants.js'
+} from '../firestore/converters.js'
+import { readDocument } from '../firestore/read.js'
+import { LOAN_STATUS, type Loan, type LoanRecord } from '../types/index.js'
 
 // Acesso ao Firestore da coleção loans (seção 2.9). Toda função que grava recebe tx
 // e deve ser chamada depois de todas as leituras da transação.
+
+// Quantos pedidos e empréstimos Meus empréstimos devolve por consulta.
+export const LOAN_LIST_LIMIT = 200
 
 const loans = () => getDb().collection(COLLECTIONS.loans)
 

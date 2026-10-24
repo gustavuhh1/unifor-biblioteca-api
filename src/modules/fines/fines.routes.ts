@@ -1,19 +1,8 @@
-import { Router, type RequestHandler } from 'express'
-import { authenticate } from '../../middlewares/auth.js'
-import { requireRole } from '../../middlewares/require-role.js'
-import { USER_ROLE } from '../../shared/types/index.js'
+import { Router } from 'express'
+import { studentSession, librarianSession } from '../../middlewares/session.js'
 import * as controller from './fines.controller.js'
 
 // Só o caminho e os middlewares de cada rota; a lógica fica no controller.
-
-const studentSession: RequestHandler[] = [
-  authenticate,
-  requireRole(USER_ROLE.student),
-]
-const librarianSession: RequestHandler[] = [
-  authenticate,
-  requireRole(USER_ROLE.librarian),
-]
 
 // Router do módulo de multas. O aluno só consulta; não há rota de pagamento para
 // ele (RF-MUL-03).

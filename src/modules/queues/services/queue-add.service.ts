@@ -12,7 +12,8 @@ import {
   USER_ROLE,
   USER_STATUS,
 } from '../../../shared/types/index.js'
-import * as usersRepository from '../../auth/repositories/users.repository.js'
+import * as usersRepository from '../../../shared/repositories/users.repository.js'
+import * as accountsRepository from '../../auth/repositories/accounts.repository.js'
 import { bookNotFound } from '../../catalog/catalog.errors.js'
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
 import { readStudentCirculation } from '../../catalog/repositories/student-circulation.repository.js'
@@ -64,7 +65,7 @@ export async function addToQueue(
     const book = await booksRepository.findById(bookId, tx)
     if (!book || book.status !== BOOK_STATUS.active) throw bookNotFound()
 
-    const account = await usersRepository.findByMatricula(body.matricula, tx)
+    const account = await accountsRepository.findByMatricula(body.matricula, tx)
     if (
       !account ||
       account.role !== USER_ROLE.student ||

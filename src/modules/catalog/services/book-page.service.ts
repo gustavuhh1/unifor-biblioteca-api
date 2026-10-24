@@ -9,7 +9,7 @@ import type { BookRecord, UserRole } from '../../../shared/types/index.js'
 import { bookNotFound } from '../catalog.errors.js'
 import type { ActionBlock, BookDetail } from '../catalog.types.js'
 import * as booksRepository from '../repositories/books.repository.js'
-import * as copiesRepository from '../repositories/copies.repository.js'
+import * as copiesRepository from '../../../shared/repositories/copies.repository.js'
 import * as studentCirculationRepository from '../repositories/student-circulation.repository.js'
 import { toBookDetail } from '../rules/book-response.rules.js'
 

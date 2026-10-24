@@ -44,6 +44,3 @@ export const PICKUP_CODE_DIGITS = 4
 // Tamanho, em bytes, do segredo aleatório do QR (24 bytes = 192 bits, acima dos
 // 128 bits pedidos em RF-EMP-07).
 export const QR_TOKEN_BYTES = 24
-
-// Quantos pedidos e empréstimos Meus empréstimos devolve por consulta.
-export const LOAN_LIST_LIMIT = 200

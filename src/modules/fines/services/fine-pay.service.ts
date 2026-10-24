@@ -7,7 +7,7 @@ import {
   AUDIT_ACTOR_ROLE,
   FINE_STATUS,
 } from '../../../shared/types/index.js'
-import * as usersRepository from '../../auth/repositories/users.repository.js'
+import * as usersRepository from '../../../shared/repositories/users.repository.js'
 import {
   fineAlreadyPaid,
   fineNotFound,

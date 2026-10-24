@@ -10,7 +10,7 @@ import {
   USER_STATUS,
   type QueueEntry,
 } from '../../../shared/types/index.js'
-import * as usersRepository from '../../auth/repositories/users.repository.js'
+import * as usersRepository from '../../../shared/repositories/users.repository.js'
 import { bookNotFound } from '../../catalog/catalog.errors.js'
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
 import { readStudentCirculation } from '../../catalog/repositories/student-circulation.repository.js'
