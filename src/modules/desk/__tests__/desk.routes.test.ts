@@ -23,6 +23,8 @@ const librarianRoutes: RouteCall[] = [
   },
   { method: 'POST', path: '/librarian/loans/loan1/pickup' },
   { method: 'POST', path: '/librarian/loans/loan1/return' },
+  { method: 'GET', path: '/librarian/pickups' },
+  { method: 'GET', path: '/librarian/desk/summary' },
 ]
 
 const label = (route: RouteCall) => `${route.method} ${route.path}`
@@ -61,4 +63,19 @@ describe('validação da ficha (POST /librarian/desk/lookup)', () => {
     expect(status).toBe(400)
     expect(response.code).toBe('validation_error')
   })
+})
+
+describe('validação da lista Retiradas (GET /librarian/pickups)', () => {
+  it.each(['24128588', 'abc', '24a'])(
+    'matrícula %j responde 400',
+    async (matricula) => {
+      const { status, body } = await server.call(
+        { method: 'GET', path: `/librarian/pickups?matricula=${matricula}` },
+        'librarian',
+      )
+
+      expect(status).toBe(400)
+      expect(body.code).toBe('validation_error')
+    },
+  )
 })

@@ -3,11 +3,14 @@ import { unauthorized } from '../../shared/errors.js'
 import { loanParamsSchema } from '../loans/schemas/request.schemas.js'
 import {
   deskLookupBodySchema,
+  pickupsQuerySchema,
   returnLoanBodySchema,
 } from './schemas/request.schemas.js'
 import * as deskLookupService from './services/desk-lookup.service.js'
+import * as deskSummaryService from './services/desk-summary.service.js'
 import * as loanPickupService from './services/loan-pickup.service.js'
 import * as loanReturnService from './services/loan-return.service.js'
+import * as pickupListService from './services/pickup-list.service.js'
 
 // Cada handler valida a entrada com o schema, chama o serviço e responde. O erro
 // de validação (ZodError) sobe para o handler de erros, que responde 400.
@@ -40,4 +43,15 @@ export async function returnLoan(req: Request, res: Response) {
   res.json(
     await loanReturnService.registerReturn(librarianUidOf(req), loanId, body),
   )
+}
+
+// GET /librarian/pickups: a lista Retiradas, com busca por matrícula (RF-BAL-05).
+export async function listPickups(req: Request, res: Response) {
+  const query = pickupsQuerySchema.parse(req.query)
+  res.json(await pickupListService.listPickups(query))
+}
+
+// GET /librarian/desk/summary: os números do dia no Painel (RF-BAL-01).
+export async function summary(_req: Request, res: Response) {
+  res.json(await deskSummaryService.getDeskSummary())
 }

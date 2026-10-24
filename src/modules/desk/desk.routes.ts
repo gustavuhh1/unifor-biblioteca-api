@@ -27,3 +27,17 @@ deskRouter.post(
   ...librarianSession,
   controller.returnLoan,
 )
+
+// Lista Retiradas: pedidos aguardando retirada, com busca por matrícula (RF-BAL-05).
+deskRouter.get(
+  '/librarian/pickups',
+  ...librarianSession,
+  controller.listPickups,
+)
+
+// Painel: os números do dia (RF-BAL-01).
+deskRouter.get(
+  '/librarian/desk/summary',
+  ...librarianSession,
+  controller.summary,
+)
