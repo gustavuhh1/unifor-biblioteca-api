@@ -1,0 +1,12 @@
+[
+  {
+    "name": "delete-old-images",
+    "action": { "type": "Delete" },
+    "condition": { "tagState": "any" }
+  },
+  {
+    "name": "keep-last-2-images",
+    "action": { "type": "Keep" },
+    "mostRecentVersions": { "keepCount": 2 }
+  }
+]

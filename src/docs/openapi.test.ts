@@ -9,6 +9,20 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     expect(document.paths?.['/health']?.get?.summary).toBeTruthy()
   })
 
+  it('lista api.uni-books.app como servidor, em primeiro só em produção', () => {
+    const urls = (nodeEnv: string) =>
+      buildOpenApiDocument(nodeEnv).servers?.map((server) => server.url)
+
+    expect(urls('production')).toEqual([
+      'https://api.uni-books.app',
+      'http://localhost:8080',
+    ])
+    expect(urls('development')).toEqual([
+      'http://localhost:8080',
+      'https://api.uni-books.app',
+    ])
+  })
+
   it('documenta todas as rotas dos módulos de acesso, do acervo, de empréstimos, de filas e de multas', () => {
     const operations = Object.entries(document.paths ?? {}).flatMap(
       ([path, item]) =>

@@ -1,6 +1,6 @@
 # Unifor Biblioteca — infraestrutura, contas e chaves
 
-Atualizado em 17/10/2026 (repositórios e app único: 18/10). **Este documento não contém nenhum valor secreto.** Ele registra só o nome de cada variável, onde ela fica guardada e como testar. As chaves de verdade ficam no Secret Manager do projeto `estoque-pay` (produção) e no arquivo `.env` local, que está no `.gitignore` e nunca vai para o Git.
+Atualizado em 17/10/2026 (repositórios e app único: 18/10; deploy: 24/10). **Este documento não contém nenhum valor secreto.** Ele registra só o nome de cada variável, onde ela fica guardada e como testar. As chaves de verdade ficam no Secret Manager do projeto `estoque-pay` (produção) e no arquivo `.env` local, que está no `.gitignore` e nunca vai para o Git.
 
 Legenda de status: ✅ feito · ⏳ aguardando (DNS, verificação ou teste) · ⬜ pendente.
 Responsáveis: **Gustavo** (contas, cartão, DNS, chaves) e **Claude** (pesquisa, configuração, scripts, código).
@@ -52,11 +52,12 @@ O Secret Manager dá 6 versões de segredo ativas por mês de graça, somando to
 | Firestore `(default)` em `southamerica-east1` | ✅ | Gustavo | 17/10 | `gcloud firestore databases list --project=estoque-pay` |
 | Firebase Authentication com o provedor **E-mail/senha** ativado (login com senha e recuperação) | ⬜ | Gustavo | 18/10 | Console do Firebase → Authentication → Método de login → E-mail/senha "Ativado" |
 | App da Web registrado no Firebase (gera a configuração pública do SDK JavaScript) | ⬜ | Gustavo | 19/10 | Configurações do projeto → Seus apps mostra o app da Web |
-| Conta de serviço do Cloud Run com o papel **Service Account Token Creator** sobre ela mesma (para o custom token do passkey) | ⬜ | Claude | 19/10 | `gcloud iam service-accounts get-iam-policy <conta>` mostra `roles/iam.serviceAccountTokenCreator` |
+| Conta de serviço do Cloud Run com o papel **Service Account Token Creator** sobre ela mesma (para o custom token do passkey) | ✅ | Claude | 24/10 | `gcloud iam service-accounts get-iam-policy <conta>` mostra `roles/iam.serviceAccountTokenCreator` |
 | Firebase Hosting: `uni-books.app` (TXT de posse, TXT `_acme-challenge`, A `199.36.158.100`) | ✅ verificado | Gustavo | 17/10 | Status "Conectado" no Firebase; `curl -I https://uni-books.app` responde |
 | Firebase Hosting: `api.uni-books.app` | ✅ verificado | Gustavo | 17/10 | Status "Conectado" no Firebase |
 | Apagar o projeto `unifor-biblioteca` da outra conta Google | ⬜ | Gustavo | 18/10 | `gcloud projects list` na outra conta não mostra o projeto |
-| Repositório do Artifact Registry com regra de manter só 2 imagens (0,5 GiB grátis) | ⬜ | Claude | no 1º deploy | `gcloud artifacts repositories describe` mostra a política de limpeza |
+| Repositório do Artifact Registry (`unibooks`) com regra de manter só 2 imagens (0,5 GiB grátis) | ✅ | Claude | 24/10 | `gcloud artifacts repositories list-cleanup-policies unibooks --location=southamerica-east1 --project=estoque-pay` mostra `keepCount: 2` |
+| API publicada no Cloud Run (`unibooks-api`) e `api.uni-books.app` encaminhando para ela (seção 6) | ✅ | Claude e Gustavo | 24/10 | `curl https://api.uni-books.app/health` → `{"status":"ok"}` |
 
 Custos: Cloud Run (180 mil vCPU-s, 360 mil GiB-s e 2 milhões de requisições por mês), Firestore (1 GiB, 50 mil leituras e 20 mil gravações por dia, um banco grátis por projeto), Cloud Build (2.500 min/mês) e Artifact Registry (0,5 GiB) dentro da cota grátis. O Hosting corta requisições em 60 s. A cota grátis do Firebase Authentication com e-mail e senha ainda não foi conferida na documentação oficial; para as poucas contas do projeto não deve haver custo, mas conferir antes do deploy.
 
@@ -103,6 +104,30 @@ Decidido em 23/10: a Google Books saiu (erros 503 e 429) e entram duas APIs que 
 
 As 2 requisições usadas são a da Open Library (`api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data`) e a da BrasilAPI (`isbn/v1/{isbn}`), feitas ao mesmo tempo, com 5 segundos de limite cada. A Open Library pede um `User-Agent` que identifique o app (`UniBooks/1.0 (+https://uni-books.app)`).
 
+## 6. Deploy da API (Cloud Run e Hosting)
+
+Primeiro deploy em 24/10/2026 (RNF-IMP-01, RNF-SEG-01 e RNF-SEG-07). Nada aqui é segredo: os valores secretos ficam no Secret Manager e a origem do passkey vem do `.env` local.
+
+| Item | Valor |
+|---|---|
+| Serviço | `unibooks-api`, Cloud Run, `southamerica-east1`, projeto `estoque-pay` |
+| Conta de serviço | `unibooks-api@estoque-pay.iam.gserviceaccount.com` (papéis: `datastore.user`, `firebaseauth.admin`, `secretmanager.secretAccessor` e Token Creator sobre ela mesma) |
+| Instâncias | mínimo 0 e máximo 2; timeout de 60 s (o limite do Hosting) |
+| Acesso | público (`--allow-unauthenticated`): quem protege as rotas é o ID token, conferido pela própria API |
+| Segredos | `RESEND_API_KEY`, `FERIADOS_API_KEY` e `GEMINI_API_KEY`, ligados ao Secret Manager na versão `:latest` |
+| Variáveis não secretas | `NODE_ENV`, `GOOGLE_CLOUD_PROJECT`, `PASSKEY_RP_ID`, `PASSKEY_ANDROID_ORIGINS`, `AUTH_EMAIL_DOMAIN`, `EMAIL_FROM` e `GEMINI_MODEL`, lidas do `.env` do Gustavo (o `PORT` é do Cloud Run). **Nunca** vão `FIRESTORE_EMULATOR_HOST` nem `FIREBASE_AUTH_EMULATOR_HOST` |
+| Imagens | Artifact Registry `southamerica-east1-docker.pkg.dev/estoque-pay/unibooks/api:<commit>`; a política em `deploy/artifact-cleanup-policy.json` guarda só as 2 mais recentes |
+| Endereço oficial | `https://api.uni-books.app` (Hosting → Cloud Run). O endereço `*.run.app` serve só para teste interno |
+| Hosting | um único site (`estoque-pay`) com `uni-books.app` e `api.uni-books.app`. O `firebase.json` manda tudo para o Cloud Run (`rewrites`), e o `assetlinks.json` continua sendo servido como arquivo. Efeito colateral aceito: `uni-books.app` também responde com a API fora dos arquivos estáticos; separar exigiria um segundo site |
+
+Comandos (cada um pede que o ID do projeto seja digitado):
+
+1. `npm run deploy:firestore`: publica regras, índices e TTL do Firestore.
+2. `npm run deploy`: monta a imagem no Cloud Build e publica no Cloud Run. Exige a árvore git limpa, porque a imagem leva o commit como tag.
+3. `npx firebase deploy --only hosting --project estoque-pay`: só quando o `firebase.json` ou o `assetlinks.json` mudarem.
+
+Conferência depois do deploy: `/health` responde 200, `/docs` abre, `/me` sem token responde 401, `https://uni-books.app/.well-known/assetlinks.json` responde 200, `gcloud run services describe unibooks-api --region=southamerica-east1` mostra a conta de serviço e os segredos e nenhuma variável de emulador, e o log do morgan aparece no Cloud Logging. Ainda falta provar o cabeçalho `Authorization` passando pelo Hosting com um login de verdade (depende do seed em produção).
+
 ## Ordem de execução
 
 Protótipo de passkey na **terça, 20/10**. Código a partir de quarta, 21/10. Entrega de Integração em 27/10.
@@ -121,6 +146,6 @@ Protótipo de passkey na **terça, 20/10**. Código a partir de quarta, 21/10. E
    - publicar no Hosting o `/.well-known/assetlinks.json`, com o pacote e a impressão SHA-256 da chave de assinatura do build de teste;
    - preparar os dois repositórios (`unifor-biblioteca-api` e `unifor-biblioteca-app`), cada um só com a `main`, com `.gitignore` (inclui `.env`), e o kanban no GitHub Projects a partir do CSV.
 4. **Ter 20/10:** protótipo de passkey num Android físico, com RP ID `uni-books.app`, terminando no custom token do Firebase e na sessão aberta no app.
-5. **Qua 21/10 em diante:** código da API (Cloud Run + Hosting) e primeiro deploy, com a política de limpeza do Artifact Registry.
+5. **Qua 21/10 em diante:** código da API (Cloud Run + Hosting) e primeiro deploy, com a política de limpeza do Artifact Registry. ✅ Primeiro deploy em 24/10 (seção 6).
 
 Depois (não bloqueia o protótipo): Expo Push só no Android (credenciais do FCM) e Cloud Scheduler para os lembretes. No iPhone não há push nem passkey (dependem da conta paga da Apple); como o app vai rodar lá será decidido depois que o Android funcionar.
