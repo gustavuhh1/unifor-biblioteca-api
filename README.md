@@ -44,17 +44,19 @@ REST API for Unifor Biblioteca, a university library app. Node + TypeScript + Ex
 
 ### Other commands
 
-| Command                | What it does                                                                          |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `npm test`             | Unit tests (Vitest)                                                                   |
-| `npm run test:watch`   | Unit tests in watch mode                                                              |
-| `npm run lint`         | ESLint                                                                                |
-| `npm run format`       | Prettier                                                                              |
-| `npm run typecheck`    | Type-check without emitting files                                                     |
-| `npm run build`        | Compile to `dist/`                                                                    |
-| `npm start`            | Run the compiled server                                                               |
-| `npm run seed`         | Load the demo data (see below)                                                        |
-| `npm run catalog:sync` | Update the active books that have an ISBN from Open Library and BrasilAPI (see below) |
+| Command                    | What it does                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------- |
+| `npm test`                 | Unit tests (Vitest)                                                                   |
+| `npm run test:watch`       | Unit tests in watch mode                                                              |
+| `npm run lint`             | ESLint                                                                                |
+| `npm run format`           | Prettier                                                                              |
+| `npm run typecheck`        | Type-check without emitting files                                                     |
+| `npm run build`            | Compile to `dist/`                                                                    |
+| `npm start`                | Run the compiled server                                                               |
+| `npm run seed`             | Load the demo data (see below)                                                        |
+| `npm run catalog:sync`     | Update the active books that have an ISBN from Open Library and BrasilAPI (see below) |
+| `npm run deploy:firestore` | Publish the Firestore rules, indexes and TTL to production (see Deployment)           |
+| `npm run deploy`           | Build the image and publish the API on Cloud Run (see Deployment)                     |
 
 ## Updating the catalog from Open Library and BrasilAPI
 
@@ -67,9 +69,62 @@ npm run catalog:sync            # emulators
 npm run catalog:sync -- --prod  # production, with typed confirmation
 ```
 
+## Deployment
+
+The API runs on **Google Cloud Run** (service `unibooks-api`, region `southamerica-east1`, project `estoque-pay`) and is published at **<https://api.uni-books.app>** by Firebase Hosting, which forwards every request to Cloud Run.
+
+- Health check: <https://api.uni-books.app/health>
+- Swagger UI: <https://api.uni-books.app/docs>
+
+Production never uses the emulators and has no key in the repository: the Resend, FeriadosAPI and Gemini keys come from Secret Manager (`resend-api-key`, `feriados-api-key`, `gemini-api-key`, always the `latest` version), and the other variables come from your local `.env` (see `.env.example` and `docs/infra.md`). `PASSKEY_ANDROID_ORIGINS` is required: without it the passkey of the Android app does not work.
+
+### Requirements
+
+- [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) (`gcloud auth login`) and the Firebase CLI, both signed in to the account that owns the `estoque-pay` project.
+- A clean Git working tree: the image is tagged with the commit hash.
+
+### Steps
+
+Each command asks you to type the project ID before it touches production.
+
+1. Publish the Firestore security rules, indexes and TTL policies:
+
+   ```sh
+   npm run deploy:firestore
+   ```
+
+2. Build the image in Cloud Build, push it to Artifact Registry and publish the Cloud Run service (0 to 2 instances, public access: the routes are protected by the Firebase ID token inside the API):
+
+   ```sh
+   npm run deploy
+   ```
+
+3. Only when `firebase.json` or `assetlinks.json` change, publish Firebase Hosting:
+
+   ```sh
+   npx firebase deploy --only hosting --project estoque-pay
+   ```
+
+### One-time setup
+
+The Artifact Registry repository keeps only the 2 most recent images (the free tier is 0.5 GiB):
+
+```sh
+gcloud artifacts repositories create unibooks --repository-format=docker --location=southamerica-east1 --project=estoque-pay
+gcloud artifacts repositories set-cleanup-policies unibooks --location=southamerica-east1 --project=estoque-pay --policy=deploy/artifact-cleanup-policy.json --no-dry-run
+```
+
+### Checking a deploy
+
+- `GET /health` answers `200` and `/docs` opens.
+- `GET /me` without a token answers `401`.
+- <https://uni-books.app/.well-known/assetlinks.json> answers `200`.
+- `gcloud run services describe unibooks-api --region=southamerica-east1` shows the service account and the three secrets, and no `*_EMULATOR_HOST` variable.
+- Each request shows up in Cloud Logging as a one-line `morgan` entry (`/health` is not logged).
+
 ## Firebase Hosting
 
-`hosting/public` is the Hosting site of `uni-books.app`. It serves `/.well-known/assetlinks.json`, which links the Android app to the passkey RP ID (`uni-books.app`). The `ignore` list in `firebase.json` must not hide dotfiles, or `.well-known` is left out of the deploy. Deploy only this part with `firebase deploy --only hosting`.
+`hosting/public` is the Hosting site of `uni-books.app` and `api.uni-books.app` (one site, `estoque-pay`). It serves `/.well-known/assetlinks.json`, which links the Android app to the passkey RP ID (`uni-books.app`). The `ignore` list in `firebase.json` must not hide dotfiles, or `.well-known` is left out of the deploy. The `rewrites` entry sends everything that is not a static file to Cloud Run, so `uni-books.app` also answers with the API outside the static files. Deploy only this part with `firebase deploy --only hosting`.
 
 ## Loading the demo data
 
