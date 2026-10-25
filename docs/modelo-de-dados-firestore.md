@@ -689,7 +689,16 @@ Todas em **transação** (Firestore `runTransaction`), para os contadores e os e
     { "collectionGroup": "jobRuns", "queryScope": "COLLECTION",
       "fields": [ {"fieldPath": "job", "order": "ASCENDING"}, {"fieldPath": "startedAt", "order": "DESCENDING"} ] }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    { "collectionGroup": "emailTokens", "fieldPath": "expiresAt", "ttl": true,
+      "indexes": [ {"order": "ASCENDING", "queryScope": "COLLECTION"}, {"order": "DESCENDING", "queryScope": "COLLECTION"}, {"arrayConfig": "CONTAINS", "queryScope": "COLLECTION"} ] },
+
+    { "collectionGroup": "passkeyChallenges", "fieldPath": "expiresAt", "ttl": true,
+      "indexes": [ {"order": "ASCENDING", "queryScope": "COLLECTION"}, {"order": "DESCENDING", "queryScope": "COLLECTION"}, {"arrayConfig": "CONTAINS", "queryScope": "COLLECTION"} ] },
+
+    { "collectionGroup": "assistantActions", "fieldPath": "expiresAt", "ttl": true,
+      "indexes": [ {"order": "ASCENDING", "queryScope": "COLLECTION"}, {"order": "DESCENDING", "queryScope": "COLLECTION"}, {"arrayConfig": "CONTAINS", "queryScope": "COLLECTION"} ] }
+  ]
 }
 ```
 
@@ -710,6 +719,8 @@ O Firestore não faz busca por trecho de texto. A API carrega `books` ativos em 
 | `users/{uid}/assistantActions` (grupo `assistantActions`) | `expiresAt` |
 
 O TTL apaga com atraso de até 24h; a API sempre confere `expiresAt` antes de aceitar.
+
+As três políticas estão em `fieldOverrides` do `firestore.indexes.json` (`"ttl": true`). Se saírem de lá, o `firebase deploy --only firestore` pergunta se deve apagá-las do projeto.
 
 ---
 
