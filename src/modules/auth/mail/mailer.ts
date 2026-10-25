@@ -1,22 +1,9 @@
-import { Resend } from 'resend'
-import { env } from '../../../config/env.js'
 import {
   EMAIL_TOKEN_PURPOSE,
   type EmailTokenPurpose,
 } from '../../../shared/types/index.js'
+import { sendEmail } from '../../../shared/mail/email.js'
 import { emailDeliveryFailed, emailNotConfigured } from '../auth.errors.js'
-import type { MailMode } from '../auth.types.js'
-
-// Decide como o token chega ao aluno. Com chave, o e-mail sai pelo Resend. Sem
-// chave, só quando a API conversa com os emuladores o token é escrito no
-// console do servidor, para ninguém ler o token num log do projeto real.
-export function mailMode(config: {
-  RESEND_API_KEY?: string | undefined
-  FIRESTORE_EMULATOR_HOST?: string | undefined
-}): MailMode {
-  if (config.RESEND_API_KEY) return 'resend'
-  return config.FIRESTORE_EMULATOR_HOST ? 'console' : 'unavailable'
-}
 
 const SUBJECTS: Record<EmailTokenPurpose, string> = {
   [EMAIL_TOKEN_PURPOSE.emailConfirmation]:
@@ -59,9 +46,12 @@ export async function sendTokenEmail(input: {
   code: string
   ttlMinutes: number
 }): Promise<void> {
-  const mode = mailMode(env)
+  const result = await sendEmail({
+    to: input.to,
+    ...buildTokenEmail(input.purpose, input.code, input.ttlMinutes),
+  })
 
-  if (mode === 'console') {
+  if (result === 'console') {
     console.log(
       [
         '',
@@ -71,32 +61,12 @@ export async function sendTokenEmail(input: {
         '',
       ].join('\n'),
     )
-    return
-  }
-
-  if (mode === 'unavailable' || !env.EMAIL_FROM) {
+  } else if (result === 'unavailable') {
     console.error(
       'E-mail sem configuração: defina RESEND_API_KEY e EMAIL_FROM.',
     )
     throw emailNotConfigured()
-  }
-
-  const { subject, text, html } = buildTokenEmail(
-    input.purpose,
-    input.code,
-    input.ttlMinutes,
-  )
-  const resend = new Resend(env.RESEND_API_KEY)
-  const { error } = await resend.emails.send({
-    from: env.EMAIL_FROM,
-    to: input.to,
-    subject,
-    text,
-    html,
-  })
-  if (error) {
-    // O erro não traz o token, mas só o nome vai para o log.
-    console.error('O Resend não conseguiu enviar o e-mail:', error.name)
+  } else if (result === 'failed') {
     throw emailDeliveryFailed()
   }
 }

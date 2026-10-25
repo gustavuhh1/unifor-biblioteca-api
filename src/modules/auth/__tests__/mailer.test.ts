@@ -1,27 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTokenEmail, mailMode } from '../mail/mailer.js'
-
-describe('modo de envio do e-mail (mailMode)', () => {
-  it('envia pelo Resend quando há chave', () => {
-    expect(mailMode({ RESEND_API_KEY: 'key' })).toBe('resend')
-    expect(
-      mailMode({
-        RESEND_API_KEY: 'key',
-        FIRESTORE_EMULATOR_HOST: '127.0.0.1:8085',
-      }),
-    ).toBe('resend')
-  })
-
-  it('escreve o token no console só no emulador e sem chave', () => {
-    expect(mailMode({ FIRESTORE_EMULATOR_HOST: '127.0.0.1:8085' })).toBe(
-      'console',
-    )
-  })
-
-  it('não envia nem imprime nada contra o projeto real sem chave', () => {
-    expect(mailMode({})).toBe('unavailable')
-  })
-})
+import { buildTokenEmail } from '../mail/mailer.js'
 
 describe('texto do e-mail do token (buildTokenEmail)', () => {
   it('traz o token, a validade e um assunto para cada finalidade', () => {
