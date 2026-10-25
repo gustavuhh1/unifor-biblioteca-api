@@ -128,6 +128,35 @@ Comandos (cada um pede que o ID do projeto seja digitado):
 
 Conferência depois do deploy: `/health` responde 200, `/docs` abre, `/me` sem token responde 401, `https://uni-books.app/.well-known/assetlinks.json` responde 200, `gcloud run services describe unibooks-api --region=southamerica-east1` mostra a conta de serviço e os segredos e nenhuma variável de emulador, e o log do morgan aparece no Cloud Logging. Ainda falta provar o cabeçalho `Authorization` passando pelo Hosting com um login de verdade (depende do seed em produção).
 
+## 7. Cloud Scheduler (rotinas da API)
+
+Criado com `npm run deploy:scheduler` (pede o ID do projeto digitado, pode rodar de novo sem duplicar nada). Nada aqui é segredo.
+
+| Item | Valor |
+|---|---|
+| Conta de serviço | `unibooks-scheduler@estoque-pay.iam.gserviceaccount.com`, sem nenhum papel: a API é pública e confere o token por conta própria |
+| Chamada | `POST https://api.uni-books.app/jobs/<rotina>` com o token OIDC do Google dessa conta, audiência `https://api.uni-books.app` (Hosting → Cloud Run, timeout de 60 s) |
+| Confere na API | assinatura RS256 contra as chaves públicas do Google, emissor, audiência, validade e o e-mail da conta de serviço. Sem token ou token inválido: 401. Token de outra conta: 403. A sessão do app nunca vale |
+| Região e fuso | `southamerica-east1`, `America/Fortaleza` |
+| Tentativas | 1 nova tentativa por erro; cada execução fica em `jobRuns` |
+
+| Job | Quando | O que faz |
+|---|---|---|
+| `unibooks-advance-queues` | a cada 5 min | quem passou das 24h para confirmar a vez sai da fila e o próximo ganha a vez (RF-FIL-07) |
+| `unibooks-expire-pickups` | a cada 15 min | pedido não retirado no prazo expira e o exemplar volta (RF-EMP-06) |
+| `unibooks-due-reminders` | todo dia, 8h | lembrete 2 dias antes e no dia, aviso de atraso e último dia para retirar (RF-SIS-05) |
+| `unibooks-accrue-fines` | todo dia, 6h | começa a contar a multa do empréstimo atrasado (RF-MUL-01) |
+| `unibooks-refresh-holidays` | segunda, 3h | busca na FeriadosAPI os feriados do ano atual e do próximo, se faltarem (RF-SIS-01) |
+
+Custo: o Cloud Scheduler dá 3 jobs grátis por conta de faturamento; os outros 2 custam cerca de US$ 0,10 por mês cada.
+
+| Verificação | Estado | Quem | Quando | Como conferir |
+|---|---|---|---|---|
+| Cloud Scheduler ativado no projeto | ⬜ conferir | Gustavo | antes de criar os jobs | `gcloud services list --enabled --project=estoque-pay` mostra `cloudscheduler.googleapis.com` |
+| API publicada com a rota `/jobs` | ⬜ | Gustavo | antes de criar os jobs | `npm run deploy`; `POST /jobs/accrue_fines` sem token responde 401 |
+| Jobs criados | ⬜ | Gustavo (com o "pode") | depois do deploy | `gcloud scheduler jobs list --location=southamerica-east1 --project=estoque-pay` mostra 5 jobs |
+| Uma rotina roda e termina em `ok` | ⬜ | Gustavo | depois de criar os jobs | `gcloud scheduler jobs run unibooks-accrue-fines --location=southamerica-east1 --project=estoque-pay` e conferir `jobRuns` |
+
 ## Ordem de execução
 
 Protótipo de passkey na **terça, 20/10**. Código a partir de quarta, 21/10. Entrega de Integração em 27/10.
@@ -148,4 +177,4 @@ Protótipo de passkey na **terça, 20/10**. Código a partir de quarta, 21/10. E
 4. **Ter 20/10:** protótipo de passkey num Android físico, com RP ID `uni-books.app`, terminando no custom token do Firebase e na sessão aberta no app.
 5. **Qua 21/10 em diante:** código da API (Cloud Run + Hosting) e primeiro deploy, com a política de limpeza do Artifact Registry. ✅ Primeiro deploy em 24/10 (seção 6).
 
-Depois (não bloqueia o protótipo): Expo Push só no Android (credenciais do FCM) e Cloud Scheduler para os lembretes. No iPhone não há push nem passkey (dependem da conta paga da Apple); como o app vai rodar lá será decidido depois que o Android funcionar.
+Depois (não bloqueia o protótipo): Expo Push só no Android (credenciais do FCM). O Cloud Scheduler está na seção 7. No iPhone não há push nem passkey (dependem da conta paga da Apple); como o app vai rodar lá será decidido depois que o Android funcionar.
