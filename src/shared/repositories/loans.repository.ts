@@ -130,6 +130,43 @@ export async function countAwaitingPickup(): Promise<number> {
   return result.data().count
 }
 
+// Os pedidos aguardando retirada cujo prazo venceu antes de `at` (rotina
+// `expire_pickups`, RF-EMP-06; índice status + pickupDeadline). Quem chama confere
+// cada um de novo dentro da própria transação.
+export async function listAwaitingPickupExpiredBefore(
+  at: Date,
+): Promise<LoanRecord[]> {
+  const result = await loans()
+    .where('status', '==', LOAN_STATUS.awaitingPickup)
+    .where('pickupDeadline', '<', at)
+    .get()
+  return result.docs.map(toRecord)
+}
+
+// Os pedidos aguardando retirada com o prazo de `from` (inclusive) até `to`
+// (exclusive): o "último dia para retirar" (rotina `due_reminders`).
+export async function listAwaitingPickupDueBetween(
+  from: Date,
+  to: Date,
+): Promise<LoanRecord[]> {
+  const result = await loans()
+    .where('status', '==', LOAN_STATUS.awaitingPickup)
+    .where('pickupDeadline', '>=', from)
+    .where('pickupDeadline', '<', to)
+    .get()
+  return result.docs.map(toRecord)
+}
+
+// Os empréstimos ativos que vencem antes de `before`, inclusive os já atrasados
+// (rotinas `due_reminders` e `accrue_fines`; índice status + dueAt).
+export async function listActiveDueBefore(before: Date): Promise<LoanRecord[]> {
+  const result = await loans()
+    .where('status', '==', LOAN_STATUS.active)
+    .where('dueAt', '<', before)
+    .get()
+  return result.docs.map(toRecord)
+}
+
 // Quantas devoluções foram registradas de `from` (inclusive) até `to` (exclusive),
 // pelo índice status + returnedAt (Painel, RF-BAL-01).
 export async function countReturnedBetween(
