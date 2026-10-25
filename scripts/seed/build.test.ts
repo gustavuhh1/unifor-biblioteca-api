@@ -15,6 +15,7 @@ import {
   holidayDates,
   type HolidaysDocument,
 } from '../../src/shared/calendar/holidays-api.js'
+import { DEFAULT_NOTIFICATION_PREFS } from '../../src/shared/domain/user.js'
 import { DEFAULT_OPENING_HOURS } from '../../src/shared/library.js'
 import { loadHolidaysFile } from './holidays.js'
 
@@ -302,6 +303,15 @@ describe('documentos', () => {
     for (const user of Object.values(data.users)) {
       expect(user.matricula).toMatch(/^\d{7}$/)
       expect(user).not.toHaveProperty('password')
+    }
+  })
+
+  it('as contas de teste nascem sem e-mail de aviso, mas com o resto ligado', () => {
+    for (const user of Object.values(data.users)) {
+      expect(user.notificationPrefs, String(user.matricula)).toEqual({
+        ...DEFAULT_NOTIFICATION_PREFS,
+        channelEmail: false,
+      })
     }
   })
 
