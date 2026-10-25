@@ -17,6 +17,12 @@ export const jsonContent = (schema: ZodType) => ({
   'application/json': { schema },
 })
 
+// Corpo JSON obrigatório de uma requisição documentada no Swagger.
+export const jsonBody = (schema: ZodType) => ({
+  required: true,
+  content: jsonContent(schema),
+})
+
 // Esquema de segurança das rotas com sessão: o ID token do Firebase vai no
 // cabeçalho Authorization.
 export const bearerAuth = registry.registerComponent(

@@ -1,5 +1,9 @@
-import type { ZodType } from 'zod'
-import { bearerAuth, jsonContent, registry } from '../../docs/registry.js'
+import {
+  bearerAuth,
+  jsonBody,
+  jsonContent,
+  registry,
+} from '../../docs/registry.js'
 import { errorResponseSchema } from '../../shared/error-response.js'
 import {
   addToQueueBodySchema,
@@ -22,10 +26,6 @@ import {
 // Swagger das rotas de fila do aluno (RF-FIL-01 a RF-FIL-06 e RF-FIL-08) e do
 // bibliotecário (RF-BAL-06 e RF-BAL-07). Fica pronto antes do código das rotas.
 
-const body = (schema: ZodType) => ({
-  required: true,
-  content: jsonContent(schema),
-})
 const error = (description: string) => ({
   description,
   content: jsonContent(errorResponseSchema),
@@ -86,7 +86,7 @@ registry.registerPath({
   description:
     'Cria um lugar `waiting` no **fim** da fila de cada edição marcada. As edições precisam ser do mesmo livro; as marcadas juntas ganham o mesmo `editionGroupId` e **cada uma conta como 1 das 7 filas**. Numa transação: `books.queueLength` sobe 1 em cada edição e `activeQueueCount` do aluno sobe o número de edições. Recusas, com o motivo no `code` (a primeira edição que falhar decide): `unavailable` (livro removido ou marcado como indisponível), `overdue` (aluno com empréstimo atrasado), `queue_limit` (passaria de 7 filas), `not_queueable` (a edição tem exemplar disponível), `same_title` (o aluno já tem pedido ou empréstimo desta edição) e `already_in_queue`. Nada é gravado se uma edição for recusada.',
   security,
-  request: { body: body(joinQueueBodySchema) },
+  request: { body: jsonBody(joinQueueBodySchema) },
   responses: {
     201: {
       description: 'Os lugares criados, com a posição de cada um.',
@@ -198,7 +198,7 @@ registry.registerPath({
   security,
   request: {
     params: queueBookParamsSchema,
-    body: body(addToQueueBodySchema),
+    body: jsonBody(addToQueueBodySchema),
   },
   responses: {
     201: {
@@ -232,7 +232,7 @@ registry.registerPath({
   security,
   request: {
     params: queueEntryParamsSchema,
-    body: body(moveEntryBodySchema),
+    body: jsonBody(moveEntryBodySchema),
   },
   responses: {
     200: {
@@ -283,7 +283,7 @@ registry.registerPath({
   security,
   request: {
     params: queueEntryParamsSchema,
-    body: body(removeFromQueueBodySchema),
+    body: jsonBody(removeFromQueueBodySchema),
   },
   responses: {
     200: {

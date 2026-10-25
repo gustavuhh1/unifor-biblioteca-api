@@ -1,4 +1,9 @@
-import { bearerAuth, jsonContent, registry } from '../../docs/registry.js'
+import {
+  bearerAuth,
+  jsonBody,
+  jsonContent,
+  registry,
+} from '../../docs/registry.js'
 import { errorResponseSchema } from '../../shared/error-response.js'
 import { loanParamsSchema } from '../loans/schemas/request.schemas.js'
 import {
@@ -44,7 +49,7 @@ registry.registerPath({
     'Abre a ficha do aluno (tela Identificar aluno). Informe **exatamente um**: `qrToken` (lido do QR do pedido), `pickupCode` ("RET-4821", digitado) ou `matricula` (7 dígitos). A ficha traz o aluno ("3 de 10 livros"), os pedidos **aguardando retirada** (`pickups`, com `scanned` no que o QR ou o código apontou), os livros **com o aluno** (`withStudent`, com a multa já acumulada dos atrasados) e `blockedReason: "overdue"` quando um livro atrasado impede a retirada. É POST, e não GET, para o `qrToken` não aparecer na URL do log. Nenhuma resposta devolve o `qrToken`.',
   security,
   request: {
-    body: { content: jsonContent(deskLookupBodySchema), required: true },
+    body: jsonBody(deskLookupBodySchema),
   },
   responses: {
     200: {

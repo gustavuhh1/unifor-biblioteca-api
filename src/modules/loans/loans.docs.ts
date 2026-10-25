@@ -1,5 +1,9 @@
-import type { ZodType } from 'zod'
-import { bearerAuth, jsonContent, registry } from '../../docs/registry.js'
+import {
+  bearerAuth,
+  jsonBody,
+  jsonContent,
+  registry,
+} from '../../docs/registry.js'
 import { errorResponseSchema } from '../../shared/error-response.js'
 import {
   createLoanBodySchema,
@@ -14,10 +18,6 @@ import {
 // Swagger das rotas de empréstimo do aluno (RF-EMP-01, 02, 03, 04, 05, 07, 08, 09,
 // 10 e 11). Fica pronto antes do código das rotas.
 
-const body = (schema: ZodType) => ({
-  required: true,
-  content: jsonContent(schema),
-})
 const error = (description: string) => ({
   description,
   content: jsonContent(errorResponseSchema),
@@ -44,7 +44,7 @@ registry.registerPath({
   description:
     'Separa um exemplar disponível para o aluno, que tem **2 dias úteis** para retirar (`pickupDeadline`, no fechamento da biblioteca). Numa transação: cria o pedido (`awaiting_pickup`), o exemplar vira `reserved`, `copiesAvailable` do livro cai 1 e `activeLoanCount` do aluno sobe 1. Devolve o `pickupCode` ("RET-4821") e o `qrToken` do QR da retirada. Recusas, nesta ordem, com o motivo no `code`: `unavailable` (livro removido ou marcado como indisponível para novos pedidos), `overdue` (aluno com empréstimo atrasado), `same_title` (já tem pedido ou empréstimo do mesmo título, de qualquer edição), `loan_limit` (já tem 10), e `no_copy_available` (sem exemplar disponível, ou com fila: o caminho é entrar na fila).',
   security,
-  request: { body: body(createLoanBodySchema) },
+  request: { body: jsonBody(createLoanBodySchema) },
   responses: {
     201: {
       description: 'Pedido criado.',

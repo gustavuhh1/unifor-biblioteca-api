@@ -1,5 +1,9 @@
-import type { ZodType } from 'zod'
-import { bearerAuth, jsonContent, registry } from '../../docs/registry.js'
+import {
+  bearerAuth,
+  jsonBody,
+  jsonContent,
+  registry,
+} from '../../docs/registry.js'
 import { errorResponseSchema } from '../../shared/error-response.js'
 import {
   matriculaBodySchema,
@@ -23,10 +27,6 @@ import {
   signupPendingResponseSchema,
 } from './schemas/response.schemas.js'
 
-const body = (schema: ZodType) => ({
-  required: true,
-  content: jsonContent(schema),
-})
 const error = (description: string) => ({
   description,
   content: jsonContent(errorResponseSchema),
@@ -61,7 +61,7 @@ registry.registerPath({
   description:
     'Valida o e-mail institucional (`@edu.unifor.br`), a matrícula (7 dígitos) e a senha (só números, mínimo 8). Cria a conta desativada e envia o token de 6 dígitos (vale 20 minutos). ' +
     'Repetir a chamada com a mesma matrícula, enquanto o e-mail não foi confirmado, troca o e-mail e a senha.',
-  request: { body: body(signupStartBodySchema) },
+  request: { body: jsonBody(signupStartBodySchema) },
   responses: {
     202: {
       description: 'Cadastro criado; o token foi enviado ao e-mail.',
@@ -85,7 +85,7 @@ registry.registerPath({
   summary: 'Confirma o e-mail com o token',
   description:
     'Confere o token, ativa a conta e devolve as opções para o celular criar o passkey.',
-  request: { body: body(signupConfirmBodySchema) },
+  request: { body: jsonBody(signupConfirmBodySchema) },
   responses: {
     200: {
       description: 'E-mail confirmado.',
@@ -100,7 +100,7 @@ registry.registerPath({
   path: '/auth/signup/resend',
   tags: ['Acesso'],
   summary: 'Reenvia o token de confirmação',
-  request: { body: body(matriculaBodySchema) },
+  request: { body: jsonBody(matriculaBodySchema) },
   responses: {
     202: {
       description: 'Novo token enviado; o anterior deixa de valer.',
@@ -124,7 +124,7 @@ registry.registerPath({
   summary: 'Pede o token de recuperação de senha',
   description:
     'Para aluno e bibliotecário. A API acha o e-mail da conta pela matrícula e responde sempre a mesma mensagem (200), exista a conta ou não e mesmo dentro dos 60 segundos desde o último token. Nesse caso só não envia outro e-mail.',
-  request: { body: body(matriculaBodySchema) },
+  request: { body: jsonBody(matriculaBodySchema) },
   responses: {
     200: {
       description: 'Mensagem genérica.',
@@ -141,7 +141,7 @@ registry.registerPath({
   summary: 'Define a nova senha com o token',
   description:
     'Confere o token e grava a nova senha (só números, mínimo 8). Os refresh tokens da conta são revogados.',
-  request: { body: body(passwordResetBodySchema) },
+  request: { body: jsonBody(passwordResetBodySchema) },
   responses: {
     204: { description: 'Senha alterada.' },
     400: tokenFailed,
@@ -157,7 +157,7 @@ registry.registerPath({
   summary: 'Registra o passkey criado pelo celular',
   description:
     'Sem sessão: o desafio, emitido para a conta no fim do cadastro ou em `POST /auth/passkeys`, identifica quem registra. Guarda só a chave pública.',
-  request: { body: body(passkeyRegisterBodySchema) },
+  request: { body: jsonBody(passkeyRegisterBodySchema) },
   responses: {
     201: {
       description: 'Passkey registrado.',
@@ -179,7 +179,7 @@ registry.registerPath({
   summary: 'Pede o desafio do login com passkey',
   description:
     'Devolve um desafio novo e os passkeys da matrícula. Matrícula sem passkey ou sem conta recebe a mesma resposta, com a lista vazia.',
-  request: { body: body(matriculaBodySchema) },
+  request: { body: jsonBody(matriculaBodySchema) },
   responses: {
     200: {
       description: PHONE_OPTIONS,
@@ -196,7 +196,7 @@ registry.registerPath({
   summary: 'Confere o passkey e devolve o custom token',
   description:
     'O app troca o custom token pela sessão com `signInWithCustomToken`.',
-  request: { body: body(passkeyLoginVerifyBodySchema) },
+  request: { body: jsonBody(passkeyLoginVerifyBodySchema) },
   responses: {
     200: {
       description: 'Assinatura válida.',
@@ -284,7 +284,7 @@ registry.registerPath({
   description:
     'Nome e sobrenome, de 3 a 100 caracteres. Grava também o nome normalizado e as iniciais.',
   security,
-  request: { body: body(updateMeBodySchema) },
+  request: { body: jsonBody(updateMeBodySchema) },
   responses: {
     200: {
       description: 'Perfil atualizado.',
