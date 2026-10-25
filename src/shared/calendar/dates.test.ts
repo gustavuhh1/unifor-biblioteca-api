@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   atLocalTime,
   daysBetween,
+  formatDayMonth,
   formatLocalDateTime,
   localDate,
   plusDays,
@@ -69,5 +70,13 @@ describe('dia e hora para os avisos (formatLocalDateTime)', () => {
     expect(formatLocalDateTime(new Date('2026-10-16T02:30:00Z'))).toBe(
       '15/10 às 23:30',
     )
+  })
+})
+
+describe('prazo como o app escreve (formatDayMonth)', () => {
+  it('escreve o dia da semana abreviado e o dia/mês', () => {
+    expect(formatDayMonth('2026-10-19')).toBe('seg, 19/10')
+    expect(formatDayMonth('2026-10-24')).toBe('sáb, 24/10')
+    expect(formatDayMonth('2026-10-25')).toBe('dom, 25/10')
   })
 })

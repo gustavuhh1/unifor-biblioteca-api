@@ -67,10 +67,11 @@ import {
   holidayDates,
   type HolidaysDocument,
 } from '../../src/shared/calendar/holidays-api.js'
-import { closingTime, formatDayMonth } from './time.js'
+import { closingTime } from './time.js'
 import {
   atLocalTime,
   daysBetween,
+  formatDayMonth,
   localDate,
   plusDays,
 } from '../../src/shared/calendar/dates.js'
