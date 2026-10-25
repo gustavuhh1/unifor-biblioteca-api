@@ -1,4 +1,6 @@
 import { lateBusinessDays } from '../../../shared/calendar/business-days.js'
+import { displayNameOf } from '../../../shared/domain/user.js'
+import { normalizeText } from '../../../shared/text.js'
 import {
   FINE_STATUS,
   type Cents,
@@ -114,6 +116,48 @@ export interface FineStudent {
   matricula: string
   name: string
   nameNormalized: string
+}
+
+// O que a multa copia do aluno: matrícula, nome (ou a matrícula, sem nome) e o
+// nome normalizado, para a busca da aba Multas.
+export function fineStudentOf(
+  student: Pick<User, 'matricula' | 'fullName' | 'fullNameNormalized'>,
+): FineStudent {
+  const name = displayNameOf(student)
+  return {
+    matricula: student.matricula,
+    name,
+    nameNormalized: student.fullNameNormalized ?? normalizeText(name),
+  }
+}
+
+// A multa que começa a contar (RF-MUL-01, rotina `accrue_fines`): o empréstimo
+// passou a ter dia útil de atraso e o livro ainda não voltou. Nasce `accruing`, sem
+// valor gravado: os dias úteis e o valor são calculados na hora, até a devolução
+// congelar a multa.
+export function buildAccruingFine(input: {
+  loan: Pick<LoanRecord, 'id' | 'studentUid' | 'bookId' | 'bookTitle'> & {
+    dueAt: Date
+  }
+  student: FineStudent
+  ratePerBusinessDayCents: Cents
+  at: Date
+}): Fine {
+  const { loan, student, at } = input
+  return {
+    loanId: loan.id,
+    studentUid: loan.studentUid,
+    matricula: student.matricula,
+    studentName: student.name,
+    studentNameNormalized: student.nameNormalized,
+    bookId: loan.bookId,
+    bookTitle: loan.bookTitle,
+    status: FINE_STATUS.accruing,
+    ratePerBusinessDayCents: input.ratePerBusinessDayCents,
+    dueAt: loan.dueAt,
+    createdAt: at,
+    updatedAt: at,
+  }
 }
 
 // Monta a multa de um empréstimo devolvido com atraso que ainda não tinha o

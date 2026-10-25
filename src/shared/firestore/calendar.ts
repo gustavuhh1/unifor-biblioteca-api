@@ -71,7 +71,7 @@ async function holidaysOfYear(
     return (snapshot.get('items') as HolidayItem[]).map((item) => item.date)
   }
 
-  const apiKey = 'apiKey' in deps ? deps.apiKey : env.FERIADOS_API_KEY
+  const apiKey = apiKeyOf(deps)
   if (!apiKey) {
     console.warn(
       `Feriados de ${year} indisponíveis: sem cache e sem FERIADOS_API_KEY.`,
@@ -79,8 +79,7 @@ async function holidaysOfYear(
     return []
   }
   try {
-    const document = await (deps.fetchHolidays ?? fetchHolidays)(year, apiKey)
-    await cacheHolidays(document)
+    const document = await fetchAndCache(year, apiKey, deps)
     return document.items.map((item) => item.date)
   } catch (error) {
     console.warn(
@@ -88,6 +87,43 @@ async function holidaysOfYear(
     )
     return []
   }
+}
+
+// Busca o ano na FeriadosAPI e o guarda no cache.
+async function fetchAndCache(
+  year: number,
+  apiKey: string,
+  deps: CalendarDeps,
+): Promise<HolidaysDocument> {
+  const document = await (deps.fetchHolidays ?? fetchHolidays)(year, apiKey)
+  await cacheHolidays(document)
+  return document
+}
+
+// A chave da FeriadosAPI: a dos testes (deps) ou a do ambiente.
+function apiKeyOf(deps: CalendarDeps): string | undefined {
+  return 'apiKey' in deps ? deps.apiKey : env.FERIADOS_API_KEY
+}
+
+// Garante os feriados do ano no cache (RF-SIS-01, rotina `refresh_holidays`): se
+// holidays/{year} já existe, não faz nada; senão busca na FeriadosAPI e guarda.
+// Devolve true quando buscou agora. Diferente da leitura do dia a dia, que segue
+// sem feriados se a busca falhar, aqui a falha (sem chave, rede, erro da API) é
+// lançada, para a rotina registrar o erro.
+export async function refreshHolidays(
+  year: number,
+  deps: CalendarDeps = {},
+): Promise<boolean> {
+  const cached = await getDb()
+    .collection(COLLECTIONS.holidays)
+    .doc(String(year))
+    .get()
+  if (cached.exists) return false
+
+  const apiKey = apiKeyOf(deps)
+  if (!apiKey) throw new Error('FERIADOS_API_KEY não está definida.')
+  await fetchAndCache(year, apiKey, deps)
+  return true
 }
 
 // Todos os recessos cadastrados (tabela pequena, preenchida à mão).

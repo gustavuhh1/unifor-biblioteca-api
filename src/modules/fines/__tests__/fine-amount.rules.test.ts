@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { atLocalTime } from '../../../shared/calendar/dates.js'
 import {
+  buildAccruingFine,
   buildFrozenFine,
   calculateFine,
   fineAmountCents,
   fineReceiverOf,
+  fineStudentOf,
   freezeFields,
   openTotalDelta,
   payDenialOf,
@@ -236,5 +238,78 @@ describe('quem recebeu o valor (fineReceiverOf)', () => {
     expect(fineReceiverOf('uid_ana', { matricula: '1000001' }).name).toBe(
       '1000001',
     )
+  })
+})
+
+describe('nome do aluno copiado para a multa (fineStudentOf)', () => {
+  it('usa o nome do Perfil e o nome normalizado já guardado', () => {
+    expect(
+      fineStudentOf({
+        matricula: '2412858',
+        fullName: 'Lucas Almeida',
+        fullNameNormalized: 'lucas almeida',
+      }),
+    ).toEqual({
+      matricula: '2412858',
+      name: 'Lucas Almeida',
+      nameNormalized: 'lucas almeida',
+    })
+  })
+
+  it('sem nome, usa a matrícula nos dois campos', () => {
+    expect(fineStudentOf({ matricula: '2412858' })).toEqual({
+      matricula: '2412858',
+      name: '2412858',
+      nameNormalized: '2412858',
+    })
+  })
+
+  it('sem o nome normalizado, normaliza na hora (sem acento nem maiúsculas)', () => {
+    expect(
+      fineStudentOf({ matricula: '2513320', fullName: 'Márcia Castro' })
+        .nameNormalized,
+    ).toBe('marcia castro')
+  })
+})
+
+describe('multa que começa a contar (buildAccruingFine, RF-MUL-01)', () => {
+  const fine = buildAccruingFine({
+    loan: {
+      id: 'loan1',
+      studentUid: 'uid_lucas',
+      bookId: 'book1',
+      bookTitle: 'Código Limpo',
+      dueAt: atLocalTime('2026-10-10', '14:10'),
+    },
+    student: {
+      matricula: '2412858',
+      name: 'Lucas Almeida',
+      nameNormalized: 'lucas almeida',
+    },
+    ratePerBusinessDayCents: 200,
+    at: NOW,
+  })
+
+  it('nasce contando, copiando o aluno, o livro e o vencimento', () => {
+    expect(fine).toEqual({
+      loanId: 'loan1',
+      studentUid: 'uid_lucas',
+      matricula: '2412858',
+      studentName: 'Lucas Almeida',
+      studentNameNormalized: 'lucas almeida',
+      bookId: 'book1',
+      bookTitle: 'Código Limpo',
+      status: 'accruing',
+      ratePerBusinessDayCents: 200,
+      dueAt: atLocalTime('2026-10-10', '14:10'),
+      createdAt: NOW,
+      updatedAt: NOW,
+    })
+  })
+
+  it('não grava valor nem dias: eles são calculados na hora até a devolução', () => {
+    expect(fine).not.toHaveProperty('amountCents')
+    expect(fine).not.toHaveProperty('businessDaysLate')
+    expect(fine).not.toHaveProperty('frozenAt')
   })
 })

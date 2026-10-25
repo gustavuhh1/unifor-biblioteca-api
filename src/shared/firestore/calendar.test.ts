@@ -8,7 +8,7 @@ vi.mock('../../config/firebase.js', () => ({ getDb: () => h.db }))
 
 const { FakeFirestore: Fake } =
   await import('../../test-support/fake-firestore.js')
-const { readLibraryCalendar } = await import('./calendar.js')
+const { readLibraryCalendar, refreshHolidays } = await import('./calendar.js')
 const { DEFAULT_OPENING_HOURS } = await import('../library.js')
 const { isBusinessDay, isOpenDay } =
   await import('../calendar/business-days.js')
@@ -133,5 +133,54 @@ describe('calendário da biblioteca (readLibraryCalendar)', () => {
     const calendar = await readLibraryCalendar(DEFAULT_OPENING_HOURS, NOW)
 
     expect(calendar.openingHours).toEqual(DEFAULT_OPENING_HOURS)
+  })
+})
+
+describe('feriados do ano no cache (refreshHolidays, RF-SIS-01)', () => {
+  it('busca na FeriadosAPI e guarda quando o ano não está no cache', async () => {
+    const fetchHolidays = vi.fn().mockResolvedValue(holidays2027)
+
+    const fetched = await refreshHolidays(2027, {
+      fetchHolidays,
+      apiKey: 'chave-falsa',
+    })
+
+    expect(fetched).toBe(true)
+    expect(fetchHolidays).toHaveBeenCalledWith(2027, 'chave-falsa')
+    expect(h.db.read('holidays', '2027')).toMatchObject({
+      year: 2027,
+      items: [{ date: '2027-01-01', name: 'Ano Novo', scope: 'national' }],
+    })
+  })
+
+  it('ano que já está no cache não chama a FeriadosAPI', async () => {
+    h.db.put('holidays', '2027', { items: [] })
+    const fetchHolidays = vi.fn()
+
+    const fetched = await refreshHolidays(2027, {
+      fetchHolidays,
+      apiKey: 'chave-falsa',
+    })
+
+    expect(fetched).toBe(false)
+    expect(fetchHolidays).not.toHaveBeenCalled()
+  })
+
+  it('sem a chave da FeriadosAPI lança erro, para a rotina registrar a falha', async () => {
+    await expect(
+      refreshHolidays(2027, { fetchHolidays: vi.fn(), apiKey: undefined }),
+    ).rejects.toThrow('FERIADOS_API_KEY')
+    expect(h.db.read('holidays', '2027')).toBeUndefined()
+  })
+
+  it('erro da FeriadosAPI lança e não grava o ano', async () => {
+    const fetchHolidays = vi
+      .fn()
+      .mockRejectedValue(new Error('FeriadosAPI answered HTTP 429.'))
+
+    await expect(
+      refreshHolidays(2027, { fetchHolidays, apiKey: 'chave-falsa' }),
+    ).rejects.toThrow('429')
+    expect(h.db.read('holidays', '2027')).toBeUndefined()
   })
 })
