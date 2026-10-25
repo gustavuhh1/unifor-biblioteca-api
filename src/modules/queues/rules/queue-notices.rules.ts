@@ -93,6 +93,25 @@ export function otherEditionNotice(
   )
 }
 
+// Alguém à frente saiu da fila e o aluno subiu uma posição (RF-AVI-01). Se a mudança
+// foi feita pelo bibliotecário, o aviso é o de posição alterada.
+export function movedUpNotice(
+  entry: QueueNoticeEntry,
+  position: number,
+  at: Date,
+): UserNotification {
+  return notice(
+    NOTIFICATION_TYPE.queueMovedUp,
+    entry,
+    {
+      title: `Você subiu na fila: ${entry.bookTitle}`,
+      body: `Agora você é o ${position}º da fila.`,
+    },
+    NOTIFICATION_ACTION.none,
+    at,
+  )
+}
+
 // O bibliotecário mudou a posição (RF-BAL-06, RF-BAL-07): vale para quem foi
 // movido e para quem desceu.
 export function positionChangedNotice(

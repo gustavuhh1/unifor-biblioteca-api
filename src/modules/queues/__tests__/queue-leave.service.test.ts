@@ -67,6 +67,22 @@ describe('sair da fila (leaveQueue, RF-FIL-05)', () => {
     expect(items[0]).toMatchObject({ id: 'qe3', position: 2 })
   })
 
+  it('quem estava atrás recebe o aviso de que subiu, com a posição nova; quem estava à frente não (RF-AVI-01)', async () => {
+    await leaveQueue(STUDENT_UID, 'qe2')
+
+    const noticesOf = (uid: string) =>
+      h.db.all(`users/${uid}/notifications`).map((notice) => notice.type)
+    expect(h.db.all('users/carlos/notifications')).toEqual([
+      expect.objectContaining({
+        type: 'queue_moved_up',
+        queueEntryId: 'qe3',
+        body: 'Agora você é o 2º da fila.',
+      }),
+    ])
+    expect(noticesOf('ana')).toEqual([])
+    expect(noticesOf(STUDENT_UID)).toEqual([])
+  })
+
   it('o contador do aluno nunca fica abaixo de zero', async () => {
     putStudent(h.db, STUDENT_UID, { activeQueueCount: 0 })
 

@@ -247,6 +247,20 @@ describe('fila em várias edições: confirmar uma cancela as outras (RF-FIL-04)
     })
   })
 
+  it('a vez virou pedido: quem estava atrás sobe e é avisado (RF-AVI-01)', async () => {
+    putEntry(h.db, 'qe9', { studentUid: 'uid_carlos', order: 9000 })
+
+    await confirmTurn(STUDENT_UID, 'qe1')
+
+    expect(h.db.all('users/uid_carlos/notifications')).toEqual([
+      expect.objectContaining({
+        type: 'queue_moved_up',
+        queueEntryId: 'qe9',
+        body: 'Agora você é o 2º da fila.',
+      }),
+    ])
+  })
+
   it('o aluno recebe o aviso de pedido pronto, com o código e o QR (RF-EMP-07)', async () => {
     const { loan } = await confirmTurn(STUDENT_UID, 'qe1')
 

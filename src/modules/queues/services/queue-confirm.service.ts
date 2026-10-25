@@ -35,7 +35,11 @@ import {
 } from '../rules/queue-exit.rules.js'
 import { otherEditionNotice } from '../rules/queue-notices.rules.js'
 import { confirmDenialOf } from '../rules/turn.rules.js'
-import { applyQueueExit, planQueueExit } from './queue-exit.service.js'
+import {
+  applyQueueExit,
+  notifyMovedUp,
+  planQueueExit,
+} from './queue-exit.service.js'
 
 // O aluno confirma a vez (RF-FIL-06, RF-FIL-04). Só o dono do lugar (outro aluno
 // recebe 404). Recusa, com o motivo no code: o lugar já saiu da fila
@@ -47,7 +51,8 @@ import { applyQueueExit, planQueueExit } from './queue-exit.service.js'
 // exemplar que estava guardado; o lugar vira `fulfilled`; `queueLength` do livro cai
 // 1; `activeLoanCount` do aluno sobe 1 e `activeQueueCount` cai 1. Os lugares das
 // outras edições marcadas juntas viram `cancelled_other_edition`, com aviso, e
-// liberam as suas vagas das 7 filas.
+// liberam as suas vagas das 7 filas. Quem estava atrás do aluno na fila recebe o
+// aviso de que subiu.
 export async function confirmTurn(
   uid: string,
   entryId: string,
@@ -66,15 +71,17 @@ export async function confirmTurn(
       throw new Error('A vez na fila não tem exemplar guardado.')
     }
 
-    const [student, book, circulation, takenCodes, group] = await Promise.all([
-      usersRepository.findById(uid, tx),
-      booksRepository.findById(entry.bookId, tx),
-      readStudentCirculation(uid, tx),
-      loansRepository.listAwaitingPickupCodes(tx),
-      entry.editionGroupId
-        ? queueEntriesRepository.listActiveByGroup(entry.editionGroupId, tx)
-        : Promise.resolve([]),
-    ])
+    const [student, book, circulation, takenCodes, queue, group] =
+      await Promise.all([
+        usersRepository.findById(uid, tx),
+        booksRepository.findById(entry.bookId, tx),
+        readStudentCirculation(uid, tx),
+        loansRepository.listAwaitingPickupCodes(tx),
+        queueEntriesRepository.listActiveByBook(entry.bookId, tx),
+        entry.editionGroupId
+          ? queueEntriesRepository.listActiveByGroup(entry.editionGroupId, tx)
+          : Promise.resolve([]),
+      ])
     if (!student || !book) {
       throw new Error('Aluno ou livro do lugar na fila não encontrado.')
     }
@@ -126,6 +133,7 @@ export async function confirmTurn(
       pickupReadyNotice({ id: loanId, ...newLoan }, at),
     )
     queueEntriesRepository.update(tx, entry.id, fulfilledFields(loanId, at))
+    notifyMovedUp(tx, queue, entry.id, at)
     booksRepository.update(tx, book.id, {
       queueLength: Math.max(0, book.queueLength - 1),
       updatedAt: at,
