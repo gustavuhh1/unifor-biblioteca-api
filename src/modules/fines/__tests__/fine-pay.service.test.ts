@@ -54,6 +54,18 @@ afterEach(() => {
 })
 
 describe('registrar o pagamento no balcão (payFine, RF-BAL-09)', () => {
+  it('o aluno recebe o aviso do pagamento registrado (RF-AVI-01)', async () => {
+    await payFine(LIBRARIAN, 'fine1')
+
+    expect(h.db.all('users/uid_pedro/notifications')).toEqual([
+      expect.objectContaining({
+        type: 'fine_paid',
+        fineId: 'fine1',
+        body: 'Pagamento de R$ 10,00 registrado no balcão.',
+      }),
+    ])
+  })
+
   it('a multa em aberto vira paga, com a hora e quem recebeu', async () => {
     const paid = await payFine(LIBRARIAN, 'fine1')
 

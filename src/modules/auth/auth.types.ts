@@ -118,8 +118,3 @@ export interface PasskeyConfig {
   rpId: string
   origins: string[]
 }
-
-// --- E-mail ------------------------------------------------------------------
-
-// Como o token chega ao aluno.
-export type MailMode = 'resend' | 'console' | 'unavailable'

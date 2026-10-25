@@ -23,7 +23,7 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     ])
   })
 
-  it('documenta todas as rotas dos módulos de acesso, do acervo, de empréstimos, de filas, de multas, do balcão e de Salvos', () => {
+  it('documenta todas as rotas dos módulos de acesso, do acervo, de empréstimos, de filas, de multas, do balcão, de Salvos e de avisos', () => {
     const operations = Object.entries(document.paths ?? {}).flatMap(
       ([path, item]) =>
         ['get', 'post', 'put', 'patch', 'delete']
@@ -87,6 +87,11 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'DELETE /me/folders/{folderId}',
         'PUT /me/folders/{folderId}/books/{bookId}',
         'DELETE /me/folders/{folderId}/books/{bookId}',
+        'GET /me/notifications',
+        'POST /me/notifications/read-all',
+        'PATCH /me/notification-prefs',
+        'PUT /me/devices/{deviceId}',
+        'DELETE /me/devices/{deviceId}',
       ].sort(),
     )
   })
@@ -250,6 +255,30 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
       paths['/me/folders/{folderId}/books/{bookId}']?.put?.responses?.['409'],
     ).toBeDefined()
     expect(paths['/me/folders']?.post?.responses?.['400']).toBeDefined()
+  })
+
+  it('documenta as rotas de avisos só para o aluno, sem rota para enviar push ou e-mail (RF-AVI-01 a RF-AVI-03)', () => {
+    const paths = document.paths ?? {}
+    const routes = [
+      paths['/me/notifications']?.get,
+      paths['/me/notifications/read-all']?.post,
+      paths['/me/notification-prefs']?.patch,
+      paths['/me/devices/{deviceId}']?.put,
+      paths['/me/devices/{deviceId}']?.delete,
+    ]
+
+    for (const operation of routes) {
+      expect(operation?.security).toEqual([{ bearerAuth: [] }])
+      expect(operation?.responses?.['401']).toBeDefined()
+      expect(operation?.responses?.['403']).toBeDefined()
+    }
+    expect(
+      paths['/me/notification-prefs']?.patch?.responses?.['400'],
+    ).toBeDefined()
+    expect(paths['/me/devices/{deviceId}']?.put?.responses?.['400']).toBeDefined()
+    expect(
+      Object.keys(paths).filter((path) => /\/(push|send|email)(\/|$)/i.test(path)),
+    ).toEqual([])
   })
 
   it('não documenta nenhuma rota de pagamento de multa para o aluno (RF-MUL-03)', () => {

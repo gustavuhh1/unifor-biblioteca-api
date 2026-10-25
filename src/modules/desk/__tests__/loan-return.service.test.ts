@@ -72,6 +72,20 @@ describe('devolução no prazo (registerReturn, RF-BAL-04)', () => {
     expect(JSON.stringify(response)).not.toContain('qrToken')
   })
 
+  it('o aluno recebe o aviso da devolução, sem aviso de multa (RF-AVI-01)', async () => {
+    seedActiveLoan(h.db)
+
+    await registerReturn(LIBRARIAN_UID, 'loan1', { finePaidNow: false })
+
+    expect(h.db.all('users/uid_lucas/notifications')).toEqual([
+      expect.objectContaining({
+        type: 'return_confirmed',
+        loanId: 'loan1',
+        action: 'none',
+      }),
+    ])
+  })
+
   it('sem fila, o exemplar volta à estante e o livro ganha um disponível', async () => {
     seedActiveLoan(h.db)
 
@@ -228,6 +242,41 @@ describe('devolução com multa (RF-MUL-02, RF-BAL-08)', () => {
       frozenAt: NOW,
     })
     expect(h.db.all('fines')).toHaveLength(1)
+  })
+
+  it('a multa em aberto gera o aviso com o valor e o pagamento no balcão (RF-AVI-01)', async () => {
+    seedActiveLoan(h.db, { dueAt: LATE_DUE })
+
+    const response = await registerReturn(LIBRARIAN_UID, 'loan1', {
+      finePaidNow: false,
+    })
+
+    const types = h.db
+      .all('users/uid_lucas/notifications')
+      .map((notice) => notice.type)
+      .sort()
+    expect(types).toEqual(['fine_open', 'return_confirmed'])
+    expect(
+      h.db
+        .all('users/uid_lucas/notifications')
+        .find((notice) => notice.type === 'fine_open'),
+    ).toMatchObject({
+      fineId: response.fine?.id,
+      action: 'open_fine',
+      body: 'R$ 6,00 por 3 dias úteis de atraso. O pagamento é feito no balcão da biblioteca.',
+    })
+  })
+
+  it('"Multa paga agora" avisa o pagamento em vez da multa em aberto', async () => {
+    seedActiveLoan(h.db, { dueAt: LATE_DUE })
+
+    await registerReturn(LIBRARIAN_UID, 'loan1', { finePaidNow: true })
+
+    const types = h.db
+      .all('users/uid_lucas/notifications')
+      .map((notice) => notice.type)
+      .sort()
+    expect(types).toEqual(['fine_paid', 'return_confirmed'])
   })
 
   it('"Multa paga agora" fecha a multa como paga, com quem recebeu, sem somar no total em aberto', async () => {

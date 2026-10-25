@@ -3,7 +3,7 @@ import { getDb } from '../../config/firebase.js'
 import { COLLECTIONS } from '../firestore/collections.js'
 import { dataWithDates } from '../firestore/converters.js'
 import { readDocument } from '../firestore/read.js'
-import type { User } from '../types/index.js'
+import type { NotificationPrefs, User } from '../types/index.js'
 
 // Acesso ao documento users/{uid}, usado por mais de um módulo (cadastro,
 // empréstimos, filas, multas e balcão). O que só o cadastro usa (índices,
@@ -93,4 +93,15 @@ export function setBooksReadByYear(
   at: Date,
 ): void {
   tx.update(userRef(uid), { booksReadByYear, updatedAt: at })
+}
+
+// Grava as preferências de aviso do aluno (RF-AVI-03). Chame depois de todas as
+// leituras da transação.
+export function setNotificationPrefs(
+  tx: Transaction,
+  uid: string,
+  notificationPrefs: NotificationPrefs,
+  at: Date,
+): void {
+  tx.update(userRef(uid), { notificationPrefs, updatedAt: at })
 }

@@ -114,6 +114,21 @@ describe('renovar empréstimo (renewLoan)', () => {
     })
   })
 
+  it('o aluno recebe o aviso da renovação, com o novo prazo (RF-AVI-01)', async () => {
+    seedActiveLoan()
+
+    await renewLoan(STUDENT_UID, 'loan1')
+
+    expect(h.db.all(`users/${STUDENT_UID}/notifications`)).toEqual([
+      expect.objectContaining({
+        type: 'renewal_done',
+        loanId: 'loan1',
+        action: 'open_loan',
+        body: 'Novo prazo de devolução: sex, 30/10.',
+      }),
+    ])
+  })
+
   it('depois de renovar não pode renovar de novo: canRenew false e already_renewed', async () => {
     seedActiveLoan()
 

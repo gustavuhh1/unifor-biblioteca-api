@@ -1,6 +1,5 @@
 import { formatLocalDateTime } from '../../../shared/calendar/dates.js'
 import {
-  DELIVERY_STATUS,
   NOTIFICATION_ACTION,
   NOTIFICATION_TYPE,
   type NotificationAction,
@@ -8,12 +7,12 @@ import {
   type QueueEntryRecord,
   type UserNotification,
 } from '../../../shared/types/index.js'
+import { newNotice } from '../../notifications/rules/notice.rules.js'
 
 // Avisos dentro do app que a fila gera (seção 2.14): sua vez, vez perdida,
 // posição mudada, entrada e saída feitas pelo bibliotecário e fila cancelada por
 // outra edição. Funções puras: devolvem o documento users/{uid}/notifications. O
-// envio por push e por e-mail (RF-AVI-02) é de outro módulo; por enquanto os dois
-// canais ficam `skipped` e o aviso dentro do app cobre (RNF-CON-02).
+// envio por push e por e-mail (RF-AVI-02) é do módulo de avisos.
 
 type QueueNoticeEntry = Pick<
   QueueEntryRecord,
@@ -28,19 +27,16 @@ function notice(
   action: NotificationAction,
   at: Date,
 ): UserNotification {
-  return {
-    type,
-    ...text,
-    bookId: entry.bookId,
-    queueEntryId: entry.id,
-    action,
-    delivery: {
-      push: DELIVERY_STATUS.skipped,
-      email: DELIVERY_STATUS.skipped,
+  return newNotice(
+    {
+      type,
+      ...text,
+      bookId: entry.bookId,
+      queueEntryId: entry.id,
+      action,
     },
-    createdAt: at,
-    updatedAt: at,
-  }
+    at,
+  )
 }
 
 // "É a sua vez" (RF-FIL-06): o exemplar voltou e o aluno tem até o prazo para

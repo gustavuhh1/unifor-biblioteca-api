@@ -1,3 +1,4 @@
+import { formatMoney } from '../../src/shared/money.js'
 import type { Firestore } from 'firebase-admin/firestore'
 import {
   COLLECTIONS,
@@ -48,9 +49,6 @@ export async function countDocuments(db: Firestore): Promise<string[]> {
   }
   return lines
 }
-
-const formatMoney = (cents: number) =>
-  `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`
 
 // Seção 8, passo 9. As datas seguem o dia em que o seed roda, então isto confere
 // as situações das seções 6.1 a 6.5 (quem está atrasado, quem tem prazo hoje...),

@@ -49,6 +49,21 @@ export function formatLocalDateTime(instant: Date): string {
   return format(new TZDate(instant, LIBRARY_TIMEZONE), "dd/MM 'às' HH:mm")
 }
 
+const WEEKDAY_NAMES: Record<WeekdayKey, string> = {
+  sun: 'dom',
+  mon: 'seg',
+  tue: 'ter',
+  wed: 'qua',
+  thu: 'qui',
+  fri: 'sex',
+  sat: 'sáb',
+}
+
+// "seg, 19/10": como o app escreve um prazo.
+export function formatDayMonth(date: DateOnly): string {
+  return `${WEEKDAY_NAMES[weekdayOf(date)]}, ${date.slice(8, 10)}/${date.slice(5, 7)}`
+}
+
 // Soma dias corridos a uma data "AAAA-MM-DD".
 export function plusDays(date: DateOnly, days: number): DateOnly {
   const [year, month, day] = parts(date)
