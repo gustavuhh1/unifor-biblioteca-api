@@ -125,6 +125,10 @@ export interface Device extends Timestamps {
   pushDisabledAt?: Date
 }
 
+// Aviso e aparelho lidos do Firestore, com o id.
+export type NotificationRecord = UserNotification & { id: string }
+export type DeviceRecord = Device & { id: string }
+
 // users/{uid}/assistantMessages/{messageId}: conversa com o Assistente.
 export interface AssistantMessage extends Timestamps {
   sender: AssistantSender
