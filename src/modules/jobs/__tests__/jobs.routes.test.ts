@@ -15,8 +15,7 @@ vi.mock('../services/job-run.service.js', () => ({ runJob: h.runJob }))
 
 const { serveRouter } = await import('../../../test-support/route-harness.js')
 const { jobsRouter } = await import('../jobs.routes.js')
-const { schedulerEmail } =
-  await import('../../../middlewares/scheduler-auth.js')
+const { schedulerEmail } = await import('../rules/scheduler.rules.js')
 const { env } = await import('../../../config/env.js')
 
 const server = await serveRouter(jobsRouter)
