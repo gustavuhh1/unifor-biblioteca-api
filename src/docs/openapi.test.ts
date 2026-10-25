@@ -23,10 +23,10 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     ])
   })
 
-  it('documenta todas as rotas dos módulos de acesso, do acervo, de empréstimos, de filas, de multas e do balcão', () => {
+  it('documenta todas as rotas dos módulos de acesso, do acervo, de empréstimos, de filas, de multas, do balcão e de Salvos', () => {
     const operations = Object.entries(document.paths ?? {}).flatMap(
       ([path, item]) =>
-        ['get', 'post', 'patch', 'delete']
+        ['get', 'post', 'put', 'patch', 'delete']
           .filter((method) => item && method in item)
           .map((method) => `${method.toUpperCase()} ${path}`),
     )
@@ -78,6 +78,15 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'POST /librarian/loans/{loanId}/return',
         'GET /librarian/pickups',
         'GET /librarian/desk/summary',
+        'GET /me/saved',
+        'PUT /me/saved/{bookId}',
+        'DELETE /me/saved/{bookId}',
+        'GET /me/folders',
+        'POST /me/folders',
+        'PATCH /me/folders/{folderId}',
+        'DELETE /me/folders/{folderId}',
+        'PUT /me/folders/{folderId}/books/{bookId}',
+        'DELETE /me/folders/{folderId}/books/{bookId}',
       ].sort(),
     )
   })
@@ -215,6 +224,32 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
       expect(operation?.responses?.['401']).toBeDefined()
       expect(operation?.responses?.['403']).toBeDefined()
     }
+  })
+
+  it('documenta as rotas de Salvos só para o aluno, com a pasta e o livro que faltam (RF-SAL-01 a RF-SAL-03)', () => {
+    const paths = document.paths ?? {}
+    const routes = [
+      paths['/me/saved']?.get,
+      paths['/me/saved/{bookId}']?.put,
+      paths['/me/saved/{bookId}']?.delete,
+      paths['/me/folders']?.get,
+      paths['/me/folders']?.post,
+      paths['/me/folders/{folderId}']?.patch,
+      paths['/me/folders/{folderId}']?.delete,
+      paths['/me/folders/{folderId}/books/{bookId}']?.put,
+      paths['/me/folders/{folderId}/books/{bookId}']?.delete,
+    ]
+
+    for (const operation of routes) {
+      expect(operation?.security).toEqual([{ bearerAuth: [] }])
+      expect(operation?.responses?.['401']).toBeDefined()
+      expect(operation?.responses?.['403']).toBeDefined()
+    }
+    expect(paths['/me/saved/{bookId}']?.put?.responses?.['404']).toBeDefined()
+    expect(
+      paths['/me/folders/{folderId}/books/{bookId}']?.put?.responses?.['409'],
+    ).toBeDefined()
+    expect(paths['/me/folders']?.post?.responses?.['400']).toBeDefined()
   })
 
   it('não documenta nenhuma rota de pagamento de multa para o aluno (RF-MUL-03)', () => {

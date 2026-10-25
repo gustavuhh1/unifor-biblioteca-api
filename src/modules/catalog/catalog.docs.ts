@@ -1,5 +1,9 @@
-import type { ZodType } from 'zod'
-import { bearerAuth, jsonContent, registry } from '../../docs/registry.js'
+import {
+  bearerAuth,
+  jsonBody,
+  jsonContent,
+  registry,
+} from '../../docs/registry.js'
 import { errorResponseSchema } from '../../shared/error-response.js'
 import {
   bookParamsSchema,
@@ -18,10 +22,6 @@ import {
   syncBookResponseSchema,
 } from './schemas/response.schemas.js'
 
-const body = (schema: ZodType) => ({
-  required: true,
-  content: jsonContent(schema),
-})
 const error = (description: string) => ({
   description,
   content: jsonContent(errorResponseSchema),
@@ -134,7 +134,7 @@ registry.registerPath({
   description:
     'Numa transação: cria a obra (ou acrescenta a edição à obra do mesmo título e primeiro autor), o livro e os exemplares (todos `available`). CDU, Cutter e estante são sempre informados à mão. Com ISBN, consulta as fontes externas (Open Library e BrasilAPI) antes de gravar: se elas acharam, grava `externalMetadata` e `dataSource` fica `external` quando título, autores, editora e sinopse estão como elas mandaram, ou `mixed` se foram alterados à mão. Se nenhuma achou, ou não responderam, o cadastro segue e `dataSource` é `manual` (`externalMetadata.found: false`). Sem ISBN, `dataSource` é `manual`. O registro de cada exemplar é único.',
   security,
-  request: { body: body(createBookBodySchema) },
+  request: { body: jsonBody(createBookBodySchema) },
   responses: {
     201: {
       description: 'Livro cadastrado.',
@@ -157,7 +157,7 @@ registry.registerPath({
   description:
     'Muda só os campos enviados (pelo menos um); `null` apaga um campo opcional. `workId`, contadores, `status` e exemplares não são editáveis. `unavailableForNewRequests` marca ou desmarca o livro como "Indisponível para novos pedidos": pedidos, empréstimos e filas que já existem não mudam. Se o livro era `external` e algum campo de origem externa muda, `dataSource` passa a `mixed`.',
   security,
-  request: { params: bookParamsSchema, body: body(updateBookBodySchema) },
+  request: { params: bookParamsSchema, body: jsonBody(updateBookBodySchema) },
   responses: {
     200: {
       description: 'Livro atualizado.',

@@ -86,6 +86,15 @@ export async function findById(
   return snapshot.exists ? toRecord(snapshot) : undefined
 }
 
+// Lê um livro só se ele está ativo no acervo. Livro removido conta como inexistente.
+export async function findActiveById(
+  id: string,
+  tx?: Transaction,
+): Promise<BookRecord | undefined> {
+  const book = await findById(id, tx)
+  return book?.status === BOOK_STATUS.active ? book : undefined
+}
+
 // Grava um livro novo (cadastro, RF-GAC-02).
 export function create(tx: Transaction, id: string, book: Book): void {
   tx.set(bookRef(id), withoutUndefined(book))

@@ -90,6 +90,10 @@ export interface Folder extends Timestamps {
   bookCount: number
 }
 
+// Os documentos de Salvos lidos do Firestore, com o id (o id do livro e o da pasta).
+export type SavedBookRecord = SavedBook & { id: string }
+export type FolderRecord = Folder & { id: string }
+
 // Entrega de um aviso em cada canal.
 export interface NotificationDelivery {
   push: DeliveryStatus
