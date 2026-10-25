@@ -60,17 +60,21 @@ export class FakeDocRef {
   }
 }
 
-type Operator = '==' | 'in' | '<' | '<=' | '>' | '>='
+type Operator = '==' | 'in' | 'array-contains' | '<' | '<=' | '>' | '>='
 type Filter = { field: string; op: Operator; value: unknown }
 
 // Valor comparável: datas viram milissegundos.
 const comparable = (value: unknown) =>
   value instanceof Date ? value.getTime() : value
 
-// Diz se o valor do campo passa no filtro (igualdade, "está na lista" ou uma
+// Diz se o valor do campo passa no filtro (igualdade, "está na lista", "a lista
+// contém" ou uma
 // comparação de ordem). Campo ausente nunca passa numa comparação de ordem.
 function matches(actual: unknown, { op, value }: Filter): boolean {
   if (op === 'in') return (value as unknown[]).includes(actual)
+  if (op === 'array-contains') {
+    return Array.isArray(actual) && actual.includes(value)
+  }
   if (op === '==') return actual === value
   if (actual === undefined) return false
   const left = comparable(actual) as number

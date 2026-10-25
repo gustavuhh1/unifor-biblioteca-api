@@ -23,7 +23,7 @@ export const fakeAuthenticate: RequestHandler = (req, _res, next) => {
 
 // Uma rota a chamar no teste.
 export interface RouteCall {
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   path: string
   body?: unknown
 }
