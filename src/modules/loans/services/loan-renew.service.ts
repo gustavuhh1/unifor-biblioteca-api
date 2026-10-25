@@ -10,6 +10,8 @@ import * as copiesRepository from '../../../shared/repositories/copies.repositor
 import { loanNotActive, loanNotFound, renewalDenied } from '../loans.errors.js'
 import type { LoanResponse } from '../loans.types.js'
 import * as loansRepository from '../../../shared/repositories/loans.repository.js'
+import * as notificationsRepository from '../../notifications/repositories/notifications.repository.js'
+import { renewalDoneNotice } from '../../notifications/rules/loan-notices.rules.js'
 import { toLoanResponse } from '../rules/loan-view.rules.js'
 import {
   nextReturnAtOf,
@@ -67,6 +69,11 @@ export async function renewLoan(
     copiesRepository.setDueAt(tx, loan.copyId, newDueAt, at)
     booksRepository.update(tx, book.id, { nextReturnAt, updatedAt: at })
     const updated = { ...loan, ...update }
+    notificationsRepository.create(
+      tx,
+      uid,
+      renewalDoneNotice({ ...loan, dueAt: newDueAt }, at),
+    )
     // Depois de renovar, o que impede outra renovação é a contagem (already_renewed).
     const renewalDenial = renewalDenialOf({
       loan: updated,

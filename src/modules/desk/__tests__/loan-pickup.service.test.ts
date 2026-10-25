@@ -62,6 +62,22 @@ describe('registrar a retirada (registerPickup, RF-BAL-02)', () => {
     })
   })
 
+  it('o aluno recebe o aviso da retirada, com o prazo de devolução (RF-AVI-01)', async () => {
+    seedPendingPickup(h.db)
+
+    await registerPickup(LIBRARIAN_UID, 'loan1')
+
+    expect(h.db.all('users/uid_lucas/notifications')).toEqual([
+      expect.objectContaining({
+        type: 'loan_picked_up',
+        loanId: 'loan1',
+        action: 'open_loan',
+        body: 'Devolva até qui, 29/10.',
+        delivery: { push: 'skipped', email: 'skipped' },
+      }),
+    ])
+  })
+
   it('a resposta nunca traz o qrToken', async () => {
     seedPendingPickup(h.db, { qrToken: 'segredo-do-qr-aaaaaaaaaaaa' })
 

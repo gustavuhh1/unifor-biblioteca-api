@@ -16,6 +16,8 @@ import {
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
 import { readStudentCirculation } from '../../catalog/repositories/student-circulation.repository.js'
 import { loanNotFound } from '../../loans/loans.errors.js'
+import * as notificationsRepository from '../../notifications/repositories/notifications.repository.js'
+import { pickedUpNotice } from '../../notifications/rules/loan-notices.rules.js'
 import { nextReturnAtOf } from '../../loans/rules/renewal.rules.js'
 import {
   loanNotAwaitingPickup,
@@ -85,6 +87,11 @@ export async function registerPickup(
         details: { copyId: copy.id, dueAt },
       },
       at,
+    )
+    notificationsRepository.create(
+      tx,
+      loan.studentUid,
+      pickedUpNotice({ ...loan, dueAt }, at),
     )
     return { ...loan, ...fields }
   })

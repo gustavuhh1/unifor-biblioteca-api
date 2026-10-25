@@ -238,12 +238,28 @@ describe('fila em várias edições: confirmar uma cancela as outras (RF-FIL-04)
   it('o aluno é avisado de cada fila cancelada, dentro do app', async () => {
     await confirmTurn(STUDENT_UID, 'qe1')
 
-    const notices = h.db.all(`users/${STUDENT_UID}/notifications`)
+    const notices = h.db
+      .all(`users/${STUDENT_UID}/notifications`)
+      .filter((notice) => notice.type === 'queue_cancelled_other_edition')
     expect(notices).toHaveLength(2)
     expect(notices[0]).toMatchObject({
-      type: 'queue_cancelled_other_edition',
       title: 'Fila cancelada: Código Limpo',
     })
+  })
+
+  it('o aluno recebe o aviso de pedido pronto, com o código e o QR (RF-EMP-07)', async () => {
+    const { loan } = await confirmTurn(STUDENT_UID, 'qe1')
+
+    const ready = h.db
+      .all(`users/${STUDENT_UID}/notifications`)
+      .filter((notice) => notice.type === 'pickup_ready')
+    expect(ready).toHaveLength(1)
+    expect(ready[0]).toMatchObject({
+      loanId: loan.id,
+      action: 'show_qr',
+      delivery: { push: 'skipped', email: 'skipped' },
+    })
+    expect(String(ready[0]?.body)).toContain(loan.pickupCode)
   })
 
   it('se a outra edição também estava na vez, o exemplar dela passa ao próximo', async () => {

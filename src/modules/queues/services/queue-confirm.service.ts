@@ -25,6 +25,7 @@ import {
   generateQrToken,
 } from '../../loans/rules/pickup-code.rules.js'
 import * as notificationsRepository from '../../notifications/repositories/notifications.repository.js'
+import { pickupReadyNotice } from '../../notifications/rules/loan-notices.rules.js'
 import { confirmDenied, queueEntryNotFound } from '../queues.errors.js'
 import type { ConfirmTurnResponse } from '../queues.types.js'
 import * as queueEntriesRepository from '../repositories/queue-entries.repository.js'
@@ -119,6 +120,11 @@ export async function confirmTurn(
 
     loansRepository.create(tx, loanId, newLoan)
     copiesRepository.reserve(tx, entry.reservedCopyId, loanId, at)
+    notificationsRepository.create(
+      tx,
+      uid,
+      pickupReadyNotice({ id: loanId, ...newLoan }, at),
+    )
     queueEntriesRepository.update(tx, entry.id, fulfilledFields(loanId, at))
     booksRepository.update(tx, book.id, {
       queueLength: Math.max(0, book.queueLength - 1),

@@ -21,6 +21,8 @@ import { bookNotFound } from '../../catalog/catalog.errors.js'
 import { noCopyAvailable, requestRefused } from '../loans.errors.js'
 import type { CreateLoanBody, LoanResponse } from '../loans.types.js'
 import * as loansRepository from '../../../shared/repositories/loans.repository.js'
+import * as notificationsRepository from '../../notifications/repositories/notifications.repository.js'
+import { pickupReadyNotice } from '../../notifications/rules/loan-notices.rules.js'
 import { toLoanResponse } from '../rules/loan-view.rules.js'
 import { buildNewLoan } from '../rules/new-loan.rules.js'
 import {
@@ -111,6 +113,11 @@ export async function requestLoan(
       uid,
       circulation.activeLoanCount + 1,
       at,
+    )
+    notificationsRepository.create(
+      tx,
+      uid,
+      pickupReadyNotice({ id: loanId, ...newLoan }, at),
     )
     return newLoan
   })

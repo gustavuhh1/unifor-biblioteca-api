@@ -92,6 +92,23 @@ describe('solicitar empréstimo (requestLoan)', () => {
     expect(response.qrToken).toMatch(/^[A-Za-z0-9_-]{32}$/)
   })
 
+  it('o aluno recebe o aviso de pedido pronto, com o prazo e o código (RF-AVI-01)', async () => {
+    seedBasics()
+
+    const response = await requestLoan(STUDENT_UID, body)
+
+    expect(h.db.all(`users/${STUDENT_UID}/notifications`)).toEqual([
+      expect.objectContaining({
+        type: 'pickup_ready',
+        title: 'Pedido pronto: Código Limpo',
+        body: `Retire até seg, 19/10. Código ${response.pickupCode}.`,
+        action: 'show_qr',
+        bookId: 'book1',
+        delivery: { push: 'skipped', email: 'skipped' },
+      }),
+    ])
+  })
+
   it('grava o pedido com as cópias do aluno e do livro, a origem e a retirada ainda vazia', async () => {
     seedBasics()
 

@@ -8,6 +8,8 @@ import {
   FINE_STATUS,
 } from '../../../shared/types/index.js'
 import * as usersRepository from '../../../shared/repositories/users.repository.js'
+import * as notificationsRepository from '../../notifications/repositories/notifications.repository.js'
+import { finePaidNotice } from '../../notifications/rules/loan-notices.rules.js'
 import {
   fineAlreadyPaid,
   fineNotFound,
@@ -70,6 +72,11 @@ export async function payFine(
         details: { amountCents, loanId: fine.loanId },
       },
       at,
+    )
+    notificationsRepository.create(
+      tx,
+      fine.studentUid,
+      finePaidNotice(fine, at),
     )
     return { ...fine, ...fields }
   })

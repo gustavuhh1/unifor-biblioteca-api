@@ -18,6 +18,12 @@ import { DELETE_FIELD } from '../../catalog/rules/book-update.rules.js'
 import { fineReceiverOf } from '../../fines/rules/fine-amount.rules.js'
 import { onCopyReturned } from '../../loans/services/copy-returned.service.js'
 import { loanNotFound } from '../../loans/loans.errors.js'
+import * as notificationsRepository from '../../notifications/repositories/notifications.repository.js'
+import {
+  fineOpenNotice,
+  finePaidNotice,
+  returnConfirmedNotice,
+} from '../../notifications/rules/loan-notices.rules.js'
 import { nextReturnAtOf } from '../../loans/rules/renewal.rules.js'
 import { loanNotReturnable } from '../desk.errors.js'
 import type { ReturnLoanBody, ReturnResponse } from '../desk.types.js'
@@ -114,6 +120,26 @@ export async function registerReturn(
       },
       at,
     )
+    notificationsRepository.create(
+      tx,
+      loan.studentUid,
+      returnConfirmedNotice(loan, at),
+    )
+    if (returned.fine) {
+      const fine = {
+        ...returned.fine,
+        loanId: loan.id,
+        bookId: loan.bookId,
+        bookTitle: loan.bookTitle,
+      }
+      notificationsRepository.create(
+        tx,
+        loan.studentUid,
+        fine.status === FINE_STATUS.paid
+          ? finePaidNotice(fine, at)
+          : fineOpenNotice(fine, at),
+      )
+    }
     return { loan: { ...loan, ...fields }, returned }
   })
 
