@@ -20,7 +20,8 @@
     "seed": "tsx --env-file-if-exists=.env scripts/seed.ts",
     "catalog:sync": "tsx --env-file-if-exists=.env scripts/catalog-sync.ts",
     "deploy": "tsx --env-file-if-exists=.env scripts/deploy.ts",
-    "deploy:firestore": "tsx --env-file-if-exists=.env scripts/deploy-firestore.ts"
+    "deploy:firestore": "tsx --env-file-if-exists=.env scripts/deploy-firestore.ts",
+    "deploy:scheduler": "tsx --env-file-if-exists=.env scripts/deploy-scheduler.ts"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
@@ -29,6 +30,7 @@
     "date-fns": "^4.4.0",
     "express": "^5.3.0",
     "firebase-admin": "^14.5.0",
+    "google-auth-library": "^10.9.1",
     "morgan": "^1.12.1",
     "resend": "^6.34.1",
     "swagger-ui-express": "^5.0.1",

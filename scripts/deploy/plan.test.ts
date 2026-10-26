@@ -37,6 +37,9 @@ describe('variáveis do deploy (planDeployEnv)', () => {
       AUTH_EMAIL_DOMAIN: 'contas.uni-books.app',
       EMAIL_FROM: 'Unifor Biblioteca <nao-responda@email.uni-books.app>',
       GEMINI_MODEL: 'gemini-3.8-flash',
+      SCHEDULER_AUDIENCE: 'https://api.uni-books.app',
+      SCHEDULER_SERVICE_ACCOUNT:
+        'unibooks-scheduler@estoque-pay.iam.gserviceaccount.com',
     })
   })
 

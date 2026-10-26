@@ -49,6 +49,8 @@ export function planDeployEnv(source: NodeJS.ProcessEnv): DeployPlan {
     AUTH_EMAIL_DOMAIN,
     EMAIL_FROM,
     GEMINI_MODEL,
+    SCHEDULER_AUDIENCE,
+    SCHEDULER_SERVICE_ACCOUNT,
   } = parsed.data
 
   const problems: string[] = []
@@ -83,6 +85,10 @@ export function planDeployEnv(source: NodeJS.ProcessEnv): DeployPlan {
         AUTH_EMAIL_DOMAIN,
         EMAIL_FROM,
         GEMINI_MODEL,
+        SCHEDULER_AUDIENCE: SCHEDULER_AUDIENCE ?? 'https://api.uni-books.app',
+        SCHEDULER_SERVICE_ACCOUNT:
+          SCHEDULER_SERVICE_ACCOUNT ??
+          `unibooks-scheduler@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com`,
       },
     },
   }

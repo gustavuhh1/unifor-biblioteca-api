@@ -64,6 +64,10 @@ export const envSchema = z
     EMAIL_FROM: optionalString,
     GEMINI_MODEL: optionalString,
 
+    // Identidade OIDC usada pelo Cloud Scheduler nas rotas /internal/jobs.
+    SCHEDULER_AUDIENCE: optionalString,
+    SCHEDULER_SERVICE_ACCOUNT: optionalString,
+
     // Segredos: Secret Manager em produção e .env local no desenvolvimento.
     RESEND_API_KEY: optionalString,
     FERIADOS_API_KEY: optionalString,
