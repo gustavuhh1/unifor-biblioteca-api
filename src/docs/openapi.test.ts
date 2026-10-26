@@ -73,6 +73,12 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'GET /me/fines',
         'GET /librarian/fines',
         'POST /librarian/fines/{fineId}/pay',
+        'GET /librarian/dashboard',
+        'GET /librarian/pickups',
+        'GET /librarian/students/lookup',
+        'POST /librarian/loans/{loanId}/pickup',
+        'POST /librarian/loans/{loanId}/return',
+        'POST /internal/jobs/{job}',
       ].sort(),
     )
   })
