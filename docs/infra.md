@@ -46,8 +46,8 @@ O Secret Manager dá 6 versões de segredo ativas por mês de graça, somando to
 | Item | Status | Responsável | Data | Como testar |
 |---|---|---|---|---|
 | Faturamento ligado ao projeto | ✅ | Gustavo | 17/10 | `gcloud billing projects describe estoque-pay` → `billingEnabled: true` |
-| Alerta `alerta-zero` (R$ 1/mês: 50% e 100% real, 100% previsto, nível grátis descontado) | ⏳ conferir se foi criado na conta de faturamento do `estoque-pay` | Gustavo | 17/10 | `gcloud billing budgets list --billing-account=<ID>` mostra `alerta-zero` |
-| Teto de R$ 10/mês no Cloud Run (pausa o serviço) | ⬜ conferir | Gustavo | 18/10 | Console → Faturamento → Orçamentos → "Spend cap status: Configured" |
+| Alerta `alerta-zero` (R$ 1/mês: 50% e 100% real, 100% previsto, nível grátis descontado) | ✅ conferido pelo Gustavo | Gustavo | 23/10 | `gcloud billing budgets list --billing-account=<ID>` mostra `alerta-zero` |
+| Teto de R$ 10/mês no Cloud Run (pausa o serviço) | ✅ conferido pelo Gustavo | Gustavo | 23/10 | Console → Faturamento → Orçamentos → "Spend cap status: Configured" |
 | APIs ativadas: Cloud Run, Artifact Registry, Cloud Build, Secret Manager, Cloud Scheduler, Firebase, Firestore, Identity Toolkit, IAM Credentials | ⏳ conferir | Gustavo | 18/10 | `gcloud services list --enabled --project=estoque-pay` |
 | Firestore `(default)` em `southamerica-east1` | ✅ | Gustavo | 17/10 | `gcloud firestore databases list --project=estoque-pay` |
 | Firebase Authentication com o provedor **E-mail/senha** ativado (login com senha e recuperação) | ⬜ | Gustavo | 18/10 | Console do Firebase → Authentication → Método de login → E-mail/senha "Ativado" |
@@ -152,10 +152,21 @@ Custo: o Cloud Scheduler dá 3 jobs grátis por conta de faturamento; os outros 
 
 | Verificação | Estado | Quem | Quando | Como conferir |
 |---|---|---|---|---|
-| Cloud Scheduler ativado no projeto | ⬜ conferir | Gustavo | antes de criar os jobs | `gcloud services list --enabled --project=estoque-pay` mostra `cloudscheduler.googleapis.com` |
-| API publicada com a rota `/jobs` | ⬜ | Gustavo | antes de criar os jobs | `npm run deploy`; `POST /jobs/accrue_fines` sem token responde 401 |
-| Jobs criados | ⬜ | Gustavo (com o "pode") | depois do deploy | `gcloud scheduler jobs list --location=southamerica-east1 --project=estoque-pay` mostra 5 jobs |
-| Uma rotina roda e termina em `ok` | ⬜ | Gustavo | depois de criar os jobs | `gcloud scheduler jobs run unibooks-accrue-fines --location=southamerica-east1 --project=estoque-pay` e conferir `jobRuns` |
+| Cloud Scheduler ativado no projeto | ✅ | Gustavo | 26/10 | `gcloud services list --enabled --project=estoque-pay` mostra `cloudscheduler.googleapis.com` |
+| API publicada com a rota `/jobs` | ✅ | Gustavo | 26/10 | `npm run deploy`; `POST /jobs/accrue_fines` sem token responde 401 |
+| Jobs criados | ✅ | Gustavo (com o "pode") | 26/10 | `gcloud scheduler jobs list --location=southamerica-east1 --project=estoque-pay` mostra 5 jobs |
+| Uma rotina roda e termina em `ok` | ✅ | Gustavo | 26/10 | `gcloud scheduler jobs run unibooks-advance-queues --location=southamerica-east1 --project=estoque-pay` e conferir `jobRuns`; as rotinas já rodam sozinhas e terminam em `ok` |
+
+## 8. Checklist da terça, 27/10 (manhã)
+
+Tudo o que toca produção só roda com o "pode" do Gustavo, um passo por vez.
+
+| Passo | Quem | Como |
+|---|---|---|
+| Recarregar os dados de demonstração (as rotinas já mexeram nos dados do seed de 25/10) | Gustavo | `npm run seed -- --prod --reset` (pede a frase "apagar tudo"); fazer depois do job das 8h |
+| `--min-instances 1` no Cloud Run antes da apresentação, para a primeira chamada não acordar a API; **voltar para 0 depois** | Gustavo (com o "pode") | `gcloud run services update unibooks-api --region=southamerica-east1 --project=estoque-pay --min-instances=1` e, depois da apresentação, `--min-instances=0`. Um `npm run deploy` feito no meio volta o mínimo para 0 |
+| Conferir `/health`, `/docs` e um login de teste | Gustavo | `/health` responde 200 e `/docs` lista as rotas |
+| Criar a tag `integration-delivery` nos dois repositórios | Claude, quando o Gustavo mandar | `git tag` na `main` de cada repositório |
 
 ## Ordem de execução
 
