@@ -20,7 +20,7 @@ Esta API REST (Node.js, TypeScript e Express) concentra todas as regras de negó
 
 ### Casos de uso principais
 
-**Aluno**
+#### Aluno
 
 - Cadastrar-se com o e-mail institucional e entrar com **passkey** (biometria do celular).
 - Buscar no acervo por título, autor ou assunto e abrir a página do livro (`GET /books`, `GET /books/{bookId}`).
@@ -31,7 +31,7 @@ Esta API REST (Node.js, TypeScript e Express) concentra todas as regras de negó
 - Salvar livros e organizá-los em pastas (`/me/saved`, `/me/folders`).
 - Receber avisos dentro do aplicativo, por push (Android) e por e-mail, e ligar ou desligar cada tipo (`/me/notifications`, `/me/notification-prefs`).
 
-**Bibliotecário**
+#### Bibliotecário
 
 - **Balcão:** abrir a ficha do aluno pelo QR do pedido, pelo código do pedido (`RET-1234`) ou pela matrícula (`POST /librarian/desk/lookup`).
 - Registrar a **retirada** e a **devolução** (`POST /librarian/loans/{loanId}/pickup` e `/return`), inclusive marcando "multa paga agora".
@@ -40,7 +40,7 @@ Esta API REST (Node.js, TypeScript e Express) concentra todas as regras de negó
 - **Acervo:** cadastrar livro a partir do ISBN, editar, remover, marcar como indisponível para novos pedidos e atualizar pelas fontes externas (`/librarian/books`).
 - **Multas:** listar as abertas, as que estão contando e as pagas, e registrar o pagamento (`/librarian/fines`).
 
-**Rotinas automáticas (Cloud Scheduler)**
+#### Rotinas automáticas (Cloud Scheduler)
 
 O Google Cloud Scheduler chama `POST /jobs/{job}` nos horários abaixo (fuso `America/Fortaleza`). Cada execução fica registrada na coleção `jobRuns`, e rodar duas vezes seguidas não repete o trabalho.
 
@@ -286,7 +286,7 @@ O que **não existe**: não há limite de requisições por IP ou por usuário n
 | Desafio do passkey          | 5 minutos, uso único (é gasto antes da verificação)                   |
 | Refresh tokens              | Revogados no logout e quando a senha é redefinida                     |
 
-**Outras proteções**
+#### Outras proteções
 
 - O Firestore apaga sozinho, por **TTL no campo `expiresAt`**, os documentos vencidos de `emailTokens`, `passkeyChallenges` e `assistantActions` (a remoção pode demorar até 24 horas; por isso a API sempre confere `expiresAt` antes de aceitar).
 - Chaves e segredos (Resend, FeriadosAPI e Gemini) ficam no **Secret Manager** em produção e num `.env` fora do Git no desenvolvimento. O repositório é público e só tem os **nomes** das variáveis.
@@ -299,14 +299,14 @@ O que **não existe**: não há limite de requisições por IP ou por usuário n
 
 ### Como rodar o projeto
 
-**Requisitos**
+#### Requisitos
 
 - Node.js 24 (LTS)
 - Java 21 ou superior (para os emuladores do Firebase)
 - [Firebase CLI](https://firebase.google.com/docs/cli): `npm install -g firebase-tools`
 - [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) (`gcloud`), só para o deploy
 
-**Passo a passo**
+#### Passo a passo
 
 1. Clone e instale as dependências:
 
@@ -448,7 +448,7 @@ HTTP/1.1 201 Created
 
 O `qrToken` é o segredo que o aplicativo transforma em QR para o balcão. O `id` do pedido (`LOAN` abaixo) é usado nas rotas do bibliotecário.
 
-**6. Rota de bibliotecário: retirada e devolução**
+#### 6. Rota de bibliotecário: retirada e devolução
 
 ```sh
 LOAN=439ZCZeAFlonDVAEanLI   # o "id" do pedido acima
@@ -492,7 +492,7 @@ A lista completa, com os corpos e as respostas de cada rota, está no Swagger (`
 
 Todo erro tem o mesmo formato: `{ "code": "...", "message": "..." }`. O `code` é estável e em inglês; a `message` é em português e é a que o aplicativo mostra.
 
-**401: sem token**
+#### 401: sem token
 
 ```sh
 curl -i $API/me
@@ -503,7 +503,7 @@ HTTP/1.1 401 Unauthorized
 {"code":"unauthorized","message":"Sua sessão expirou ou é inválida. Entre novamente."}
 ```
 
-**403: aluno em rota de bibliotecário**
+#### 403: aluno em rota de bibliotecário
 
 ```sh
 curl -i $API/librarian/pickups -H "Authorization: Bearer $ALUNO"
@@ -533,7 +533,7 @@ HTTP/1.1 409 Conflict
 - **API:** <https://api.uni-books.app>
 - **Swagger (documentação interativa):** <https://api.uni-books.app/docs>
 
-**Testar online pelo Swagger**
+#### Testar online pelo Swagger
 
 1. Obtenha um ID token como no exemplo 2 acima.
 2. Abra <https://api.uni-books.app/docs>.
