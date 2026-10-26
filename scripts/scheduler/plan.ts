@@ -9,7 +9,8 @@ import { JOB_NAME, type JobName } from '../../src/shared/types/index.js'
 // comandos do gcloud que os criam ou atualizam. Só monta texto, sem executar nada,
 // para ser testado; quem executa é deploy-scheduler.ts.
 
-// Quando cada rotina roda (cron no fuso America/Fortaleza) e o que ela faz.
+// Quando cada rotina roda (cron no fuso America/Fortaleza) e o que ela faz. A
+// descrição não tem acento: o gcloud no Windows troca os acentuados por "?".
 export const JOB_SCHEDULES: Record<
   JobName,
   { cron: string; description: string }
@@ -21,17 +22,17 @@ export const JOB_SCHEDULES: Record<
   },
   [JOB_NAME.expirePickups]: {
     cron: '*/15 * * * *',
-    description: 'Expira os pedidos não retirados no prazo (RF-EMP-06)',
+    description: 'Expira os pedidos nao retirados no prazo (RF-EMP-06)',
   },
   [JOB_NAME.dueReminders]: {
     cron: '0 8 * * *',
     description:
-      'Lembretes de prazo, atraso e último dia de retirada (RF-SIS-05)',
+      'Lembretes de prazo, atraso e ultimo dia de retirada (RF-SIS-05)',
   },
   [JOB_NAME.accrueFines]: {
     cron: '0 6 * * *',
     description:
-      'Começa a contar a multa dos empréstimos atrasados (RF-MUL-01)',
+      'Comeca a contar a multa dos emprestimos atrasados (RF-MUL-01)',
   },
   [JOB_NAME.refreshHolidays]: {
     cron: '0 3 * * 1',
