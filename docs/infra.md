@@ -33,6 +33,8 @@ Responsáveis: **Gustavo** (contas, cartão, DNS, chaves) e **Claude** (pesquisa
 | `PASSKEY_ANDROID_ORIGINS` | não | variável do Cloud Run e `.env` | Origens aceitas no passkey do app Android, no formato `android:apk-key-hash:<SHA-256 do certificado de assinatura, em base64url>`, separadas por vírgula (uma para o build de desenvolvimento). Vem do certificado do app, não é segredo |
 | `SEED_TEST_PASSWORD` | sim | só no `.env` de quem roda o seed | Senha das contas de teste criadas pelo script de carga (seção 8 do modelo de dados). Nunca no código |
 | `AUTH_EMAIL_DOMAIN` | não | `contas.uni-books.app` (e-mail interno das contas no Firebase: `<matrícula>@contas.uni-books.app`; não recebe mensagens) | Firebase Authentication |
+| `SCHEDULER_AUDIENCE` | não | `https://api.uni-books.app` | Audience do token OIDC dos jobs |
+| `SCHEDULER_SERVICE_ACCOUNT` | não | `unibooks-scheduler@estoque-pay.iam.gserviceaccount.com` | Identidade exclusiva aceita nas rotas internas |
 | `EXPO_PUBLIC_FIREBASE_*` | não | configuração web do Firebase no app (apiKey, authDomain, projectId, appId). É pública por natureza; a proteção vem das regras e da API | App (SDK JavaScript do Firebase) |
 
 `PASSKEY_RP_ID` e `AUTH_EMAIL_DOMAIN` são obrigatórias com `NODE_ENV=production`: a API não sobe sem elas (no desenvolvimento são opcionais).
@@ -125,6 +127,7 @@ Comandos (cada um pede que o ID do projeto seja digitado):
 1. `npm run deploy:firestore`: publica regras, índices e TTL do Firestore.
 2. `npm run deploy`: monta a imagem no Cloud Build e publica no Cloud Run. Exige a árvore git limpa, porque a imagem leva o commit como tag.
 3. `npx firebase deploy --only hosting --project estoque-pay`: só quando o `firebase.json` ou o `assetlinks.json` mudarem.
+4. `npm run deploy:scheduler`: cria ou atualiza os cinco jobs com OIDC (expiração de retiradas, avanço de filas, lembretes, multas e cache de feriados).
 
 Conferência depois do deploy: `/health` responde 200, `/docs` abre, `/me` sem token responde 401, `https://uni-books.app/.well-known/assetlinks.json` responde 200, `gcloud run services describe unibooks-api --region=southamerica-east1` mostra a conta de serviço e os segredos e nenhuma variável de emulador, e o log do morgan aparece no Cloud Logging. Ainda falta provar o cabeçalho `Authorization` passando pelo Hosting com um login de verdade (depende do seed em produção).
 
@@ -148,4 +151,4 @@ Protótipo de passkey na **terça, 20/10**. Código a partir de quarta, 21/10. E
 4. **Ter 20/10:** protótipo de passkey num Android físico, com RP ID `uni-books.app`, terminando no custom token do Firebase e na sessão aberta no app.
 5. **Qua 21/10 em diante:** código da API (Cloud Run + Hosting) e primeiro deploy, com a política de limpeza do Artifact Registry. ✅ Primeiro deploy em 24/10 (seção 6).
 
-Depois (não bloqueia o protótipo): Expo Push só no Android (credenciais do FCM) e Cloud Scheduler para os lembretes. No iPhone não há push nem passkey (dependem da conta paga da Apple); como o app vai rodar lá será decidido depois que o Android funcionar.
+Depois (não bloqueia o protótipo): Expo Push só no Android (credenciais do FCM). O Cloud Scheduler já tem código e script de configuração (`npm run deploy:scheduler`). No iPhone não há push nem passkey (dependem da conta paga da Apple); como o app vai rodar lá será decidido depois que o Android funcionar.

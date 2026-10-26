@@ -2,7 +2,25 @@
 
 REST API for Unifor Biblioteca, a university library app. Node + TypeScript + Express, with Firestore and Firebase Authentication behind it.
 
-> Work in progress: only the project skeleton exists so far (`GET /health` and the Swagger docs). The full README comes with the final delivery.
+Implemented modules include Firebase/passkey authentication, catalog, loans,
+queues, fines, the librarian desk and scheduled circulation routines. The live
+OpenAPI contract is available at `/docs`.
+
+## Librarian desk and scheduled jobs
+
+All `/librarian/*` routes require an authenticated user with the `librarian`
+role (invalid/missing session: `401`; wrong role: `403`):
+
+- `GET /librarian/dashboard` — operational counters.
+- `GET /librarian/students/lookup?identifier=...` — matrícula, pickup code or QR token.
+- `GET /librarian/pickups?matricula=...` — pending pickups ordered by deadline.
+- `POST /librarian/loans/{loanId}/pickup` — register pickup and calculate due date.
+- `POST /librarian/loans/{loanId}/return` — register return; `{ "paidNow": true }` records an overdue fine as paid at the desk.
+
+The internal `POST /internal/jobs/{job}` route only accepts the Google-signed
+OIDC identity configured for Cloud Scheduler. It runs `expire_pickups`,
+`advance_queues`, `due_reminders`, `accrue_fines` or `refresh_holidays`, and
+records each execution in `jobRuns`.
 
 ## Running locally
 
@@ -57,6 +75,7 @@ REST API for Unifor Biblioteca, a university library app. Node + TypeScript + Ex
 | `npm run catalog:sync`     | Update the active books that have an ISBN from Open Library and BrasilAPI (see below) |
 | `npm run deploy:firestore` | Publish the Firestore rules, indexes and TTL to production (see Deployment)           |
 | `npm run deploy`           | Build the image and publish the API on Cloud Run (see Deployment)                     |
+| `npm run deploy:scheduler` | Create/update the five authenticated Cloud Scheduler jobs                             |
 
 ## Updating the catalog from Open Library and BrasilAPI
 
@@ -104,6 +123,16 @@ Each command asks you to type the project ID before it touches production.
    ```sh
    npx firebase deploy --only hosting --project estoque-pay
    ```
+
+4. Create or update the scheduled circulation routines (safe to run again):
+
+   ```sh
+   npm run deploy:scheduler
+   ```
+
+   Scheduler calls `POST /internal/jobs/{job}` with a Google-signed OIDC token
+   from `unibooks-scheduler@<project>.iam.gserviceaccount.com`. The API checks
+   the signature, audience and exact service-account e-mail before running a job.
 
 ### One-time setup
 
