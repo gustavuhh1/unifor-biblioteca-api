@@ -60,6 +60,12 @@ describe('jobs do Cloud Scheduler (plano, RF-SIS-05)', () => {
     ])
   })
 
+  it('as descrições não têm acento (o gcloud no Windows troca por "?")', () => {
+    for (const { description } of Object.values(JOB_SCHEDULES)) {
+      expect(description).toMatch(/^[\x20-\x7e]+$/)
+    }
+  })
+
   it('nenhum comando leva chave, senha ou token', () => {
     const everything = [
       ...JOB_NAMES.flatMap((job) => upsertJobArgs('create', PROJECT, job)),

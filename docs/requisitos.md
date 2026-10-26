@@ -1,6 +1,6 @@
 # Requisitos funcionais e não funcionais
 
-Gerado em 18/10/2026 a partir do documento de requisitos (rev 77) e do kanban. São 85 RF e 28 RNF. "Comum" vale para as duas entregas (27/10 e 09/11); "Sistema" é comportamento automático da API. Prioridade: Alta, Média ou Baixa.
+Gerado em 18/10/2026 a partir do documento de requisitos (rev 77) e do kanban; o texto foi ajustado em 23/10 (Open Library e BrasilAPI no lugar do Google Books; entrega de Integração em 27/10) e a seção "Situação da API" foi acrescentada em 26/10. São 85 RF e 28 RNF. "Comum" vale para as duas entregas (27/10 e 09/11); "Sistema" é comportamento automático da API. Prioridade: Alta, Média ou Baixa.
 
 Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EMP-01`).
 
@@ -168,7 +168,7 @@ Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EM
 ### Manutenção
 
 - **RNF-MAN-01 — Dois repositórios, só a main, entregas por tag** (Alta, Comum): São dois repositórios, unifor-biblioteca-api e unifor-biblioteca-app, cada um só com a branch main. Cada tarefa vira uma branch curta com PR para a main, e cada entrega é marcada por tag: integration-delivery (27/10, nos dois) e mobile-delivery (09/11).
-- **RNF-MAN-02 — README e código em inglês** (Alta, Comum): README e código do app em inglês; commits e interface em português.
+- **RNF-MAN-02 — README e código do app em inglês** (Alta, Comum): README e código do app em inglês; commits e interface em português. O README da API é em português (decidido em 26/10).
 - **RNF-MAN-03 — Usar o design system UniforBib** (Média, Comum): As telas usam o design system UniforBib (cores, tipos e componentes) em vez de estilos soltos.
 
 ### Implantação
@@ -177,3 +177,32 @@ Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EM
 - **RNF-IMP-02 — README da API** (Alta, Comum): O README da API traz como clonar, executar, as variáveis de ambiente, o deploy e o link da API publicada.
 - **RNF-IMP-03 — Firestore: produção e Emulator Suite** (Alta, Comum): O banco é o Firebase Firestore, com ambiente de produção no Firebase e ambiente de teste no Emulator Suite.
 - **RNF-IMP-04 — App completo na demo de 27/10** (Alta, Comum): O app completo, com todas as funcionalidades, funciona em 27/10 para a demonstração ao vivo da API.
+
+## Situação da API (26/10/2026)
+
+O texto dos requisitos acima não mudou. Esta seção só diz o que a API já atende, para acompanhar a entrega. "No ar" quer dizer implementado, com teste unitário e publicado em `https://api.uni-books.app`. Os requisitos de tela (ou da lógica que só existe no app) aparecem como "Só do app".
+
+| Grupo | Situação da API | Observação |
+|---|---|---|
+| Acesso e cadastro (RF-AUT-01 a 05, 08 a 12) | No ar | Cadastro, token de e-mail, passkeys (cadastro, login, listar, criar, remover), recuperação de senha, logout e rotas protegidas (401 e 403) |
+| RF-AUT-06, RF-AUT-07 | No ar, pelo Firebase | O login com matrícula e senha é feito pelo app no Firebase Authentication; a API cria a conta e lê o perfil. O bibliotecário vem do seed |
+| RF-AUT-13 a 16 | Só do app | A API entrega o perfil em `GET /me`; abertura, apresentação, tela de login e "Outras formas de entrar" são telas. O campo `onboardingSeenAt` existe no modelo, mas não há rota para gravá-lo |
+| Acervo (RF-ACE-01 a 05, 08) | No ar | Busca, página do livro, Open Library e BrasilAPI em paralelo, script `catalog:sync` e livro indisponível para novos pedidos |
+| RF-ACE-06, RF-ACE-07 | Só do app | Sugestão do Assistente na busca vazia (depende do Assistente) e compartilhar pelo menu do celular |
+| Empréstimos (RF-EMP-01 a 11) | No ar | Inclui a rotina que expira o pedido não retirado (RF-EMP-06). A API entrega o segredo do QR (`qrToken`); o desenho do QR é do app (RF-EMP-07) |
+| Filas (RF-FIL-01 a 08) | No ar | Inclui a rotina que tira da fila quem perde a vez (RF-FIL-07) |
+| Multas (RF-MUL-01 a 04) | No ar | A multa passa a contar pela rotina `accrue_fines` e congela na devolução |
+| Salvos (RF-SAL-01 a 03) | No ar | Salvar, pastas e livros nas pastas |
+| Perfil (RF-PER-01) | No ar | Dados em `GET /me`, mais empréstimos, filas e multas nas rotas próprias |
+| RF-PER-02, RF-PER-03 | Só do app | Regras da biblioteca e tema claro e escuro |
+| Balcão (RF-BAL-01 a 09) | No ar | Painel, ficha do aluno por QR, código ou matrícula, retirada, devolução, "multa paga agora", retiradas, filas e aba Multas |
+| RF-BAL-10 | Só do app | Perfil do bibliotecário (tema); o logout usa `POST /auth/logout` |
+| Gestão do acervo (RF-GAC-01 a 06) | No ar | Listar, cadastrar, editar, atualizar pelas fontes, remover e marcar indisponível |
+| Sistema (RF-SIS-01 a 05) | No ar | Feriados em cache, horários e recesso, atraso calculado, data simulada fora de produção e as rotinas do Cloud Scheduler |
+| Avisos (RF-AVI-01 a 04) | No ar | Notificações no app, push (Expo, Android) e e-mail (Resend), preferências e cobertura da falha pelo aviso do app |
+| Assistente (RF-ASS-01 a 07) | **Pendente** | O módulo `assistant` existe vazio. Entra se der tempo, conforme a decisão de 25/10 |
+
+Requisitos não funcionais que dependem de uma ação ainda não feita:
+
+- RNF-MAN-01: a tag `integration-delivery` nos dois repositórios, na entrega de 27/10.
+- RNF-IMP-02: o README da API está pronto e aguarda o merge do PR #109.

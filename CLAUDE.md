@@ -48,6 +48,7 @@ Se dois documentos se contradizem, ou se uma tarefa exige algo que não está ne
 ## Convenções
 
 - Nomes no código (variáveis, funções, arquivos, coleções e campos) em inglês; comentários e textos dos testes em português (pt-BR).
+- **README da API em português (pt-BR)**, seguindo a estrutura da disciplina de Integração (decidido em 26/10). Só o README do app (cadeira de Mobile) é em inglês. Todo comando e exemplo do README tem que ter sido rodado de verdade, sem chave, senha, token nem e-mail real.
 - **Rotas** em inglês (decisão 14 do escopo). As rotas do escopo em português são nomes sugeridos: mantenha a mesma função e documente cada rota no Swagger.
 - **Mensagens de erro para o usuário** em português (o app mostra), com um `code` em inglês estável. Sem sessão → 401; perfil errado → 403.
 - **Commits em português**, curtos e no imperativo (ex.: `cria script de carga do banco`).
