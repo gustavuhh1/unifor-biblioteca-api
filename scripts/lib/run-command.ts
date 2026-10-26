@@ -10,3 +10,13 @@ export function runCommand(command: string, args: string[]): boolean {
   })
   return !result.error && result.status === 0
 }
+
+// Igual a runCommand, mas sem mostrar nada no terminal: serve para perguntar "isto
+// existe?" (um `describe` termina bem só se existir).
+export function commandSucceeds(command: string, args: string[]): boolean {
+  const result = spawnSync(command, args, {
+    stdio: 'ignore',
+    shell: process.platform === 'win32',
+  })
+  return !result.error && result.status === 0
+}

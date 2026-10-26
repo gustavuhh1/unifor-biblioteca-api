@@ -43,6 +43,9 @@ export async function serveRouter(router: Router) {
   const { port } = server.address() as AddressInfo
 
   return {
+    // Endereço do servidor, para quem precisa montar a própria chamada (cabeçalho
+    // de autorização diferente do de perfil).
+    baseUrl: `http://127.0.0.1:${port}`,
     // Chama a rota como o perfil dado (ou sem sessão) e devolve o status e o corpo.
     async call(route: RouteCall, role?: 'student' | 'librarian') {
       const response = await fetch(`http://127.0.0.1:${port}${route.path}`, {

@@ -36,3 +36,18 @@ export const bearerAuth = registry.registerComponent(
       'ID token do Firebase Authentication, no cabeçalho `Authorization: Bearer <token>`.',
   },
 )
+
+// Esquema de segurança das rotinas agendadas: o token OIDC que o Cloud Scheduler
+// assina com a conta de serviço dele (não é o token de um aluno nem de um
+// bibliotecário).
+export const schedulerAuth = registry.registerComponent(
+  'securitySchemes',
+  'schedulerOidc',
+  {
+    type: 'http',
+    scheme: 'bearer',
+    bearerFormat: 'Google OIDC ID token',
+    description:
+      'Token OIDC do Google, no cabeçalho `Authorization: Bearer <token>`, emitido para a conta de serviço do Cloud Scheduler com a audiência `https://api.uni-books.app`.',
+  },
+)

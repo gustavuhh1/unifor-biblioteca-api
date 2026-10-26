@@ -17,7 +17,7 @@ declare module 'express-serve-static-core' {
   }
 }
 
-const BEARER_HEADER = /^Bearer\s+(\S+)$/i
+export const BEARER_HEADER = /^Bearer\s+(\S+)$/i
 
 // Erros que o Admin SDK levanta sobre o próprio token (vencido, revogado,
 // malformado, conta desativada). Qualquer outro (rede, credenciais) não é culpa

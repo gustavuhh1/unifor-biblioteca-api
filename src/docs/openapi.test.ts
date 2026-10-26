@@ -23,7 +23,7 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     ])
   })
 
-  it('documenta todas as rotas dos módulos de acesso, do acervo, de empréstimos, de filas, de multas, do balcão, de Salvos e de avisos', () => {
+  it('documenta todas as rotas dos módulos de acesso, do acervo, de empréstimos, de filas, de multas, do balcão, de Salvos, de avisos e das rotinas', () => {
     const operations = Object.entries(document.paths ?? {}).flatMap(
       ([path, item]) =>
         ['get', 'post', 'put', 'patch', 'delete']
@@ -92,6 +92,7 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'PATCH /me/notification-prefs',
         'PUT /me/devices/{deviceId}',
         'DELETE /me/devices/{deviceId}',
+        'POST /jobs/{job}',
       ].sort(),
     )
   })
@@ -279,6 +280,22 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     expect(
       Object.keys(paths).filter((path) => /\/(push|send|email)(\/|$)/i.test(path)),
     ).toEqual([])
+  })
+
+  it('documenta a rota das rotinas só com o token do Cloud Scheduler, sem a sessão do app (RF-SIS-05)', () => {
+    const operation = document.paths?.['/jobs/{job}']?.post
+
+    expect(operation?.security).toEqual([{ schedulerOidc: [] }])
+    expect(operation?.responses?.['401']).toBeDefined()
+    expect(operation?.responses?.['403']).toBeDefined()
+    expect(operation?.responses?.['500']).toBeDefined()
+    const parameter = (operation?.parameters ?? []).find(
+      (item) => 'name' in item && item.name === 'job',
+    )
+    expect(JSON.stringify(parameter)).toContain('accrue_fines')
+    expect(JSON.stringify(document.components?.securitySchemes)).toContain(
+      'schedulerOidc',
+    )
   })
 
   it('não documenta nenhuma rota de pagamento de multa para o aluno (RF-MUL-03)', () => {

@@ -9,6 +9,7 @@ import { readDocument } from '../../../shared/firestore/read.js'
 import type {
   NotificationDelivery,
   NotificationRecord,
+  NotificationType,
   UserNotification,
 } from '../../../shared/types/index.js'
 import { enqueueDelivery } from '../delivery-batch.js'
@@ -62,6 +63,23 @@ export async function listLatest(
     .limit(NOTIFICATION_LIST_LIMIT)
   const result = await (tx ? tx.get(query) : query.get())
   return result.docs.map(toRecord)
+}
+
+// Já existe um aviso deste tipo para o empréstimo? (a rotina dos lembretes não
+// repete o aviso de "último dia para retirar"). A leitura entra na transação.
+export async function existsForLoan(
+  tx: Transaction,
+  uid: string,
+  loanId: string,
+  type: NotificationType,
+): Promise<boolean> {
+  const result = await tx.get(
+    notifications(uid)
+      .where('loanId', '==', loanId)
+      .where('type', '==', type)
+      .limit(1),
+  )
+  return result.docs.length > 0
 }
 
 // Marca o aviso como lido (RF-AVI-01).

@@ -7,7 +7,9 @@ import '../modules/fines/fines.docs.js'
 import '../modules/desk/desk.docs.js'
 import '../modules/saved/saved.docs.js'
 import '../modules/notifications/notifications.docs.js'
+import '../modules/jobs/jobs.docs.js'
 import { env } from '../config/env.js'
+import { PRODUCTION_API_URL } from '../shared/api-url.js'
 import { healthResponseSchema } from '../shared/health.js'
 import { jsonContent, registry } from './registry.js'
 
@@ -25,7 +27,7 @@ registry.registerPath({
 })
 
 const PRODUCTION_SERVER = {
-  url: 'https://api.uni-books.app',
+  url: PRODUCTION_API_URL,
   description: 'Produção',
 }
 const LOCAL_SERVER = { url: 'http://localhost:8080', description: 'Local' }

@@ -498,6 +498,9 @@ export function buildSeed(options: BuildOptions): SeedData {
           .reduce((sum, f) => sum + required(f.amountCents, 'amountCents'), 0),
         booksReadByYear,
       },
+      // As contas de teste não recebem e-mail: os endereços são fictícios e podem ser
+      // de outra pessoa. Os avisos continuam no app e no push.
+      notificationPrefs: { channelEmail: false },
       createdAt: created,
       updatedAt: isLucas ? atLocalTime(today, '09:12') : now,
     })

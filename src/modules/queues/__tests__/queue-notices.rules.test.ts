@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { atLocalTime } from '../../../shared/calendar/dates.js'
 import {
   addedByLibrarianNotice,
+  movedUpNotice,
   otherEditionNotice,
   positionChangedNotice,
   removedByLibrarianNotice,
@@ -84,5 +85,25 @@ describe('avisos de saída e de mudança na fila', () => {
       expect(notice.delivery).toEqual({ push: 'skipped', email: 'skipped' })
       expect(notice.readAt).toBeUndefined()
     }
+  })
+})
+
+describe('aviso de que subiu na fila (movedUpNotice, RF-AVI-01)', () => {
+  it('diz a posição nova, sem botão', () => {
+    const notice = movedUpNotice(
+      { id: 'qe3', bookId: 'book1', bookTitle: 'Código Limpo' },
+      2,
+      NOW,
+    )
+
+    expect(notice).toMatchObject({
+      type: 'queue_moved_up',
+      title: 'Você subiu na fila: Código Limpo',
+      body: 'Agora você é o 2º da fila.',
+      action: 'none',
+      bookId: 'book1',
+      queueEntryId: 'qe3',
+      delivery: { push: 'skipped', email: 'skipped' },
+    })
   })
 })

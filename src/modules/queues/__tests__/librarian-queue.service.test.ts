@@ -593,6 +593,22 @@ describe('remover da fila com motivo (removeFromQueue, RF-BAL-06)', () => {
     ])
   })
 
+  it('quem estava atrás sobe e é avisado com a posição nova; quem estava à frente não (RF-AVI-01)', async () => {
+    await removeFromQueue(LIBRARIAN_UID, 'qe2', { reason: 'Trancou' })
+
+    const moved = (uid: string) =>
+      h.db
+        .all(`users/${uid}/notifications`)
+        .filter((notice) => notice.type === 'queue_moved_up')
+    expect(moved('uid_ana_beatriz')).toEqual([])
+    expect(moved('uid_carlos')).toEqual([
+      expect.objectContaining({ body: 'Agora você é o 2º da fila.' }),
+    ])
+    expect(moved('uid_marina')).toEqual([
+      expect.objectContaining({ body: 'Agora você é o 3º da fila.' }),
+    ])
+  })
+
   it('removendo quem estava na vez, o exemplar guardado passa ao próximo', async () => {
     putCopy(h.db, 'copy1', {
       status: 'reserved',

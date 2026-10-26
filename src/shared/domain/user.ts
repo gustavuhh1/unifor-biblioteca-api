@@ -41,6 +41,8 @@ export interface NewUserInput {
   deskLabel?: string | undefined
   emailVerifiedAt?: Date | undefined
   counters?: Partial<UserCounters>
+  // Muda só as preferências de aviso que forem dadas; o resto fica no padrão.
+  notificationPrefs?: Partial<NotificationPrefs>
   createdAt: Date
   // Se faltar, vale o mesmo instante de createdAt.
   updatedAt?: Date
@@ -78,7 +80,10 @@ export function buildUserDocument(input: NewUserInput): User {
     openFineTotalCents: 0,
     booksReadByYear: {},
     ...input.counters,
-    notificationPrefs: { ...DEFAULT_NOTIFICATION_PREFS },
+    notificationPrefs: {
+      ...DEFAULT_NOTIFICATION_PREFS,
+      ...input.notificationPrefs,
+    },
     createdAt: input.createdAt,
     updatedAt: input.updatedAt ?? input.createdAt,
   }

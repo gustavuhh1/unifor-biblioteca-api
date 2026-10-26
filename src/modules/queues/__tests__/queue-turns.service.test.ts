@@ -71,6 +71,23 @@ describe('perdeu o prazo, sai da fila (expireQueueTurns, RF-FIL-07)', () => {
     })
   })
 
+  it('quem ganhou a vez recebe "É a sua vez" e não o aviso de que subiu; os outros de trás sobem (RF-AVI-01)', async () => {
+    putStudent(h.db, 'marina', { activeQueueCount: 1, matricula: '2513320' })
+    putEntry(h.db, 'qe3', { studentUid: 'marina', order: 3000 })
+
+    await expireQueueTurns(AFTER_DEADLINE)
+
+    expect(h.db.all('users/carlos/notifications').map((n) => n.type)).toEqual([
+      'queue_turn',
+    ])
+    expect(h.db.all('users/marina/notifications')).toEqual([
+      expect.objectContaining({
+        type: 'queue_moved_up',
+        body: 'Agora você é o 2º da fila.',
+      }),
+    ])
+  })
+
   it('o exemplar passa ao próximo da fila, que ganha 24h e o aviso', async () => {
     await expireQueueTurns(AFTER_DEADLINE)
 
