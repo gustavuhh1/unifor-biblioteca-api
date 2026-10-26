@@ -124,6 +124,13 @@ export async function listTurnIdsExpiredBefore(at: Date): Promise<string[]> {
   return result.docs.map((doc) => doc.id)
 }
 
+export async function listByStatus(
+  status: QueueEntry['status'],
+): Promise<QueueEntryRecord[]> {
+  const result = await entries().where('status', '==', status).get()
+  return result.docs.map(toRecord)
+}
+
 // Grava um lugar novo (RF-FIL-02, RF-BAL-06).
 export function create(tx: Transaction, id: string, entry: QueueEntry): void {
   tx.set(entries().doc(id), withoutUndefined(entry))

@@ -9,6 +9,7 @@ import * as copiesRepository from '../../catalog/repositories/copies.repository.
 import { loanNotCancellable, loanNotFound } from '../loans.errors.js'
 import type { LoanResponse } from '../loans.types.js'
 import * as loansRepository from '../repositories/loans.repository.js'
+import { activeLoanCountAfter } from '../rules/loan-exit.rules.js'
 import { toLoanResponse } from '../rules/loan-view.rules.js'
 import { applyCopyRelease, planCopyRelease } from './copy-release.service.js'
 
@@ -47,7 +48,7 @@ export async function cancelLoan(
     usersRepository.setActiveLoanCount(
       tx,
       uid,
-      Math.max(0, student.activeLoanCount - 1),
+      activeLoanCountAfter(student.activeLoanCount),
       at,
     )
     applyCopyRelease(tx, plan, at, settings)

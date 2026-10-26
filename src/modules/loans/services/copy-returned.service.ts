@@ -43,8 +43,9 @@ export interface CopyReturnedResult {
 //
 // QUEM CHAMA: o módulo do balcão (`desk`), ao registrar a devolução (RF-BAL-04),
 // dentro da mesma transação em que marca o empréstimo como `returned` e acerta os
-// contadores do aluno. Ainda não há rota. A rotina que expira pedidos não retirados
-// usa só copy-release.service, porque não há multa nem devolução nesse caso.
+// contadores do aluno. A rota fica em POST /librarian/loans/:loanId/return. A
+// rotina que expira pedidos não retirados usa só copy-release.service, porque não
+// há multa nem devolução nesse caso.
 //
 // COMO CHAMAR: a transação do Firestore exige todas as leituras antes de qualquer
 // gravação. Esta função lê (a multa do empréstimo e o 1º da fila) e depois grava,

@@ -4,6 +4,7 @@ import {
   buildFrozenFine,
   calculateFine,
   fineAmountCents,
+  fineStudentOf,
   freezeFields,
   openTotalDelta,
   payDenialOf,
@@ -22,6 +23,23 @@ describe('valor da multa (fineAmountCents, RF-MUL-01)', () => {
 
   it('não tem teto', () => {
     expect(fineAmountCents(100, 200)).toBe(20000)
+  })
+})
+
+describe('dados do aluno copiados para a multa', () => {
+  it('normaliza o nome e usa a matrícula quando o perfil ainda não tem nome', () => {
+    expect(
+      fineStudentOf({ matricula: '2412858', fullName: 'Lucas Álmeida' }),
+    ).toEqual({
+      matricula: '2412858',
+      name: 'Lucas Álmeida',
+      nameNormalized: 'lucas almeida',
+    })
+    expect(fineStudentOf({ matricula: '2412858' })).toEqual({
+      matricula: '2412858',
+      name: '2412858',
+      nameNormalized: '2412858',
+    })
   })
 })
 

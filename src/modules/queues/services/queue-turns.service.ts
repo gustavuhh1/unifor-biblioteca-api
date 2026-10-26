@@ -17,9 +17,9 @@ export interface ExpiredTurnsResult {
 }
 
 // Tira da fila quem perdeu o prazo de confirmar a vez (RF-FIL-07, rotina
-// `advance_queues`). QUEM CHAMA: a rota do Cloud Scheduler do módulo `jobs`
-// (RF-SIS-05, dia 26), passando o "agora" das regras de negócio (shared/clock);
-// ainda não há rota. Cada vez vencida (`your_turn` com `confirmDeadline` antes de
+// `advance_queues`). QUEM CHAMA: a rota autenticada do Cloud Scheduler do módulo
+// `jobs` (RF-SIS-05), passando o "agora" das regras de negócio (shared/clock).
+// Cada vez vencida (`your_turn` com `confirmDeadline` antes de
 // `at`) é tratada numa transação própria, uma de cada vez: o lugar vira `missed`,
 // `queueLength` do livro e `activeQueueCount` do aluno caem 1 (a vaga das 7 filas
 // volta), o aluno recebe o aviso de vez perdida e o exemplar guardado passa ao

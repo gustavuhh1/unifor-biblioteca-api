@@ -1,7 +1,5 @@
 import type { Transaction } from 'firebase-admin/firestore'
 import type { LibraryCalendar } from '../../../shared/calendar/business-days.js'
-import { displayNameOf } from '../../../shared/domain/user.js'
-import { normalizeText } from '../../../shared/text.js'
 import {
   FINE_STATUS,
   type Cents,
@@ -14,6 +12,7 @@ import * as loansRepository from '../../loans/repositories/loans.repository.js'
 import * as finesRepository from '../repositories/fines.repository.js'
 import {
   buildFrozenFine,
+  fineStudentOf,
   freezeFields,
   openTotalDelta,
   type FineReceiver,
@@ -86,14 +85,9 @@ export async function planFineFreeze(
   }
 
   if (!loan.dueAt) return { kind: 'none' }
-  const name = displayNameOf(student)
   const fine = buildFrozenFine({
     loan: { ...loan, dueAt: loan.dueAt },
-    student: {
-      matricula: student.matricula,
-      name,
-      nameNormalized: student.fullNameNormalized ?? normalizeText(name),
-    },
+    student: fineStudentOf(student),
     ratePerBusinessDayCents: input.ratePerBusinessDayCents,
     returnedAt,
     closedDates,

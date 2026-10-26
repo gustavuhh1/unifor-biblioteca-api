@@ -1,10 +1,13 @@
 import { lateBusinessDays } from '../../../shared/calendar/business-days.js'
+import { displayNameOf } from '../../../shared/domain/user.js'
+import { normalizeText } from '../../../shared/text.js'
 import {
   FINE_STATUS,
   type Cents,
   type DateOnly,
   type Fine,
   type LoanRecord,
+  type User,
 } from '../../../shared/types/index.js'
 
 // Cálculo e congelamento da multa (RF-MUL-01, RF-MUL-02, seção 2.11). Funções
@@ -101,6 +104,43 @@ export interface FineStudent {
   matricula: string
   name: string
   nameNormalized: string
+}
+
+export function fineStudentOf(
+  student: Pick<User, 'matricula' | 'fullName' | 'fullNameNormalized'>,
+): FineStudent {
+  const name = displayNameOf(student)
+  return {
+    matricula: student.matricula,
+    name,
+    nameNormalized: student.fullNameNormalized ?? normalizeText(name),
+  }
+}
+
+// Documento inicial da multa enquanto o livro continua com o aluno. Os dias e o
+// valor são calculados na leitura; só são congelados quando o livro volta.
+export function buildAccruingFine(input: {
+  loan: Pick<LoanRecord, 'id' | 'studentUid' | 'bookId' | 'bookTitle'> & {
+    dueAt: Date
+  }
+  student: FineStudent
+  ratePerBusinessDayCents: Cents
+  at: Date
+}): Fine {
+  return {
+    loanId: input.loan.id,
+    studentUid: input.loan.studentUid,
+    matricula: input.student.matricula,
+    studentName: input.student.name,
+    studentNameNormalized: input.student.nameNormalized,
+    bookId: input.loan.bookId,
+    bookTitle: input.loan.bookTitle,
+    status: FINE_STATUS.accruing,
+    ratePerBusinessDayCents: input.ratePerBusinessDayCents,
+    dueAt: input.loan.dueAt,
+    createdAt: input.at,
+    updatedAt: input.at,
+  }
 }
 
 // Monta a multa de um empréstimo devolvido com atraso que ainda não tinha o

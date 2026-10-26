@@ -202,3 +202,17 @@ export function setOpenFineTotalCents(
 ): void {
   tx.update(usersRef(uid), { openFineTotalCents: cents, updatedAt: at })
 }
+
+// Atualiza de uma vez os agregados alterados por uma devolução.
+export function recordReturnedBook(
+  tx: Transaction,
+  uid: string,
+  input: { activeLoanCount: number; year: number; currentYearCount: number },
+  at: Date,
+): void {
+  tx.update(usersRef(uid), {
+    activeLoanCount: input.activeLoanCount,
+    [`booksReadByYear.${input.year}`]: input.currentYearCount + 1,
+    updatedAt: at,
+  })
+}

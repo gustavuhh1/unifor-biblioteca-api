@@ -164,3 +164,21 @@ export function setDueAt(
 ): void {
   tx.update(copies().doc(id), { dueAt, updatedAt: at })
 }
+
+// Confirma a retirada no balcão: o exemplar reservado passa a emprestado e
+// recebe o mesmo vencimento do empréstimo.
+export function markOnLoan(
+  tx: Transaction,
+  id: string,
+  loanId: string,
+  dueAt: Date,
+  at: Date,
+): void {
+  tx.update(copies().doc(id), {
+    status: COPY_STATUS.onLoan,
+    currentLoanId: loanId,
+    reservedForQueueEntryId: FieldValue.delete(),
+    dueAt,
+    updatedAt: at,
+  })
+}

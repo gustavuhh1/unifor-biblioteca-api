@@ -6,7 +6,10 @@ import type {
   StudentCirculation,
   StudentOpenLoan,
 } from '../../../shared/rules/request-eligibility.js'
-import { LOAN_STATUS, type LoanStatus } from '../../../shared/types/index.js'
+import {
+  OPEN_LOAN_STATUSES,
+  type LoanStatus,
+} from '../../../shared/types/index.js'
 
 // Leitura, para a página do livro, do que a regra de elegibilidade precisa saber
 // do aluno (seção 2.9): os contadores de users e os pedidos aguardando retirada
@@ -24,7 +27,7 @@ export async function readStudentCirculation(
   const loansQuery = db
     .collection(COLLECTIONS.loans)
     .where('studentUid', '==', uid)
-    .where('status', 'in', [LOAN_STATUS.awaitingPickup, LOAN_STATUS.active])
+    .where('status', 'in', [...OPEN_LOAN_STATUSES])
   const [user, loans] = await Promise.all([
     tx ? tx.get(userRef) : userRef.get(),
     tx ? tx.get(loansQuery) : loansQuery.get(),

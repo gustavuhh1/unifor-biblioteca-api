@@ -142,4 +142,14 @@ describe('próxima devolução do livro (nextReturnAtOf)', () => {
 
     expect(nextReturnAtOf(copies, { copyId: 'a', dueAt: DUE })).toEqual(DUE)
   })
+
+  it('retira da conta o exemplar devolvido', () => {
+    const later = atLocalTime('2026-10-20', '21:55')
+    const copies = [copy('a', 'on_loan', DUE), copy('b', 'on_loan', later)]
+
+    expect(nextReturnAtOf(copies, { copyId: 'a' })).toEqual(later)
+    expect(nextReturnAtOf([copy('a', 'on_loan', DUE)], { copyId: 'a' })).toBe(
+      undefined,
+    )
+  })
 })

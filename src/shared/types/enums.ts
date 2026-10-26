@@ -100,6 +100,12 @@ export type LoanStatus = (typeof LOAN_STATUSES)[number]
 // Valores com nome (cada texto escrito uma vez só): LOAN_STATUS.awaitingPickup, LOAN_STATUS.active.
 export const LOAN_STATUS = constantsOf(LOAN_STATUSES)
 
+// Pedidos e empréstimos ainda em circulação: contam no limite do aluno.
+export const OPEN_LOAN_STATUSES = [
+  LOAN_STATUS.awaitingPickup,
+  LOAN_STATUS.active,
+] as const
+
 // Como o pedido nasceu (loans.origin).
 export const LOAN_ORIGINS = ['request', 'queue', 'assistant'] as const
 export type LoanOrigin = (typeof LOAN_ORIGINS)[number]

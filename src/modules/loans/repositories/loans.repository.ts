@@ -88,6 +88,58 @@ export async function listByStudent(uid: string): Promise<LoanRecord[]> {
   return result.docs.map(toRecord)
 }
 
+// Pedidos aguardando retirada, ordenados pelo prazo mais próximo. A matrícula é
+// opcional para a busca rápida da tela de balcão.
+export async function listAwaitingPickup(
+  matricula?: string,
+): Promise<LoanRecord[]> {
+  let query = loans().where('status', '==', LOAN_STATUS.awaitingPickup)
+  if (matricula) query = query.where('matricula', '==', matricula)
+  const result = await query.orderBy('pickupDeadline', 'asc').get()
+  return result.docs.map(toRecord)
+}
+
+// Localiza o pedido lido pelo balcão. O identificador pode ser o código curto
+// digitado ou o segredo contido no QR; pedidos encerrados não são aceitos.
+export async function findAwaitingByIdentifier(
+  identifier: string,
+): Promise<LoanRecord | undefined> {
+  const field = identifier.toUpperCase().startsWith('RET-')
+    ? 'pickupCode'
+    : 'qrToken'
+  const value = field === 'pickupCode' ? identifier.toUpperCase() : identifier
+  const result = await loans().where(field, '==', value).limit(1).get()
+  const [document] = result.docs
+  if (!document) return undefined
+  const loan = toRecord(document)
+  return loan.status === LOAN_STATUS.awaitingPickup ? loan : undefined
+}
+
+// Consultas das rotinas agendadas e do resumo do balcão. O filtro de situação é
+// simples de propósito; ordenações e recortes adicionais são feitos em memória.
+export async function listByStatus(
+  status: Loan['status'],
+): Promise<LoanRecord[]> {
+  const result = await loans().where('status', '==', status).get()
+  return result.docs.map(toRecord)
+}
+
+export async function listPickupIdsExpiredBefore(at: Date): Promise<string[]> {
+  const result = await loans()
+    .where('status', '==', LOAN_STATUS.awaitingPickup)
+    .where('pickupDeadline', '<', at)
+    .get()
+  return result.docs.map((document) => document.id)
+}
+
+export async function listActiveIdsDueBefore(at: Date): Promise<string[]> {
+  const result = await loans()
+    .where('status', '==', LOAN_STATUS.active)
+    .where('dueAt', '<', at)
+    .get()
+  return result.docs.map((document) => document.id)
+}
+
 // Grava um pedido novo (RF-EMP-01).
 export function create(tx: Transaction, id: string, loan: Loan): void {
   tx.set(loans().doc(id), withoutUndefined(loan))

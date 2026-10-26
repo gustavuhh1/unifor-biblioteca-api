@@ -1,6 +1,10 @@
 import { isoOrNull } from '../../../shared/iso-date.js'
 import { isOverdue } from '../../../shared/time.js'
-import { LOAN_STATUS, type LoanRecord } from '../../../shared/types/index.js'
+import {
+  LOAN_STATUS,
+  OPEN_LOAN_STATUSES,
+  type LoanRecord,
+} from '../../../shared/types/index.js'
 import { LOAN_DISPLAY_STATE, LOAN_VIEW } from '../loans.constants.js'
 import type {
   LoanDisplayState,
@@ -74,9 +78,7 @@ export function belongsToView(
   loan: Pick<LoanRecord, 'status'>,
   view: LoanView,
 ): boolean {
-  const inProgress =
-    loan.status === LOAN_STATUS.awaitingPickup ||
-    loan.status === LOAN_STATUS.active
+  const inProgress = OPEN_LOAN_STATUSES.some((status) => status === loan.status)
   return view === LOAN_VIEW.active ? inProgress : !inProgress
 }
 

@@ -4,7 +4,7 @@ import {
   buildLibraryCalendar,
   type LibraryCalendar,
 } from '../calendar/business-days.js'
-import { localDate, plusDays } from '../calendar/dates.js'
+import { daysBetween, localDate, plusDays } from '../calendar/dates.js'
 import {
   fetchHolidays,
   type HolidaysDocument,
@@ -101,6 +101,23 @@ async function readRecesses(): Promise<
   }))
 }
 
+async function buildCalendarForPeriod(
+  openingHours: OpeningHours,
+  from: Date,
+  days: number,
+  deps: CalendarDeps,
+): Promise<LibraryCalendar> {
+  const [holidayLists, recesses] = await Promise.all([
+    Promise.all(yearsOf(from, days).map((year) => holidaysOfYear(year, deps))),
+    readRecesses(),
+  ])
+  return buildLibraryCalendar({
+    openingHours,
+    holidays: holidayLists.flat(),
+    recesses,
+  })
+}
+
 // Monta o calendário da biblioteca para as contas de prazo a partir de `from`
 // (RF-EMP-11): horários de settings/library, feriados dos anos que o período
 // atravessa e recessos.
@@ -109,17 +126,37 @@ export async function readLibraryCalendar(
   from: Date,
   deps: CalendarDeps = {},
 ): Promise<LibraryCalendar> {
-  const [holidayLists, recesses] = await Promise.all([
-    Promise.all(
-      yearsOf(from, CALENDAR_LOOKAHEAD_DAYS).map((year) =>
-        holidaysOfYear(year, deps),
-      ),
-    ),
-    readRecesses(),
-  ])
-  return buildLibraryCalendar({
+  return buildCalendarForPeriod(
     openingHours,
-    holidays: holidayLists.flat(),
-    recesses,
-  })
+    from,
+    CALENDAR_LOOKAHEAD_DAYS,
+    deps,
+  )
+}
+
+// Calendário para um intervalo arbitrário, usado pela multa de um empréstimo
+// antigo. Assim uma devolução que atravessou a virada do ano não ignora feriados.
+export async function readLibraryCalendarBetween(
+  openingHours: OpeningHours,
+  from: Date,
+  to: Date,
+  deps: CalendarDeps = {},
+): Promise<LibraryCalendar> {
+  const days = Math.max(0, daysBetween(localDate(from), localDate(to)))
+  return buildCalendarForPeriod(openingHours, from, days, deps)
+}
+
+// Pré-carrega um ano no cache. Devolve true quando foi necessário consultar a
+// FeriadosAPI e false quando o documento já existia.
+export async function refreshHolidayYear(
+  year: number,
+  deps: CalendarDeps = {},
+): Promise<boolean> {
+  const ref = getDb().collection(COLLECTIONS.holidays).doc(String(year))
+  if ((await ref.get()).exists) return false
+  const apiKey = 'apiKey' in deps ? deps.apiKey : env.FERIADOS_API_KEY
+  if (!apiKey) throw new Error('FERIADOS_API_KEY não configurada.')
+  const document = await (deps.fetchHolidays ?? fetchHolidays)(year, apiKey)
+  await cacheHolidays(document)
+  return true
 }
