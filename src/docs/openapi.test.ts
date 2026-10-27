@@ -23,7 +23,7 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     ])
   })
 
-  it('documenta todas as rotas dos módulos de acesso, do acervo, de empréstimos, de filas, de multas, do balcão, de Salvos, de avisos e das rotinas', () => {
+  it('documenta exatamente todas as rotas implementadas', () => {
     const operations = Object.entries(document.paths ?? {}).flatMap(
       ([path, item]) =>
         ['get', 'post', 'put', 'patch', 'delete']
@@ -35,6 +35,7 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
       [
         'GET /health',
         'GET /library/info',
+        'GET /me/recommendations',
         'POST /auth/signup/start',
         'POST /auth/signup/confirm',
         'POST /auth/signup/resend',
@@ -95,6 +96,35 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'DELETE /me/devices/{deviceId}',
         'POST /jobs/{job}',
       ].sort(),
+    )
+  })
+
+  it('documenta as regras para os dois perfis e as recomendações só para o aluno', () => {
+    const library = document.paths?.['/library/info']?.get
+    const recommendations = document.paths?.['/me/recommendations']?.get
+    for (const operation of [library, recommendations]) {
+      expect(operation?.security).toEqual([{ bearerAuth: [] }])
+      expect(operation?.responses?.['200']).toBeDefined()
+      expect(operation?.responses?.['401']).toBeDefined()
+    }
+    expect(library?.responses?.['403']).toBeUndefined()
+    expect(recommendations?.responses?.['403']).toBeDefined()
+    expect(document.components?.schemas?.LibraryInfo).toMatchObject({
+      required: expect.arrayContaining([
+        'openingHours',
+        'contact',
+        'officialRulesUrl',
+        'fineCentsPerBusinessDay',
+      ]),
+    })
+    expect(document.components?.schemas?.RecommendationsResponse).toMatchObject(
+      {
+        properties: {
+          reasonText: { type: ['string', 'null'] },
+          items: { maxItems: 6 },
+        },
+        required: ['reasonText', 'items', 'generatedAt', 'validUntil'],
+      },
     )
   })
 
@@ -277,9 +307,13 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     expect(
       paths['/me/notification-prefs']?.patch?.responses?.['400'],
     ).toBeDefined()
-    expect(paths['/me/devices/{deviceId}']?.put?.responses?.['400']).toBeDefined()
     expect(
-      Object.keys(paths).filter((path) => /\/(push|send|email)(\/|$)/i.test(path)),
+      paths['/me/devices/{deviceId}']?.put?.responses?.['400'],
+    ).toBeDefined()
+    expect(
+      Object.keys(paths).filter((path) =>
+        /\/(push|send|email)(\/|$)/i.test(path),
+      ),
     ).toEqual([])
   })
 

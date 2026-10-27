@@ -1,3 +1,4 @@
+import '../modules/recommendations/recommendations.docs.js'
 import '../modules/library/library.docs.js'
 import { OpenApiGeneratorV31 } from '@asteasolutions/zod-to-openapi'
 import '../modules/auth/auth.docs.js'
@@ -46,7 +47,8 @@ export function buildOpenApiDocument(nodeEnv: string = env.NODE_ENV) {
     info: {
       title: 'Unifor Biblioteca API',
       version: '0.1.0',
-      description: 'API REST do app de biblioteca universitária Unifor Biblioteca.',
+      description:
+        'API REST do app de biblioteca universitária Unifor Biblioteca.',
     },
     servers,
   })

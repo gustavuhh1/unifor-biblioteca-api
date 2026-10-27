@@ -12,6 +12,7 @@ import { libraryRouter } from './modules/library/library.routes.js'
 import { loansRouter } from './modules/loans/loans.routes.js'
 import { queuesRouter } from './modules/queues/queues.routes.js'
 import { notificationsRouter } from './modules/notifications/notifications.routes.js'
+import { recommendationsRouter } from './modules/recommendations/recommendations.routes.js'
 import { savedRouter } from './modules/saved/saved.routes.js'
 import { healthResponseSchema } from './shared/health.js'
 
@@ -35,6 +36,7 @@ app.use(queuesRouter)
 app.use(finesRouter)
 app.use(deskRouter)
 app.use(savedRouter)
+app.use(recommendationsRouter)
 app.use(notificationsRouter)
 app.use(jobsRouter)
 
