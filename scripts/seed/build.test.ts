@@ -438,6 +438,27 @@ describe.each([
 
   const day = (date: Date | undefined) => localDate(date!)
 
+  it('dá ao Lucas dois livros devolvidos no prazo, sem multa e sem mexer nos contadores (histórico dos Recomendados)', () => {
+    const returned = Object.values(run.loans).filter(
+      (loan) => loan.studentUid === 'uid_lucas' && loan.status === 'returned',
+    )
+
+    expect(returned.map((loan) => loan.bookTitle).sort()).toEqual([
+      'Algoritmos',
+      'Refatoração',
+    ])
+    for (const loan of returned) {
+      expect(loan.fineId).toBeUndefined()
+      expect(loan.returnedAt!.getTime()).toBeLessThanOrEqual(
+        loan.dueAt!.getTime(),
+      )
+    }
+    expect(run.users.uid_lucas).toMatchObject({
+      activeLoanCount: 4,
+      booksReadByYear: { '2026': 17 },
+    })
+  })
+
   it('mantém o Lucas com 4 de 10 e o pedido RET-4821 dentro do prazo de retirada', () => {
     expect(run.users.uid_lucas).toMatchObject({ activeLoanCount: 4 })
     const order = run.loans.loan_ret4821!
