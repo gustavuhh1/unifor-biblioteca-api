@@ -116,3 +116,9 @@ export type QueueEntryRecord = QueueEntry & { id: string }
 
 // Multa lida do banco, com o seu id.
 export type FineRecord = Fine & { id: string }
+
+// Histórico usado nas sugestões: livros devolvidos e obras já emprestadas.
+export interface ReadingHistory {
+  returnedBookIds: string[]
+  borrowedWorkIds: Set<string>
+}
