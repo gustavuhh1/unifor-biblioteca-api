@@ -27,7 +27,7 @@ Responsáveis: **Gustavo** (contas, cartão, DNS, chaves) e **Claude** (pesquisa
 | `EMAIL_FROM` | não | variável do Cloud Run e `.env` (`Unifor Biblioteca <nao-responda@email.uni-books.app>`) | Resend |
 | `FERIADOS_API_KEY` | sim | Secret Manager `feriados-api-key` e `.env` | FeriadosAPI |
 | `GEMINI_API_KEY` | sim | Secret Manager `gemini-api-key` e `.env` | Gemini |
-| `GEMINI_MODEL` | não | variável do Cloud Run e `.env` (`gemini-3.8-flash`; reserva `gemini-3.1-flash-lite`) | Gemini |
+| `GEMINI_MODEL` | não | variável do Cloud Run e `.env` (`gemini-3.5-flash-lite`; reserva `gemini-3.1-flash-lite`; trocado em 27/10, ver seção 4) | Gemini |
 | `GOOGLE_CLOUD_PROJECT` | não | `estoque-pay` | Firestore, Firebase Admin e Secret Manager |
 | `PASSKEY_RP_ID` | não | `uni-books.app` (não trocar: invalida os passkeys) | Passkey |
 | `PASSKEY_ANDROID_ORIGINS` | não | variável do Cloud Run e `.env` | Origens aceitas no passkey do app Android, no formato `android:apk-key-hash:<SHA-256 do certificado de assinatura, em base64url>`, separadas por vírgula (uma para o build de desenvolvimento). Vem do certificado do app, não é segredo |
@@ -91,6 +91,8 @@ Fortaleza = IBGE `2304400`. Uma chamada por ano traz os feriados nacionais, esta
 | Limites do plano grátis do modelo escolhido | ⬜ conferir | Gustavo | 18/10 | https://aistudio.google.com/rate-limit |
 
 Sem faturamento no projeto da chave, não há como cobrar: ao passar do limite, a chamada só falha. No plano grátis o Google usa os dados para melhorar os produtos. Os dados do app são fictícios; registrar isso no README.
+
+**Modelo (27/10).** Os códigos `gemini-3.8-flash`, `gemini-3.5-flash-lite` e `gemini-3.1-flash-lite` existem e são estáveis na documentação do Google. Em 27/10, pela API, o `gemini-3.8-flash` respondeu 503 ("high demand") e 504 (fim do prazo, depois de 24 s), enquanto o `gemini-3.5-flash-lite` respondeu em cerca de 1 s e o `gemini-3.1-flash-lite` em 1,3 s. Com o `gemini-3.5-flash-lite` o Assistente respondeu cada pergunta em 2 a 3 s, inclusive com busca, pedido e fila. Por isso ele é o modelo padrão e o `gemini-3.1-flash-lite` é o reserva. O `gemini-3.8-flash` continua valendo, trocando `GEMINI_MODEL`. Atenção: o deploy lê `GEMINI_MODEL` do `.env`; sem trocar lá, o Cloud Run segue com o valor antigo.
 
 ## 5. Open Library e BrasilAPI (API externa da cadeira de Integração)
 

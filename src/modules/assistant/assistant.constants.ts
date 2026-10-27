@@ -32,9 +32,27 @@ export const SYNOPSIS_MAX_LENGTH = 300
 
 // Gemini: modelo padrão (o GEMINI_MODEL do ambiente troca), endereço da API e
 // tempo máximo de espera de cada chamada.
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
-export const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta'
+// O gemini-3.5-flash-lite (estável, com thinking mínimo por padrão) respondeu em
+// cerca de 1 s nos testes de 27/10, enquanto o gemini-3.8-flash dava 503 e 504.
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite'
+// Modelo reserva (docs/infra.md): entra quando o principal responde 503 ou 429.
+export const DEFAULT_GEMINI_FALLBACK_MODEL = 'gemini-3.1-flash-lite'
+// Tempo máximo de cada chamada ao Gemini.
 export const GEMINI_TIMEOUT_MS = 15_000
+// Tempo máximo de uma pergunta inteira, somando todas as chamadas e tentativas.
+// Fica abaixo dos 60 s do Hosting e do Cloud Run, com folga para gravar a resposta.
+export const GEMINI_QUESTION_DEADLINE_MS = 40_000
+// Tentativas por chamada, alternando o modelo principal e o reserva. O 503 do
+// Gemini costuma ser passageiro e responder rápido, então vale insistir; o prazo
+// da pergunta limita o total.
+export const GEMINI_MAX_ATTEMPTS = 5
+// Depois que um modelo falha, as próximas perguntas começam pelo outro durante
+// este tempo, em vez de esperar o modelo ruim responder de novo.
+export const GEMINI_COOLDOWN_MS = 120_000
+// Espera antes de voltar a um modelo que acabou de falhar.
+export const GEMINI_RETRY_DELAY_MS = 1_000
+// Erros do Gemini que valem uma nova tentativa: excesso de pedidos e instabilidade.
+export const GEMINI_RETRYABLE_STATUSES: readonly number[] = [429, 500, 503, 504]
 
 // Ferramentas que o Gemini pode pedir à API. A API executa cada uma com os
 // serviços do acervo, do empréstimo e da fila; o Gemini só recebe o resultado.

@@ -238,7 +238,7 @@ src/middlewares/
 
 Os nomes dos middlewares no código são `authenticate` (exige sessão) e `requireRole` (exige o perfil). `studentSession` e `librarianSession` apenas juntam os dois, na ordem certa.
 
-**Bibliotecas:** `@simplewebauthn/server` (passkey), `firebase-admin` (Firebase Authentication e Firestore), `zod` (validação), `express` 5 e `resend` (e-mail).
+**Bibliotecas:** `@simplewebauthn/server` (passkey), `firebase-admin` (Firebase Authentication e Firestore), `zod` (validação), `express` 5, `resend` (e-mail) e `@google/genai` (SDK oficial do Gemini, no Assistente).
 
 **Middleware que confere o token** (`src/middlewares/auth.ts`, resumido):
 
@@ -627,6 +627,7 @@ O Assistente do aluno (`src/modules/assistant/`) usa a **Gemini API** com _funct
 | `propose_loan` e `propose_queue` | Conferem a mesma regra do pedido e da fila e gravam uma ação **proposta** ou **bloqueada**, com o motivo (RF-ASS-04) |
 
 - **Nada é executado sem o aluno:** a ação proposta vira um cartão no app, e só `POST /me/assistant/actions/{actionId}/confirm` faz o pedido ou entra na fila, pelo próprio serviço do empréstimo ou da fila (origem `assistant`), conferindo tudo de novo. A ação vale 15 minutos (`settings/library.assistantActionMinutes`).
+- **Gemini sobrecarregado (503, 429) ou lento:** a chamada é feita com o SDK oficial `@google/genai`. Se o modelo responde 503, 429 ou 5xx, a API tenta de novo alternando o modelo de `GEMINI_MODEL` e o modelo reserva (`gemini-3.1-flash-lite`), até 5 tentativas, e por 2 minutos começa pelo modelo que não falhou. Cada chamada espera no máximo 15 segundos, e a pergunta inteira no máximo 40 segundos, abaixo do limite de 60 segundos do Hosting.
 - **Só o necessário vai ao Gemini (RF-ASS-07):** a pergunta, a conversa e dados do acervo (título, autores, assuntos, ano, trecho da sinopse e disponibilidade). Nunca matrícula, e-mail, nome nem o identificador do aluno. A chave vai no cabeçalho `x-goog-api-key`, nunca na URL.
 - **Plano gratuito:** a chave do Gemini é de um projeto sem faturamento, e nesse plano o Google pode usar os dados enviados para melhorar os produtos dele. Por isso os dados do aplicativo são fictícios e nada pessoal vai no pedido.
 - **Se o Gemini falhar** (sem chave, fora do ar ou tempo esgotado), a resposta vem com `error: true` e um texto pedindo para tentar de novo; a pergunta fica salva.
