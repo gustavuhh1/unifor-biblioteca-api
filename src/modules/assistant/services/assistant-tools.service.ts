@@ -5,6 +5,7 @@ import {
   recommendFromHistory,
 } from '../../../shared/rules/book-similarity.js'
 import * as loansRepository from '../../../shared/repositories/loans.repository.js'
+import { readingHistoryOf } from '../../../shared/rules/reading-history.js'
 import { searchTermsOf } from '../../../shared/search-text.js'
 import {
   ASSISTANT_ACTION_STATUS,
@@ -14,12 +15,12 @@ import * as booksRepository from '../../catalog/repositories/books.repository.js
 import { searchBooks } from '../../catalog/rules/catalog-search.rules.js'
 import {
   ASSISTANT_TOOL,
+  HISTORY_BOOKS_LIMIT,
   SEARCH_LIMIT,
   SUGGESTION_LIMIT,
 } from '../assistant.constants.js'
 import { blockedMessageOf } from '../rules/assistant-view.rules.js'
 import { toToolBook } from '../rules/catalog-view.rules.js'
-import { readingHistoryOf } from '../rules/reading-history.rules.js'
 import type { ToolCall } from '../rules/tools.rules.js'
 import {
   proposeLoan,
@@ -157,7 +158,7 @@ export async function runTool(
         activeBooks(),
         loansRepository.listByStudent(ctx.uid),
       ])
-      const history = readingHistoryOf(loans)
+      const history = readingHistoryOf(loans, HISTORY_BOOKS_LIMIT)
       const byId = new Map(books.map((book) => [book.id, book]))
       const read = await Promise.all(
         history.returnedBookIds.map(

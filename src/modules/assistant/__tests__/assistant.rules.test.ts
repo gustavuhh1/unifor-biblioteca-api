@@ -4,10 +4,8 @@ import { DEFAULT_REQUEST_LIMITS } from '../../../shared/rules/request-eligibilit
 import type {
   AssistantActionRecord,
   AssistantMessageRecord,
-  LoanRecord,
 } from '../../../shared/types/index.js'
 import { makeBook } from '../../catalog/__tests__/book.fixtures.js'
-import { makeLoanRecord } from '../../loans/__tests__/loan.fixtures.js'
 import { ASSISTANT_TOOLS, SYNOPSIS_MAX_LENGTH } from '../assistant.constants.js'
 import { buildSystemInstruction } from '../rules/app-guide.rules.js'
 import {
@@ -17,7 +15,6 @@ import {
   toMessageResponse,
 } from '../rules/assistant-view.rules.js'
 import { toToolBook } from '../rules/catalog-view.rules.js'
-import { readingHistoryOf } from '../rules/reading-history.rules.js'
 import { parseToolCall, TOOL_DECLARATIONS } from '../rules/tools.rules.js'
 
 const AT = new Date('2026-10-15T15:00:00Z')
@@ -94,31 +91,6 @@ describe('toToolBook: o livro que vai ao Gemini (RF-ASS-07)', () => {
     )
     expect(tool.synopsis).toHaveLength(SYNOPSIS_MAX_LENGTH)
     expect(tool.synopsis?.endsWith('…')).toBe(true)
-  })
-})
-
-describe('readingHistoryOf: histórico para as sugestões (RF-ASS-03)', () => {
-  it('lista os devolvidos do mais recente para o mais antigo e as obras já pegas', () => {
-    const loans: LoanRecord[] = [
-      makeLoanRecord('l1', {
-        bookId: 'antigo',
-        workId: 'w1',
-        status: 'returned',
-        returnedAt: new Date('2026-09-01T12:00:00Z'),
-      }),
-      makeLoanRecord('l2', {
-        bookId: 'recente',
-        workId: 'w2',
-        status: 'returned',
-        returnedAt: new Date('2026-10-01T12:00:00Z'),
-      }),
-      makeLoanRecord('l3', { bookId: 'aberto', workId: 'w3' }),
-    ]
-
-    const history = readingHistoryOf(loans)
-
-    expect(history.returnedBookIds).toEqual(['recente', 'antigo'])
-    expect([...history.borrowedWorkIds].sort()).toEqual(['w1', 'w2', 'w3'])
   })
 })
 
