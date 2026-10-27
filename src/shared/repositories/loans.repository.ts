@@ -76,13 +76,15 @@ export async function listAwaitingPickupCodes(
 }
 
 // Os pedidos e empréstimos do aluno, dos mais novos para os mais antigos (índice
-// studentUid + requestedAt), até LOAN_LIST_LIMIT.
-export async function listByStudent(uid: string): Promise<LoanRecord[]> {
-  const result = await loans()
+// studentUid + requestedAt), até o limite. null lê todo o histórico (RF-ASS-03).
+export async function listByStudent(
+  uid: string,
+  limit: number | null = LOAN_LIST_LIMIT,
+): Promise<LoanRecord[]> {
+  const query = loans()
     .where('studentUid', '==', uid)
     .orderBy('requestedAt', 'desc')
-    .limit(LOAN_LIST_LIMIT)
-    .get()
+  const result = await (limit === null ? query : query.limit(limit)).get()
   return result.docs.map(toRecord)
 }
 

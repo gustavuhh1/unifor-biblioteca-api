@@ -1,18 +1,15 @@
-import { Router, type RequestHandler } from 'express'
-import { authenticate } from '../../middlewares/auth.js'
-import { librarianSession } from '../../middlewares/session.js'
+import { Router } from 'express'
+import { anySession, librarianSession } from '../../middlewares/session.js'
 import * as controller from './catalog.controller.js'
 
 // Só o caminho e os middlewares de cada rota; a lógica fica no controller.
-
-const session: RequestHandler[] = [authenticate]
 
 // Router do módulo do acervo.
 export const catalogRouter = Router()
 
 // Busca e página do livro (RF-ACE-01, RF-ACE-02, RF-ACE-03, RF-ACE-08).
-catalogRouter.get('/books', ...session, controller.listBooks)
-catalogRouter.get('/books/:bookId', ...session, controller.getBook)
+catalogRouter.get('/books', ...anySession, controller.listBooks)
+catalogRouter.get('/books/:bookId', ...anySession, controller.getBook)
 
 // Gestão do acervo, só do bibliotecário (RF-GAC-01 a RF-GAC-06).
 catalogRouter.get(

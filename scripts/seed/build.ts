@@ -22,6 +22,8 @@ import {
   DEFAULT_BOOK_LANGUAGE,
   DEFAULT_COPY_FORMAT,
   DEFAULT_LOAN_RULES,
+  DEFAULT_LIBRARY_CONTACT,
+  DEFAULT_OFFICIAL_RULES_URL,
   DEFAULT_MATERIAL_TYPE,
   LIBRARY_PLACE,
 } from '../../src/shared/library.js'
@@ -595,13 +597,8 @@ export function buildSeed(options: BuildOptions): SeedData {
     emailTokenMinutes: 20,
     emailTokenMaxAttempts: 5,
     assistantActionMinutes: 15,
-    contact: {
-      place: LIBRARY_PLACE,
-      biblioZap: '(85) 3477-3257',
-      loanPhone: '(85) 3477-3162',
-      loanEmail: 'bibemprestimo@unifor.br',
-    },
-    officialRulesUrl: 'https://unifor.br/cesta-de-servicos/biblioteca',
+    contact: DEFAULT_LIBRARY_CONTACT,
+    officialRulesUrl: DEFAULT_OFFICIAL_RULES_URL,
     ...stamps(),
   }
 

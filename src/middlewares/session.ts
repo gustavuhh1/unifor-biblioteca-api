@@ -6,6 +6,9 @@ import { requireRole } from './require-role.js'
 // Sessão exigida pelas rotas protegidas (RF-AUT-12): sem sessão 401, perfil errado
 // 403. Cada módulo usa a do perfil dono da rota, em vez de montar a sua.
 
+// Rotas de qualquer usuário autenticado.
+export const anySession: RequestHandler[] = [authenticate]
+
 // Rotas do aluno.
 export const studentSession: RequestHandler[] = [
   authenticate,

@@ -1,4 +1,4 @@
-import type { OpeningHours } from './types/index.js'
+import type { LibraryContact, OpeningHours } from './types/index.js'
 
 // Textos padrão do acervo da biblioteca. O cadastro de livros e o seed usam os
 // mesmos valores.
@@ -45,3 +45,15 @@ export const DEFAULT_LOAN_RULES = {
   // Multa por dia útil de atraso, em centavos (RF-MUL-01): R$ 2,00.
   fineCentsPerBusinessDay: 200,
 }
+
+// Contatos padrão do atendimento, usados pela API e pelo seed (seção 2.21).
+export const DEFAULT_LIBRARY_CONTACT: LibraryContact = {
+  place: LIBRARY_PLACE,
+  biblioZap: '(85) 3477-3257',
+  loanPhone: '(85) 3477-3162',
+  loanEmail: 'bibemprestimo@unifor.br',
+}
+
+// Página oficial mostrada em Regras da biblioteca (RF-PER-02).
+export const DEFAULT_OFFICIAL_RULES_URL =
+  'https://unifor.br/cesta-de-servicos/biblioteca'

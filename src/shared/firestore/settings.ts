@@ -1,7 +1,16 @@
 import type { DocumentSnapshot } from 'firebase-admin/firestore'
-import { z } from 'zod'
 import { getDb } from '../../config/firebase.js'
-import { DEFAULT_LOAN_RULES, DEFAULT_OPENING_HOURS } from '../library.js'
+import {
+  DEFAULT_LOAN_RULES,
+  DEFAULT_OPENING_HOURS,
+  DEFAULT_LIBRARY_CONTACT,
+  DEFAULT_OFFICIAL_RULES_URL,
+} from '../library.js'
+import {
+  openingHoursSchema,
+  libraryContactSchema,
+  officialRulesUrlSchema,
+} from '../library-schemas.js'
 import {
   DEFAULT_REQUEST_LIMITS,
   type RequestLimits,
@@ -20,24 +29,6 @@ export function readLibrarySettings(): Promise<DocumentSnapshot> {
 export function positiveNumberOr(value: unknown, fallback: number): number {
   return typeof value === 'number' && value > 0 ? value : fallback
 }
-
-// Horário de um dia da semana: abre e fecha em "HH:mm", ou null (fechado).
-const openingPeriodSchema = z
-  .object({
-    open: z.string().regex(/^\d{2}:\d{2}$/),
-    close: z.string().regex(/^\d{2}:\d{2}$/),
-  })
-  .nullable()
-
-const openingHoursSchema = z.object({
-  mon: openingPeriodSchema,
-  tue: openingPeriodSchema,
-  wed: openingPeriodSchema,
-  thu: openingPeriodSchema,
-  fri: openingPeriodSchema,
-  sat: openingPeriodSchema,
-  sun: openingPeriodSchema,
-})
 
 // O horário de funcionamento, se estiver completo e válido; senão o padrão.
 function openingHoursOr(value: unknown): OpeningHours {
@@ -65,8 +56,10 @@ export interface LoanSettings extends RequestLimits {
 // Lê settings/library (uma leitura só) e devolve os números das regras de
 // empréstimo. Sem o documento ou com valor inválido, valem os padrões da seção
 // 2.21 (10 empréstimos, 7 filas, 14 dias, 1 renovação, 2 dias úteis...).
-export async function readLoanSettings(): Promise<LoanSettings> {
-  const snapshot = await readLibrarySettings()
+export async function readLoanSettings(
+  source?: DocumentSnapshot,
+): Promise<LoanSettings> {
+  const snapshot = source ?? (await readLibrarySettings())
   const number = (field: string, fallback: number) =>
     positiveNumberOr(snapshot.get(field), fallback)
   return {
@@ -105,4 +98,29 @@ export async function readLoanSettings(): Promise<LoanSettings> {
 export async function readRequestLimits(): Promise<RequestLimits> {
   const { maxActiveLoans, maxActiveQueues } = await readLoanSettings()
   return { maxActiveLoans, maxActiveQueues }
+}
+
+// Lê os contatos e o link oficial, validando cada campo e usando os padrões
+// apenas onde o valor está ausente ou inválido (RF-PER-02).
+export async function readLibraryContactSettings(source?: DocumentSnapshot) {
+  const snapshot = source ?? (await readLibrarySettings())
+  const raw = snapshot.get('contact') as
+    Record<string, unknown> | null | undefined
+  const fields = libraryContactSchema.shape
+  const contactField = <K extends keyof typeof fields>(key: K): string => {
+    const parsed = fields[key].safeParse(raw?.[key])
+    return parsed.success ? parsed.data : DEFAULT_LIBRARY_CONTACT[key]
+  }
+  const link = officialRulesUrlSchema.safeParse(
+    snapshot.get('officialRulesUrl'),
+  )
+  return {
+    contact: {
+      place: contactField('place'),
+      biblioZap: contactField('biblioZap'),
+      loanPhone: contactField('loanPhone'),
+      loanEmail: contactField('loanEmail'),
+    },
+    officialRulesUrl: link.success ? link.data : DEFAULT_OFFICIAL_RULES_URL,
+  }
 }
