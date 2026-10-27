@@ -13,6 +13,7 @@ import {
   ASSISTANT_ERROR_TEXT,
   CONTEXT_MESSAGES,
   CONVERSATION_LIST_LIMIT,
+  GEMINI_QUESTION_DEADLINE_MS,
   MAX_TOOL_ROUNDS,
 } from '../assistant.constants.js'
 import type {
@@ -92,11 +93,15 @@ async function converse(
   contents: GeminiContent[],
   ctx: ToolContext,
 ): Promise<string> {
+  // Prazo da pergunta inteira: as rodadas de ferramentas e as novas tentativas
+  // dividem o mesmo tempo, que fica abaixo dos 60 s do Hosting.
+  const signal = AbortSignal.timeout(GEMINI_QUESTION_DEADLINE_MS)
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
     const reply = await generateContent({
       systemInstruction,
       contents,
       tools: TOOL_DECLARATIONS,
+      signal,
     })
     const calls = reply.parts.flatMap((part) =>
       part.functionCall ? [part.functionCall] : [],
