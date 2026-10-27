@@ -10,8 +10,10 @@ import { readLoanSettings } from '../../../shared/firestore/settings.js'
 import { checkRequestEligibility } from '../../../shared/rules/request-eligibility.js'
 import {
   ELIGIBILITY_ACTION,
+  LOAN_ORIGIN,
   USER_ROLE,
   USER_STATUS,
+  type LoanOrigin,
 } from '../../../shared/types/index.js'
 import * as usersRepository from '../../../shared/repositories/users.repository.js'
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
@@ -40,10 +42,13 @@ import {
 //   6. existe exemplar disponível e a fila da edição está vazia (no_copy_available).
 // Se passar: cria o pedido (aguardando retirada, com 2 dias úteis até o fechamento
 // da biblioteca, código RET-#### e segredo do QR), o exemplar vira reserved,
-// copiesAvailable do livro cai 1 e activeLoanCount do aluno sobe 1.
+// copiesAvailable do livro cai 1 e activeLoanCount do aluno sobe 1. `origin` diz
+// quem pediu: o próprio aluno (padrão) ou o Assistente, depois da confirmação do
+// aluno (RF-ASS-04, com as mesmas regras).
 export async function requestLoan(
   uid: string,
   body: CreateLoanBody,
+  origin: LoanOrigin = LOAN_ORIGIN.request,
 ): Promise<LoanResponse> {
   const settings = await readLoanSettings()
   const at = nowOf(settings)
@@ -91,6 +96,7 @@ export async function requestLoan(
         shelf: book.shelf,
       },
       copyId: copy.id,
+      origin,
       pickupCode: generatePickupCode(takenCodes, randomInt),
       qrToken: generateQrToken(randomBytes),
       loanDays: settings.loanDays,
