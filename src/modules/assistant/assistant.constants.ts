@@ -32,7 +32,9 @@ export const SYNOPSIS_MAX_LENGTH = 300
 
 // Gemini: modelo padrão (o GEMINI_MODEL do ambiente troca), endereço da API e
 // tempo máximo de espera de cada chamada.
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
+// O gemini-3.5-flash-lite (estável, com thinking mínimo por padrão) respondeu em
+// cerca de 1 s nos testes de 27/10, enquanto o gemini-3.8-flash dava 503 e 504.
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite'
 // Modelo reserva (docs/infra.md): entra quando o principal responde 503 ou 429.
 export const DEFAULT_GEMINI_FALLBACK_MODEL = 'gemini-3.1-flash-lite'
 // Tempo máximo de cada chamada ao Gemini.
