@@ -1,3 +1,4 @@
+import '../modules/library/library.docs.js'
 import { OpenApiGeneratorV31 } from '@asteasolutions/zod-to-openapi'
 import '../modules/auth/auth.docs.js'
 import '../modules/catalog/catalog.docs.js'

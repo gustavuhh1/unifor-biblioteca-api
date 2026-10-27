@@ -34,6 +34,7 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
     expect(operations.sort()).toEqual(
       [
         'GET /health',
+        'GET /library/info',
         'POST /auth/signup/start',
         'POST /auth/signup/confirm',
         'POST /auth/signup/resend',
