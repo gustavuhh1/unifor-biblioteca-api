@@ -8,8 +8,12 @@ vi.mock('../../config/firebase.js', () => ({ getDb: () => h.db }))
 
 const { FakeFirestore: Fake } =
   await import('../../test-support/fake-firestore.js')
-const { positiveNumberOr, readLoanSettings, readRequestLimits } =
-  await import('./settings.js')
+const {
+  positiveNumberOr,
+  readAssistantActionMinutes,
+  readLoanSettings,
+  readRequestLimits,
+} = await import('./settings.js')
 
 beforeEach(() => {
   h.db = new Fake()
@@ -126,5 +130,19 @@ describe('números das regras de empréstimo (readLoanSettings)', () => {
     expect((await readLoanSettings()).simulatedNow).toEqual(
       new Date('2026-10-15T15:00:00Z'),
     )
+  })
+})
+
+describe('validade da ação do Assistente (readAssistantActionMinutes)', () => {
+  it('lê assistantActionMinutes de settings/library', async () => {
+    h.db.put('settings', 'library', { assistantActionMinutes: 20 })
+
+    expect(await readAssistantActionMinutes()).toBe(20)
+  })
+
+  it('usa 15 quando o documento não existe ou o valor é inválido', async () => {
+    expect(await readAssistantActionMinutes()).toBe(15)
+    h.db.put('settings', 'library', { assistantActionMinutes: 0 })
+    expect(await readAssistantActionMinutes()).toBe(15)
   })
 })

@@ -14,6 +14,7 @@ import { queuesRouter } from './modules/queues/queues.routes.js'
 import { notificationsRouter } from './modules/notifications/notifications.routes.js'
 import { recommendationsRouter } from './modules/recommendations/recommendations.routes.js'
 import { savedRouter } from './modules/saved/saved.routes.js'
+import { assistantRouter } from './modules/assistant/assistant.routes.js'
 import { healthResponseSchema } from './shared/health.js'
 
 // Aplicação Express da API: middlewares, /health, módulos, /docs e erros.
@@ -38,6 +39,7 @@ app.use(deskRouter)
 app.use(savedRouter)
 app.use(recommendationsRouter)
 app.use(notificationsRouter)
+app.use(assistantRouter)
 app.use(jobsRouter)
 
 // Os routers dos módulos são montados acima desta linha, para que a

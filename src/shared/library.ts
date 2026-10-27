@@ -57,3 +57,8 @@ export const DEFAULT_LIBRARY_CONTACT: LibraryContact = {
 // Página oficial mostrada em Regras da biblioteca (RF-PER-02).
 export const DEFAULT_OFFICIAL_RULES_URL =
   'https://unifor.br/cesta-de-servicos/biblioteca'
+
+// Minutos que a ação proposta pelo Assistente espera a confirmação do aluno
+// (settings/library.assistantActionMinutes, seção 2.17), usados quando o
+// documento ou o campo não existe.
+export const DEFAULT_ASSISTANT_ACTION_MINUTES = 15

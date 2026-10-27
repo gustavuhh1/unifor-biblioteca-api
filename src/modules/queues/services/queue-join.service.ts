@@ -9,6 +9,7 @@ import {
   USER_ROLE,
   USER_STATUS,
   type QueueEntry,
+  type QueueOrigin,
 } from '../../../shared/types/index.js'
 import * as usersRepository from '../../../shared/repositories/users.repository.js'
 import { bookNotFound } from '../../catalog/catalog.errors.js'
@@ -29,9 +30,12 @@ import { toQueueEntryResponse } from '../rules/queue-view.rules.js'
 // pedido nesta edição) e cria o lugar `waiting` no fim da fila. As edições marcadas
 // juntas ganham o mesmo `editionGroupId`. `queueLength` de cada livro e
 // `activeQueueCount` do aluno sobem. Nada é gravado se uma edição for recusada.
+// `origin` diz quem pediu: o próprio aluno (padrão) ou o Assistente, depois da
+// confirmação do aluno (RF-ASS-04, com as mesmas regras).
 export async function joinQueue(
   uid: string,
   body: JoinQueueBody,
+  origin: QueueOrigin = QUEUE_ORIGIN.student,
 ): Promise<JoinQueueResponse> {
   const settings = await readLoanSettings()
   const at = nowOf(settings)
@@ -85,7 +89,7 @@ export async function joinQueue(
           name: displayNameOf(student),
         },
         order: nextOrderAtEnd(queues[index] ?? []),
-        origin: QUEUE_ORIGIN.student,
+        origin,
         editionGroupId,
         at,
       }),

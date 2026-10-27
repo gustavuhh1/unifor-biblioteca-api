@@ -30,6 +30,7 @@ Esta API REST (Node.js, TypeScript e Express) concentra todas as regras de negó
 - Consultar as multas (`GET /me/fines`). A multa é paga só no balcão; a API não recebe pagamento.
 - Salvar livros e organizá-los em pastas (`/me/saved`, `/me/folders`).
 - Receber avisos dentro do aplicativo, por push (Android) e por e-mail, e ligar ou desligar cada tipo (`/me/notifications`, `/me/notification-prefs`).
+- Conversar com o **Assistente** (Gemini): ele ensina a usar o app, busca no acervo, sugere livros parecidos e pelo histórico de leitura, e prepara um pedido de empréstimo ou uma entrada na fila que só acontece depois que o aluno confirma (`/me/assistant/messages`, `/me/assistant/actions/{actionId}/confirm`).
 
 #### Bibliotecário
 
@@ -85,8 +86,8 @@ O banco é o **Firestore**, com 24 coleções (`docs/modelo-de-dados-firestore.m
 | `users/{uid}/folders/{folderId}`     | Pastas de Salvos                                                   |
 | `users/{uid}/notifications/{id}`     | Avisos dentro do aplicativo                                        |
 | `users/{uid}/devices/{deviceId}`     | Token de push de cada aparelho                                     |
-| `users/{uid}/assistantMessages/{id}` | Conversa com o Assistente (reservada)                              |
-| `users/{uid}/assistantActions/{id}`  | Ação proposta pelo Assistente (reservada)                          |
+| `users/{uid}/assistantMessages/{id}` | Conversa com o Assistente                                          |
+| `users/{uid}/assistantActions/{id}`  | Ação proposta pelo Assistente, esperando a confirmação do aluno    |
 | `recommendations/{uid}`              | "Recomendados para você" (reservada)                               |
 | `holidays/{ano}`                     | Feriados vindos da FeriadosAPI (cache)                             |
 | `recesses/{recessId}`                | Dias de recesso, cadastrados à mão                                 |
@@ -369,7 +370,7 @@ O `seed` cria 12 contas (11 alunos e 1 bibliotecário), livros, exemplares, empr
 | `EMAIL_FROM`                                              | Remetente dos e-mails                                                       | Não               |
 | `RESEND_API_KEY`                                          | Chave do Resend, para enviar e-mails                                        | **Sim**           |
 | `FERIADOS_API_KEY`                                        | Chave da FeriadosAPI, para os feriados                                      | **Sim**           |
-| `GEMINI_API_KEY` e `GEMINI_MODEL`                         | Reservadas ao Assistente de IA (ainda não implementado)                     | **Sim** (a chave) |
+| `GEMINI_API_KEY` e `GEMINI_MODEL`                         | Chave e modelo do Gemini, para o Assistente                                 | **Sim** (a chave) |
 | `SEED_TEST_PASSWORD`                                      | Senha das contas de teste criadas pelo seed (só no `.env` local)            | **Sim**           |
 
 ### Exemplos de requisições funcionando
@@ -557,7 +558,7 @@ A API fala com serviços externos em quatro frentes:
 | **FeriadosAPI**                         | Feriados de Fortaleza, para o cálculo de dias úteis, prazos e multas | Leitura do calendário e rotina `refresh_holidays`                                          |
 | **Resend**                              | Envio de e-mail (token de cadastro e recuperação, avisos)            | Cadastro, recuperação de senha e entrega de avisos                                         |
 | **Expo Push**                           | Notificação push no Android                                          | Entrega de avisos                                                                          |
-| **Gemini** (reservado)                  | Assistente de IA                                                     | **Ainda não implementado:** só as variáveis de ambiente e o módulo vazio existem           |
+| **Gemini**                              | Assistente de IA do aluno                                            | Conversa do Assistente (`POST /me/assistant/messages`)                                     |
 
 A integração principal da disciplina é a de **livros**: duas APIs públicas, sem chave, consultadas **ao mesmo tempo** e combinadas com os dados locais.
 
@@ -610,6 +611,22 @@ flowchart TD
 - **A busca e a página do livro nunca chamam a API externa.** Só o cadastro e a atualização chamam.
 - **Se a API externa falhar** (rede, tempo esgotado ou resposta fora do formato), a API usa o que já está salvo, e uma fonte fora do ar não impede a outra de responder.
 - **Feriados:** uma chamada por ano, guardada em cache no Firestore (`holidays/{ano}`), por causa do limite de 60 requisições por minuto da FeriadosAPI. Se a FeriadosAPI falhar, a API segue com os feriados já salvos.
+
+### Assistente com o Gemini
+
+O Assistente do aluno (`src/modules/assistant/`) usa a **Gemini API** com _function calling_. A cada pergunta, a API manda ao Gemini a instrução de sistema (o guia do app, com os números das regras lidos de `settings/library`), as últimas mensagens da conversa e a lista de ferramentas. Quando o Gemini pede uma ferramenta, **quem executa é a API**, com os serviços que já existem, e devolve só o resultado:
+
+| Ferramenta                       | O que a API faz                                                                                                      |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `search_catalog`                 | Busca no acervo, com a mesma busca do app (RF-ASS-02)                                                                |
+| `similar_books`                  | Livros parecidos pelo assunto e pelo autor (`src/shared/rules/book-similarity.ts`)                                   |
+| `recommend_from_history`         | Sugestões pelos livros que o aluno devolveu (RF-ASS-03)                                                              |
+| `propose_loan` e `propose_queue` | Conferem a mesma regra do pedido e da fila e gravam uma ação **proposta** ou **bloqueada**, com o motivo (RF-ASS-04) |
+
+- **Nada é executado sem o aluno:** a ação proposta vira um cartão no app, e só `POST /me/assistant/actions/{actionId}/confirm` faz o pedido ou entra na fila, pelo próprio serviço do empréstimo ou da fila (origem `assistant`), conferindo tudo de novo. A ação vale 15 minutos (`settings/library.assistantActionMinutes`).
+- **Só o necessário vai ao Gemini (RF-ASS-07):** a pergunta, a conversa e dados do acervo (título, autores, assuntos, ano, trecho da sinopse e disponibilidade). Nunca matrícula, e-mail, nome nem o identificador do aluno. A chave vai no cabeçalho `x-goog-api-key`, nunca na URL.
+- **Se o Gemini falhar** (sem chave, fora do ar ou tempo esgotado), a resposta vem com `error: true` e um texto pedindo para tentar de novo; a pergunta fica salva.
+- Todas as respostas trazem `disclaimer`, o aviso de que a IA pode errar (RF-ASS-05), e as rotas são só do aluno: o bibliotecário recebe 403 (RF-ASS-06).
 
 ---
 
@@ -674,7 +691,7 @@ src/
     saved/               livros salvos e pastas
     notifications/       avisos, push, e-mail, preferências, aparelhos
     jobs/                rotinas do Cloud Scheduler
-    assistant/           reservada ao Assistente (ainda sem código)
+    assistant/           Assistente: conversa com o Gemini, ferramentas e ações com confirmação
   shared/                tipos, calendário e dias úteis, repositórios usados por mais de um módulo
   docs/                  documento OpenAPI (Swagger)
   test-support/          Firestore em memória e apoio dos testes

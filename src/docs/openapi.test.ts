@@ -94,6 +94,10 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'PATCH /me/notification-prefs',
         'PUT /me/devices/{deviceId}',
         'DELETE /me/devices/{deviceId}',
+        'GET /me/assistant/messages',
+        'POST /me/assistant/messages',
+        'POST /me/assistant/actions/{actionId}/confirm',
+        'POST /me/assistant/actions/{actionId}/cancel',
         'POST /jobs/{job}',
       ].sort(),
     )

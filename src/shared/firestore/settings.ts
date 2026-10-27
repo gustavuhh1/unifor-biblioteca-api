@@ -1,6 +1,7 @@
 import type { DocumentSnapshot } from 'firebase-admin/firestore'
 import { getDb } from '../../config/firebase.js'
 import {
+  DEFAULT_ASSISTANT_ACTION_MINUTES,
   DEFAULT_LOAN_RULES,
   DEFAULT_OPENING_HOURS,
   DEFAULT_LIBRARY_CONTACT,
@@ -123,4 +124,14 @@ export async function readLibraryContactSettings(source?: DocumentSnapshot) {
     },
     officialRulesUrl: link.success ? link.data : DEFAULT_OFFICIAL_RULES_URL,
   }
+}
+
+// Lê de settings/library quantos minutos a ação proposta pelo Assistente espera a
+// confirmação do aluno (RF-ASS-04). Sem o documento ou com valor inválido, 15.
+export async function readAssistantActionMinutes(): Promise<number> {
+  const snapshot = await readLibrarySettings()
+  return positiveNumberOr(
+    snapshot.get('assistantActionMinutes'),
+    DEFAULT_ASSISTANT_ACTION_MINUTES,
+  )
 }
