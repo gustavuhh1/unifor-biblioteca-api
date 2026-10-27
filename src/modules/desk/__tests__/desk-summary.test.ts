@@ -5,7 +5,7 @@ const h = vi.hoisted(() => ({ db: undefined as unknown as FakeFirestore }))
 
 vi.mock('../../../config/firebase.js', () => ({ getDb: () => h.db }))
 
-const { FakeFirestore: Fake } =
+const { FakeFirestore: Fake, FakeQuery } =
   await import('../../../test-support/fake-firestore.js')
 const { getDeskSummary } = await import('../services/desk-summary.service.js')
 const { dayRangeOf } = await import('../rules/summary.rules.js')
@@ -79,6 +79,15 @@ describe('Painel do balcão (getDeskSummary, RF-BAL-01)', () => {
     h.db.put('loans', 'ativo', makeActiveLoan())
 
     expect((await getDeskSummary()).returnsToday).toBe(3)
+  })
+
+  it('conta as devoluções ordenando por returnedAt decrescente, o índice publicado (o emulador não confere índices)', async () => {
+    const orderBy = vi.spyOn(FakeQuery.prototype, 'orderBy')
+
+    await getDeskSummary()
+
+    expect(orderBy).toHaveBeenCalledWith('returnedAt', 'desc')
+    orderBy.mockRestore()
   })
 
   it('conta os lugares na vez esperando confirmação, e não os que aguardam', async () => {

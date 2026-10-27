@@ -168,7 +168,9 @@ export async function listActiveDueBefore(before: Date): Promise<LoanRecord[]> {
 }
 
 // Quantas devoluções foram registradas de `from` (inclusive) até `to` (exclusive),
-// pelo índice status + returnedAt (Painel, RF-BAL-01).
+// pelo índice status + returnedAt decrescente (Painel, RF-BAL-01). O orderBy é
+// obrigatório: sem ele o Firestore pede o índice crescente, que não existe, e a
+// consulta falha em produção (o emulador não confere índices).
 export async function countReturnedBetween(
   from: Date,
   to: Date,
@@ -177,6 +179,7 @@ export async function countReturnedBetween(
     .where('status', '==', LOAN_STATUS.returned)
     .where('returnedAt', '>=', from)
     .where('returnedAt', '<', to)
+    .orderBy('returnedAt', 'desc')
     .count()
     .get()
   return result.data().count
