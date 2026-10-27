@@ -520,6 +520,27 @@ export const LOANS: LoanSpec[] = [
     status: LOAN_STATUS.active,
     pickedUpOn: '2026-10-09',
   },
+  // Dois livros que o Lucas já devolveu no prazo, sem multa: dão histórico de
+  // leitura para os Recomendados para você e para o Assistente (RF-ASS-03). Não
+  // mudam nenhum contador; os 17 livros lidos dele continuam o valor fixo da 6.4.
+  {
+    id: 'loan_lucas_refatoracao',
+    student: 'lucas',
+    book: 'refatoracao',
+    copy: '51734',
+    status: LOAN_STATUS.returned,
+    pickedUpOn: '2026-09-14',
+    returnedAt: ['2026-09-25', '12:00'],
+  },
+  {
+    id: 'loan_lucas_algoritmos',
+    student: 'lucas',
+    book: 'algoritmos_3a',
+    copy: '60411',
+    status: LOAN_STATUS.returned,
+    pickedUpOn: '2026-08-31',
+    returnedAt: ['2026-09-10', '12:00'],
+  },
   // Empréstimos devolvidos por trás das quatro multas em aberto (seção 6.5).
   {
     id: 'loan_pedrohenrique_fisica',

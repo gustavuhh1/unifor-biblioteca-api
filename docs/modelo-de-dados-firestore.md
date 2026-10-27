@@ -792,6 +792,7 @@ Campos sem valor na tabela (ISBN, editora) podem ser preenchidos pelo script com
 | `loans` | Lucas · Engenharia de Software | `active`, retirado 02/10, `dueAt` 16/10 21:55, `renewalCount` 0 |
 | `loans` | Lucas · Redes de Computadores | `active`, retirado 06/10, `dueAt` 20/10 21:55 |
 | `loans` | Lucas · Estruturas de Dados e Algoritmos | `active`, retirado 09/10, `dueAt` 23/10 21:55 |
+| `loans` | Lucas · Refatoração e Algoritmos (3ª ed.) | `returned` no prazo, sem multa (decidido em 27/10): dão histórico de leitura aos Recomendados para você (RF-ASS-03). Não mudam nenhum contador |
 | `loans` | Lucas · Código Limpo (pedido, RET-4821) | `awaiting_pickup`, `origin` queue, `pickupDeadline` seg 19/10 21:55 |
 | `loans` | Beatriz · Padrões de Projeto (RET-4817) | `awaiting_pickup`, `pickupDeadline` 15/10 21:55 |
 | `loans` | Rafael · Cálculo, Vol. 2 (RET-4809) | `awaiting_pickup`, `pickupDeadline` 16/10 21:55 |
@@ -957,7 +958,7 @@ Com isso Marina fica com 3 de 10 (Cálculo, Vol. 1, Code Complete e Algoritmos),
 
 **Filas.** Engenharia de Software: 1ª Beatriz Nogueira (desde 05/10), 2º Diego Alves (desde 13/10), `waiting`, `order` 1000 e 2000. Código Limpo: Lucas entrou em 09/10 e Carlos Eduardo Sá em 10/10.
 
-**Contadores.** Todos calculados pelos dados, com uma exceção documentada: `booksReadByYear` do Lucas é o literal `{"2026": 17}` da 6.4 (o histórico dele não é carregado). Os demais alunos contam só as devoluções carregadas.
+**Contadores.** Todos calculados pelos dados, com uma exceção documentada: `booksReadByYear` do Lucas é o literal `{"2026": 17}` da 6.4 (o histórico completo dele não é carregado; só as duas devoluções da 6.3 acima, que não entram nessa conta). Os demais alunos contam só as devoluções carregadas.
 
 **Datas derivadas.** `requestedAt` de Beatriz em 13/10 e de Rafael em 14/10, às 12:00 (-03:00). `pickedUpAt` de Pedro Martins = vencimento menos 14 dias.
 

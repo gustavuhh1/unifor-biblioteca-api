@@ -1,6 +1,6 @@
 # Requisitos funcionais e não funcionais
 
-Gerado em 18/10/2026 a partir do documento de requisitos (rev 77) e do kanban; o texto foi ajustado em 23/10 (Open Library e BrasilAPI no lugar do Google Books; entrega de Integração em 27/10) e a seção "Situação da API" foi acrescentada em 26/10. São 85 RF e 28 RNF. "Comum" vale para as duas entregas (27/10 e 09/11); "Sistema" é comportamento automático da API. Prioridade: Alta, Média ou Baixa.
+Gerado em 18/10/2026 a partir do documento de requisitos (rev 77) e do kanban; o texto foi ajustado em 23/10 (Open Library e BrasilAPI no lugar do Google Books; entrega de Integração em 27/10) e a seção "Situação da API" foi acrescentada em 26/10 e atualizada em 27/10. São 85 RF e 28 RNF. "Comum" vale para as duas entregas (27/10 e 09/11); "Sistema" é comportamento automático da API. Prioridade: Alta, Média ou Baixa.
 
 Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EMP-01`).
 
@@ -178,7 +178,7 @@ Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EM
 - **RNF-IMP-03 — Firestore: produção e Emulator Suite** (Alta, Comum): O banco é o Firebase Firestore, com ambiente de produção no Firebase e ambiente de teste no Emulator Suite.
 - **RNF-IMP-04 — App completo na demo de 27/10** (Alta, Comum): O app completo, com todas as funcionalidades, funciona em 27/10 para a demonstração ao vivo da API.
 
-## Situação da API (26/10/2026)
+## Situação da API (27/10/2026)
 
 O texto dos requisitos acima não mudou. Esta seção só diz o que a API já atende, para acompanhar a entrega. "No ar" quer dizer implementado, com teste unitário e publicado em `https://api.uni-books.app`. Os requisitos de tela (ou da lógica que só existe no app) aparecem como "Só do app".
 
@@ -194,15 +194,20 @@ O texto dos requisitos acima não mudou. Esta seção só diz o que a API já at
 | Multas (RF-MUL-01 a 04) | No ar | A multa passa a contar pela rotina `accrue_fines` e congela na devolução |
 | Salvos (RF-SAL-01 a 03) | No ar | Salvar, pastas e livros nas pastas |
 | Perfil (RF-PER-01) | No ar | Dados em `GET /me`, mais empréstimos, filas e multas nas rotas próprias |
-| RF-PER-02, RF-PER-03 | Só do app | Regras da biblioteca e tema claro e escuro |
+| Perfil (RF-PER-02) | No ar | `GET /library/info`: horários, contatos, link oficial e os números das regras, lidos de `settings/library` |
+| RF-PER-03 | Só do app | Tema claro e escuro |
 | Balcão (RF-BAL-01 a 09) | No ar | Painel, ficha do aluno por QR, código ou matrícula, retirada, devolução, "multa paga agora", retiradas, filas e aba Multas |
 | RF-BAL-10 | Só do app | Perfil do bibliotecário (tema); o logout usa `POST /auth/logout` |
 | Gestão do acervo (RF-GAC-01 a 06) | No ar | Listar, cadastrar, editar, atualizar pelas fontes, remover e marcar indisponível |
 | Sistema (RF-SIS-01 a 05) | No ar | Feriados em cache, horários e recesso, atraso calculado, data simulada fora de produção e as rotinas do Cloud Scheduler |
 | Avisos (RF-AVI-01 a 04) | No ar | Notificações no app, push (Expo, Android) e e-mail (Resend), preferências e cobertura da falha pelo aviso do app |
-| Assistente (RF-ASS-01 a 07) | **Pendente** | O módulo `assistant` existe vazio. Entra se der tempo, conforme a decisão de 25/10 |
+| Assistente (RF-ASS-01 a 04, 06 e 07) | No ar | Conversa, busca, livros parecidos e ações com confirmação (pedido e fila), pelo Gemini. Rotas em `/me/assistant/*`. O Gemini é um serviço externo e pode responder 503 em horas de muita demanda: nesse caso a resposta vem com `error: true` e a pergunta fica salva |
+| RF-ASS-03 | No ar | `GET /me/recommendations`, até 6 livros pelo histórico de livros devolvidos, com cache de 24 horas. Aluno sem livro devolvido recebe a lista vazia |
+| RF-ASS-05 | Só do app (aviso) | A API devolve o texto do aviso de que a IA pode errar em `disclaimer` |
 
 Requisitos não funcionais que dependem de uma ação ainda não feita:
 
 - RNF-MAN-01: a tag `integration-delivery` nos dois repositórios, na entrega de 27/10.
-- RNF-IMP-02: o README da API está pronto e aguarda o merge do PR #109.
+- RNF-IMP-02: o README da API está pronto e foi mesclado (PR #109), com a seção do Assistente atualizada em 27/10.
+
+Sugestão para a entrega de Mobile (não implementada, por estar fora dos documentos): a aba Filas do bibliotecário (RF-BAL-06) não tem uma rota que liste os livros com fila, só a fila de um livro (`GET /librarian/books/{bookId}/queue`). Por decisão de 27/10, o app usa `GET /librarian/books` (até 50 por página; o acervo de demonstração cabe numa) e filtra por `queueLength > 0`. Se o acervo crescer, vale uma rota de listagem de filas ou um filtro "com fila" na lista do acervo.
