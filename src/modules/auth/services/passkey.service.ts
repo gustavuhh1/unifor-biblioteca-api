@@ -178,7 +178,8 @@ export async function verifyRegistration(
 
 // Cria o desafio do login com passkey (POST /auth/passkey/login/options,
 // RF-AUT-05). Matrícula sem passkey, de bibliotecário ou sem conta recebe opções
-// sem credenciais e nada é guardado, então a resposta não diz qual é o caso.
+// sem credenciais e nada é guardado, então a resposta não diz se a conta existe.
+// Ela diz, sim, se a matrícula tem passkey: só nesse caso vêm as credenciais.
 export async function createLoginOptions(
   matricula: string,
 ): Promise<PublicKeyCredentialRequestOptionsJSON> {

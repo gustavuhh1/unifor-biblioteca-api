@@ -1,6 +1,6 @@
 # Unifor Biblioteca — infraestrutura, contas e chaves
 
-Atualizado em 17/10/2026 (repositórios e app único: 18/10; deploy: 24/10). **Este documento não contém nenhum valor secreto.** Ele registra só o nome de cada variável, onde ela fica guardada e como testar. As chaves de verdade ficam no Secret Manager do projeto `estoque-pay` (produção) e no arquivo `.env` local, que está no `.gitignore` e nunca vai para o Git.
+Atualizado em 17/10/2026 (repositórios e app único: 18/10; deploy: 24/10; conferência dos itens de 18 e 19/10: 27/10). **Este documento não contém nenhum valor secreto.** Ele registra só o nome de cada variável, onde ela fica guardada e como testar. As chaves de verdade ficam no Secret Manager do projeto `estoque-pay` (produção) e no arquivo `.env` local, que está no `.gitignore` e nunca vai para o Git.
 
 Legenda de status: ✅ feito · ⏳ aguardando (DNS, verificação ou teste) · ⬜ pendente.
 Responsáveis: **Gustavo** (contas, cartão, DNS, chaves) e **Claude** (pesquisa, configuração, scripts, código).
@@ -50,8 +50,8 @@ O Secret Manager dá 6 versões de segredo ativas por mês de graça, somando to
 | Teto de R$ 10/mês no Cloud Run (pausa o serviço) | ✅ conferido pelo Gustavo | Gustavo | 23/10 | Console → Faturamento → Orçamentos → "Spend cap status: Configured" |
 | APIs ativadas: Cloud Run, Artifact Registry, Cloud Build, Secret Manager, Cloud Scheduler, Firebase, Firestore, Identity Toolkit, IAM Credentials | ⏳ conferir | Gustavo | 18/10 | `gcloud services list --enabled --project=estoque-pay` |
 | Firestore `(default)` em `southamerica-east1` | ✅ | Gustavo | 17/10 | `gcloud firestore databases list --project=estoque-pay` |
-| Firebase Authentication com o provedor **E-mail/senha** ativado (login com senha e recuperação) | ⬜ | Gustavo | 18/10 | Console do Firebase → Authentication → Método de login → E-mail/senha "Ativado" |
-| App da Web registrado no Firebase (gera a configuração pública do SDK JavaScript) | ⬜ | Gustavo | 19/10 | Configurações do projeto → Seus apps mostra o app da Web |
+| Firebase Authentication com o provedor **E-mail/senha** ativado (login com senha e recuperação) | ✅ | Gustavo | 18/10 | Console do Firebase → Authentication → Método de login → E-mail/senha "Ativado". Conferido em 27/10: o login com matrícula e senha funciona em produção |
+| App da Web registrado no Firebase (gera a configuração pública do SDK JavaScript) | ✅ | Gustavo | 19/10 | Configurações do projeto → Seus apps mostra o app da Web. Conferido em 27/10: `firebase apps:list --project estoque-pay` lista "Unifor Biblioteca App" (WEB) |
 | Conta de serviço do Cloud Run com o papel **Service Account Token Creator** sobre ela mesma (para o custom token do passkey) | ✅ | Claude | 24/10 | `gcloud iam service-accounts get-iam-policy <conta>` mostra `roles/iam.serviceAccountTokenCreator` |
 | Firebase Hosting: `uni-books.app` (TXT de posse, TXT `_acme-challenge`, A `199.36.158.100`) | ✅ verificado | Gustavo | 17/10 | Status "Conectado" no Firebase; `curl -I https://uni-books.app` responde |
 | Firebase Hosting: `api.uni-books.app` | ✅ verificado | Gustavo | 17/10 | Status "Conectado" no Firebase |
@@ -69,7 +69,7 @@ Custos: Cloud Run (180 mil vCPU-s, 360 mil GiB-s e 2 milhões de requisições p
 | Domínio `email.uni-books.app` na região `sa-east-1`, com DKIM e os CNAME `send`/`rsend` na Name.com | ✅ verificado | Gustavo | 17/10 | Domínio "Verified" no painel |
 | Chave exposta na conversa revogada; chave nova só de envio, restrita ao domínio | ⏳ confirmar a revogação | Gustavo | 17/10 | A chave antiga não aparece mais em API Keys |
 | Segredo `resend-api-key` com versão (Secret Manager e `.env`) | ✅ | Gustavo | 17/10 | `gcloud secrets versions list resend-api-key --project=estoque-pay` |
-| E-mail de teste chega na **caixa de entrada** do @edu.unifor.br do Gustavo (não no spam) | ⬜ | Gustavo | 18/10 | Enviar pelo painel do Resend ou por `curl` e abrir a caixa da Unifor |
+| E-mail de teste chega na **caixa de entrada** do @edu.unifor.br do Gustavo (não no spam) | ✅ | Gustavo | 20/10 | Testado em 20/10: o e-mail chegou na caixa de entrada do @edu.unifor.br. Para repetir, enviar pelo painel do Resend ou por `curl` e abrir a caixa da Unifor |
 
 Plano grátis: 3.000 e-mails por mês, 100 por dia, 3 domínios. Não há cobrança por excedente no plano grátis.
 

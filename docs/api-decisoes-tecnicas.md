@@ -34,6 +34,8 @@ unifor-biblioteca-api/
 │   │   ├── saved/          # salvos e pastas
 │   │   ├── notifications/  # avisos, push e e-mail
 │   │   ├── assistant/      # Assistente (Gemini)
+│   │   ├── library/        # regras da biblioteca (settings/library)
+│   │   ├── recommendations/ # Recomendados para você
 │   │   └── jobs/           # rotinas do Cloud Scheduler
 │   ├── shared/             # dias úteis, feriados, datas (America/Fortaleza), erros
 │   └── docs/               # Swagger
