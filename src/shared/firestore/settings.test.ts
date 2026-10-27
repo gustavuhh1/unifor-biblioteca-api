@@ -8,8 +8,12 @@ vi.mock('../../config/firebase.js', () => ({ getDb: () => h.db }))
 
 const { FakeFirestore: Fake } =
   await import('../../test-support/fake-firestore.js')
-const { positiveNumberOr, readLoanSettings, readRequestLimits } =
-  await import('./settings.js')
+const {
+  positiveNumberOr,
+  readLibraryInfoSettings,
+  readLoanSettings,
+  readRequestLimits,
+} = await import('./settings.js')
 
 beforeEach(() => {
   h.db = new Fake()
@@ -125,6 +129,31 @@ describe('números das regras de empréstimo (readLoanSettings)', () => {
 
     expect((await readLoanSettings()).simulatedNow).toEqual(
       new Date('2026-10-15T15:00:00Z'),
+    )
+  })
+})
+
+describe('configurações das Regras da biblioteca (readLibraryInfoSettings, RF-PER-02)', () => {
+  it('traz os números das regras junto com o contato e o link oficial', async () => {
+    h.db.put('settings', 'library', {
+      loanDays: 21,
+      contact: { loanPhone: '(85) 1111-1111' },
+      officialRulesUrl: 'https://exemplo.unifor.br',
+    })
+
+    const info = await readLibraryInfoSettings()
+
+    expect(info.loanDays).toBe(21)
+    expect(info.contact.loanPhone).toBe('(85) 1111-1111')
+    expect(info.contact.loanEmail).toBe('bibemprestimo@unifor.br')
+    expect(info.officialRulesUrl).toBe('https://exemplo.unifor.br')
+  })
+
+  it('contato que não é um objeto cai no padrão', async () => {
+    h.db.put('settings', 'library', { contact: 'texto solto' })
+
+    expect((await readLibraryInfoSettings()).contact.place).toBe(
+      'Biblioteca (Praça Central)',
     )
   })
 })

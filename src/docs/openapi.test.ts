@@ -93,6 +93,7 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
         'PUT /me/devices/{deviceId}',
         'DELETE /me/devices/{deviceId}',
         'POST /jobs/{job}',
+        'GET /library/info',
       ].sort(),
     )
   })
@@ -334,6 +335,18 @@ describe('documento OpenAPI (buildOpenApiDocument)', () => {
       type: 'http',
       scheme: 'bearer',
     })
+  })
+
+  it('documenta GET /library/info para qualquer perfil logado, com 401 (RF-PER-02)', () => {
+    const operation = document.paths?.['/library/info']?.get
+
+    expect(operation?.security).toEqual([{ bearerAuth: [] }])
+    expect(Object.keys(operation?.responses ?? {})).toEqual([
+      '200',
+      '401',
+      '403',
+    ])
+    expect(document.components?.schemas?.LibraryInfoResponse).toBeDefined()
   })
 
   it('monta a resposta do health a partir do schema do Zod', () => {

@@ -1,12 +1,17 @@
 import type { DocumentSnapshot } from 'firebase-admin/firestore'
 import { z } from 'zod'
 import { getDb } from '../../config/firebase.js'
-import { DEFAULT_LOAN_RULES, DEFAULT_OPENING_HOURS } from '../library.js'
+import {
+  DEFAULT_LIBRARY_CONTACT,
+  DEFAULT_LOAN_RULES,
+  DEFAULT_OFFICIAL_RULES_URL,
+  DEFAULT_OPENING_HOURS,
+} from '../library.js'
 import {
   DEFAULT_REQUEST_LIMITS,
   type RequestLimits,
 } from '../rules/request-eligibility.js'
-import type { OpeningHours } from '../types/index.js'
+import type { LibraryContact, OpeningHours } from '../types/index.js'
 import { COLLECTIONS, SETTINGS_DOC_ID } from './collections.js'
 import { optionalDate } from './converters.js'
 
@@ -29,7 +34,8 @@ const openingPeriodSchema = z
   })
   .nullable()
 
-const openingHoursSchema = z.object({
+// Horário de funcionamento por dia da semana (settings.openingHours).
+export const openingHoursSchema = z.object({
   mon: openingPeriodSchema,
   tue: openingPeriodSchema,
   wed: openingPeriodSchema,
@@ -62,11 +68,10 @@ export interface LoanSettings extends RequestLimits {
   simulatedNow: Date | null
 }
 
-// Lê settings/library (uma leitura só) e devolve os números das regras de
-// empréstimo. Sem o documento ou com valor inválido, valem os padrões da seção
-// 2.21 (10 empréstimos, 7 filas, 14 dias, 1 renovação, 2 dias úteis...).
-export async function readLoanSettings(): Promise<LoanSettings> {
-  const snapshot = await readLibrarySettings()
+// Os números das regras de empréstimo de um settings/library já lido. Sem o
+// documento ou com valor inválido, valem os padrões da seção 2.21 (10
+// empréstimos, 7 filas, 14 dias, 1 renovação, 2 dias úteis...).
+function loanSettingsOf(snapshot: DocumentSnapshot): LoanSettings {
   const number = (field: string, fallback: number) =>
     positiveNumberOr(snapshot.get(field), fallback)
   return {
@@ -96,6 +101,57 @@ export async function readLoanSettings(): Promise<LoanSettings> {
     ),
     openingHours: openingHoursOr(snapshot.get('openingHours')),
     simulatedNow: optionalDate(snapshot.get('simulatedNow')),
+  }
+}
+
+// Lê settings/library (uma leitura só) e devolve os números das regras de
+// empréstimo.
+export async function readLoanSettings(): Promise<LoanSettings> {
+  return loanSettingsOf(await readLibrarySettings())
+}
+
+// O texto, se não estiver em branco; senão o padrão.
+function textOr(value: unknown, fallback: string): string {
+  return typeof value === 'string' && value.trim() !== '' ? value : fallback
+}
+
+// Os contatos de um settings/library já lido, campo a campo, com o padrão no
+// lugar do que faltar.
+function contactOf(snapshot: DocumentSnapshot): LibraryContact {
+  const contact: unknown = snapshot.get('contact')
+  const field = (name: keyof LibraryContact) =>
+    textOr(
+      typeof contact === 'object' && contact !== null
+        ? (contact as Record<string, unknown>)[name]
+        : undefined,
+      DEFAULT_LIBRARY_CONTACT[name],
+    )
+  return {
+    place: field('place'),
+    biblioZap: field('biblioZap'),
+    loanPhone: field('loanPhone'),
+    loanEmail: field('loanEmail'),
+  }
+}
+
+// O que a tela Regras da biblioteca mostra de settings/library (RF-PER-02): os
+// números das regras, o horário, os contatos e o link da página oficial.
+export interface LibraryInfoSettings extends LoanSettings {
+  contact: LibraryContact
+  officialRulesUrl: string
+}
+
+// Lê settings/library (uma leitura só) para a tela Regras da biblioteca. Campo
+// ausente ou inválido cai no padrão.
+export async function readLibraryInfoSettings(): Promise<LibraryInfoSettings> {
+  const snapshot = await readLibrarySettings()
+  return {
+    ...loanSettingsOf(snapshot),
+    contact: contactOf(snapshot),
+    officialRulesUrl: textOr(
+      snapshot.get('officialRulesUrl'),
+      DEFAULT_OFFICIAL_RULES_URL,
+    ),
   }
 }
 

@@ -8,6 +8,7 @@ import { catalogRouter } from './modules/catalog/catalog.routes.js'
 import { deskRouter } from './modules/desk/desk.routes.js'
 import { finesRouter } from './modules/fines/fines.routes.js'
 import { jobsRouter } from './modules/jobs/jobs.routes.js'
+import { libraryRouter } from './modules/library/library.routes.js'
 import { loansRouter } from './modules/loans/loans.routes.js'
 import { queuesRouter } from './modules/queues/queues.routes.js'
 import { notificationsRouter } from './modules/notifications/notifications.routes.js'
@@ -35,6 +36,7 @@ app.use(deskRouter)
 app.use(savedRouter)
 app.use(notificationsRouter)
 app.use(jobsRouter)
+app.use(libraryRouter)
 
 // Os routers dos módulos são montados acima desta linha, para que a
 // documentação deles seja registrada antes de o Swagger ser gerado.

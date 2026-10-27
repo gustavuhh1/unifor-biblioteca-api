@@ -1,16 +1,8 @@
-import { Router, type RequestHandler } from 'express'
-import { authenticate } from '../../middlewares/auth.js'
-import { requireRole } from '../../middlewares/require-role.js'
-import { USER_ROLE } from '../../shared/types/index.js'
+import { Router } from 'express'
+import { session, studentSession } from '../../middlewares/session.js'
 import * as controller from './auth.controller.js'
 
 // Só o caminho e os middlewares de cada rota; a lógica fica no controller.
-
-const session: RequestHandler[] = [authenticate]
-const studentSession: RequestHandler[] = [
-  authenticate,
-  requireRole(USER_ROLE.student),
-]
 
 // Router do módulo de acesso.
 export const authRouter = Router()

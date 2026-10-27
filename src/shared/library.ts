@@ -1,10 +1,24 @@
-import type { OpeningHours } from './types/index.js'
+import type { LibraryContact, OpeningHours } from './types/index.js'
 
 // Textos padrão do acervo da biblioteca. O cadastro de livros e o seed usam os
 // mesmos valores.
 
 // Local do acervo e do atendimento (books.location e settings.contact.place).
 export const LIBRARY_PLACE = 'Biblioteca (Praça Central)'
+
+// Contatos da biblioteca (settings.contact, seção 2.21), usados quando o campo não
+// existe e pelo seed.
+export const DEFAULT_LIBRARY_CONTACT: LibraryContact = {
+  place: LIBRARY_PLACE,
+  biblioZap: '(85) 3477-3257',
+  loanPhone: '(85) 3477-3162',
+  loanEmail: 'bibemprestimo@unifor.br',
+}
+
+// Página oficial da biblioteca (settings.officialRulesUrl), usada quando o campo
+// não existe e pelo seed.
+export const DEFAULT_OFFICIAL_RULES_URL =
+  'https://unifor.br/cesta-de-servicos/biblioteca'
 
 // Idioma de um livro novo (books.language).
 export const DEFAULT_BOOK_LANGUAGE = 'Português'
