@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { buildSeed, toWrites, type SeedData } from './build.js'
+import { buildSeed, FIXED_QR_TOKENS, toWrites, type SeedData } from './build.js'
 import {
   buildLibraryCalendar,
   isOpenDay,
@@ -280,6 +280,21 @@ describe('consistência dos dados', () => {
     expect(other.loans.loan_diego_refatoracao!.qrToken).not.toBe(
       data.loans.loan_diego_refatoracao!.qrToken,
     )
+  })
+
+  it('mantém fixos os tokens de RET-4821 e RET-4809, qualquer que seja o segredo', () => {
+    const other = buildSeed({
+      holidays,
+      tokenSecret: 'another-secret',
+      today: BASE_DAY,
+    })
+
+    for (const run of [data, other]) {
+      expect(run.loans.loan_ret4821!.qrToken).toBe(FIXED_QR_TOKENS.loan_ret4821)
+      expect(run.loans.loan_rafael_calculo2!.qrToken).toBe(
+        FIXED_QR_TOKENS.loan_rafael_calculo2,
+      )
+    }
   })
 })
 

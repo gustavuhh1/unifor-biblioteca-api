@@ -123,8 +123,13 @@ export interface SeedData {
 
 // Valor da multa por dia útil de atraso, em centavos (R$ 2,00).
 export const FINE_RATE_CENTS = DEFAULT_LOAN_RULES.fineCentsPerBusinessDay
-// Seção 6.4: o único qrToken que o documento informa.
-const RET_4821_QR_TOKEN = 'q9Zr0bH6v3S1kT8xY2mW4pLc'
+// qrToken fixo das retiradas da demonstração: o QR impresso continua valendo
+// mesmo que a senha do seed (usada como segredo dos demais tokens) mude.
+// RET-4821 é o da seção 6.4 do modelo de dados.
+export const FIXED_QR_TOKENS: Record<string, string> = {
+  loan_ret4821: 'q9Zr0bH6v3S1kT8xY2mW4pLc',
+  loan_rafael_calculo2: '82PIQYbhkxo-bxx42b1WNO6h',
+}
 
 // Uid fixo da conta de cada usuário do seed: uid_<chave>.
 export const uidOf = (userKey: string) => `uid_${userKey}`
@@ -254,12 +259,11 @@ export function buildSeed(options: BuildOptions): SeedData {
       queueEntryId: spec.queueEntry,
       pickupCode: spec.pickupCode ?? nextPickupCode(),
       qrToken:
-        spec.id === 'loan_ret4821'
-          ? RET_4821_QR_TOKEN
-          : createHmac('sha256', options.tokenSecret)
-              .update(`qr:${spec.id}`)
-              .digest('base64url')
-              .slice(0, 24),
+        FIXED_QR_TOKENS[spec.id] ??
+        createHmac('sha256', options.tokenSecret)
+          .update(`qr:${spec.id}`)
+          .digest('base64url')
+          .slice(0, 24),
       loanDays: 14,
       renewalCount: spec.renewedOn ? 1 : 0,
       fineId: spec.fine,
