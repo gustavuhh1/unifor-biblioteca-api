@@ -159,6 +159,10 @@ export interface AssistantAction extends Timestamps {
   resultQueueEntryIds?: string[]
 }
 
+// Mensagem e ação do Assistente lidas do Firestore, com o id.
+export type AssistantMessageRecord = AssistantMessage & { id: string }
+export type AssistantActionRecord = AssistantAction & { id: string }
+
 // recommendations/{uid}: "Recomendados para você" (cache).
 export interface Recommendation extends Timestamps {
   // Até 6 livros.
