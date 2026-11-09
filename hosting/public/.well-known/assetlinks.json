@@ -8,7 +8,8 @@
       "namespace": "android_app",
       "package_name": "app.unibooks.biblioteca",
       "sha256_cert_fingerprints": [
-        "04:3C:59:EB:DD:1D:A7:49:E1:AE:0B:A2:C5:C8:8A:91:6D:31:2E:FD:C4:79:AA:2D:C5:17:C3:38:55:09:82:54"
+        "04:3C:59:EB:DD:1D:A7:49:E1:AE:0B:A2:C5:C8:8A:91:6D:31:2E:FD:C4:79:AA:2D:C5:17:C3:38:55:09:82:54",
+        "DB:FC:44:E8:3D:B4:98:8D:CD:D8:84:03:A2:8B:C2:55:38:33:C2:FB:AA:28:35:33:D4:EC:CF:E4:D5:D2:6F:21"
       ]
     }
   }
