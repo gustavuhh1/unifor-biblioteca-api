@@ -6,6 +6,7 @@
 import { writeFile } from 'node:fs/promises'
 import { fetchSource } from '../../../src/modules/catalog/book-metadata/fetch-source.js'
 import {
+  BOOK_METADATA_USER_AGENT,
   LOOKUP_STATUS,
   OPEN_LIBRARY_BASE_URL,
 } from '../../../src/modules/catalog/catalog.constants.js'
@@ -16,6 +17,9 @@ import { CATALOG_AREAS, type CatalogArea } from './areas.js'
 import { CATALOG_JSON_URL, loadCatalog } from './load.js'
 import {
   FIRST_CATALOG_REGISTRATION,
+  isSameBook,
+  isUsableCoverSource,
+  MIN_COVER_BYTES,
   pickBrazilianIsbn,
   toCatalogBook,
   type CatalogBookSpec,
@@ -65,18 +69,50 @@ async function discoverIsbns(area: CatalogArea): Promise<string[]> {
   return [...found]
 }
 
+// A capa é uma capa de verdade. Pelos metadados da Open Library, recusa a página
+// de título escaneada e a miniatura pequena (isUsableCoverSource); pelo arquivo
+// M, recusa a imagem em branco e a folha de rosto lisa (abaixo de MIN_COVER_BYTES).
+async function isRealCover(coverUrl: string): Promise<boolean> {
+  const fetchOptions = {
+    headers: { 'user-agent': BOOK_METADATA_USER_AGENT },
+    signal: AbortSignal.timeout(30000),
+  }
+  try {
+    const id = /\/b\/id\/(\d+)-[SML]\.jpg$/.exec(coverUrl)?.[1]
+    if (id) {
+      const meta = await fetch(
+        `https://covers.openlibrary.org/b/id/${id}.json`,
+        fetchOptions,
+      )
+      if (
+        !meta.ok ||
+        !isUsableCoverSource(
+          (await meta.json()) as { width?: number; source_url?: string },
+        )
+      )
+        return false
+    }
+    const image = await fetch(coverUrl.replace(/-L\.jpg$/, '-M.jpg'), {
+      ...fetchOptions,
+      signal: AbortSignal.timeout(30000),
+    })
+    if (!image.ok) return false
+    return (await image.arrayBuffer()).byteLength >= MIN_COVER_BYTES
+  } catch {
+    return false
+  }
+}
+
 // Capa da Open Library pelo título e autor (para os livros da seção 6.2 sem ISBN).
 // Usa os campos title e author da busca (o título vai como está, com vírgulas e
-// "Vol."), prefere a edição em português e aceita outra língua se não houver.
+// "Vol."), prefere a edição em português e aceita outra língua se não houver. Só
+// aceita o resultado que for o mesmo livro (isSameBook) e tiver capa de verdade.
 async function coverByTitle(
   title: string,
   author?: string,
 ): Promise<string | null> {
-  const params = new URLSearchParams({
-    title,
-    fields: 'cover_i,language',
-    limit: '20',
-  })
+  const fields = 'title,author_name,cover_i,language'
+  const params = new URLSearchParams({ title, fields, limit: '20' })
   // "Gamma et al." e sobrenomes soltos atrapalham: vai só a última palavra útil.
   const surname = author
     ?.replace(/et al\.?/i, '')
@@ -88,7 +124,7 @@ async function coverByTitle(
   // título na fonte está escrito diferente, como "Cálculo - Volume 1").
   const loose = new URLSearchParams({
     q: `${title.replace(/[,.]/g, ' ')} ${surname ?? ''}`.trim(),
-    fields: 'cover_i,language',
+    fields,
     limit: '20',
   })
   for (const query of [params, loose]) {
@@ -99,11 +135,28 @@ async function coverByTitle(
     )
     if (outcome.kind !== 'ok') continue
     const docs = (
-      (outcome.body as { docs?: (SearchDoc & { language?: string[] })[] })
-        .docs ?? []
-    ).filter((doc) => doc.cover_i)
-    const best = docs.find((doc) => doc.language?.includes('por')) ?? docs[0]
-    if (best) return `https://covers.openlibrary.org/b/id/${best.cover_i}-L.jpg`
+      (
+        outcome.body as {
+          docs?: (SearchDoc & { language?: string[]; author_name?: string[] })[]
+        }
+      ).docs ?? []
+    ).filter(
+      (doc) =>
+        doc.cover_i &&
+        isSameBook(
+          { title, author },
+          { title: doc.title, authors: doc.author_name },
+        ),
+    )
+    // Português primeiro; depois as outras línguas, até achar uma capa real.
+    const ordered = [
+      ...docs.filter((doc) => doc.language?.includes('por')),
+      ...docs.filter((doc) => !doc.language?.includes('por')),
+    ]
+    for (const doc of ordered) {
+      const url = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
+      if (await isRealCover(url)) return url
+    }
     await sleep(SYNC_PAUSE_MS)
   }
   return null
@@ -116,8 +169,9 @@ async function findDemoCovers(): Promise<Record<string, string>> {
     let cover: string | null = null
     if (book.isbn) {
       const lookup = await lookupBookMetadata(book.isbn)
-      if (lookup.status === LOOKUP_STATUS.found)
-        cover = lookup.data.coverUrl ?? null
+      const url =
+        lookup.status === LOOKUP_STATUS.found ? lookup.data.coverUrl : undefined
+      if (url && (await isRealCover(url))) cover = url
     }
     if (!cover) {
       await sleep(SYNC_PAUSE_MS)
@@ -175,6 +229,7 @@ async function main() {
         firstRegistration: registration,
       })
       if (!book || seenWorks.has(book.workId)) continue
+      if (!(await isRealCover(book.coverUrl))) continue
       seenWorks.add(book.workId)
       books.push(book)
       registration += book.copies.length

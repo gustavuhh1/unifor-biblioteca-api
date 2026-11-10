@@ -11,6 +11,52 @@ export const MAX_COPIES_PER_TITLE = 4
 export const FIRST_CATALOG_REGISTRATION = 400001
 // Títulos mais longos que isso costumam ser registros malformados na fonte.
 export const MAX_TITLE_LENGTH = 120
+// Tamanho mínimo da capa no tamanho M da Open Library. Abaixo disso a imagem é
+// em branco ou a foto da folha de rosto (miolo branco com o título), que na tela
+// parece um retângulo vazio; o livro fica sem capa oficial.
+export const MIN_COVER_BYTES = 3000
+// Largura mínima da imagem original da capa: abaixo disso é miniatura antiga.
+export const MIN_COVER_WIDTH = 200
+
+// A capa é usável pelos metadados da Open Library (covers.openlibrary.org/b/id/
+// {id}.json): recusa a foto da página de título de um livro escaneado (a fonte é
+// ".../page/title.jpg" no archive.org, que pode ter carimbos de outra biblioteca)
+// e a miniatura pequena demais.
+export function isUsableCoverSource(meta: {
+  width?: number
+  source_url?: string
+}): boolean {
+  if (meta.source_url?.includes('/page/title')) return false
+  return (meta.width ?? 0) >= MIN_COVER_WIDTH
+}
+
+// Palavras que identificam um título: sem acento, sem pontuação e sem as curtas
+// ("de", "e", "vol"). "Cálculo, Vol. 2" vira ["calculo"].
+function significantWords(text: string): string[] {
+  return normalizeText(text)
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .split(/\s+/)
+    .filter((word) => word.length > 3)
+}
+
+// O resultado da busca é o mesmo livro: tem todas as palavras do título e o
+// sobrenome do primeiro autor (quando o livro tem autor). Evita aceitar a capa
+// de outro livro que só aparece primeiro na busca.
+export function isSameBook(
+  wanted: { title: string; author?: string },
+  found: { title?: string; authors?: readonly string[] },
+): boolean {
+  const foundTitle = ` ${significantWords(found.title ?? '').join(' ')} `
+  const titleOk = significantWords(wanted.title).every((word) =>
+    foundTitle.includes(` ${word} `),
+  )
+  const surname = significantWords(
+    wanted.author?.replace(/et al\.?/i, '') ?? '',
+  ).pop()
+  const authorOk =
+    !surname || normalizeText((found.authors ?? []).join(' ')).includes(surname)
+  return titleOk && authorOk
+}
 
 // Quantos exemplares cada título ganha, num ciclo fixo de 1 a 4 (o seed fica
 // determinístico: o mesmo JSON gera sempre o mesmo acervo).

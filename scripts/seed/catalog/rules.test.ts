@@ -3,6 +3,8 @@ import type { CatalogArea } from './areas.js'
 import {
   copyCountOf,
   cutterOf,
+  isSameBook,
+  isUsableCoverSource,
   matchesArea,
   MAX_COPIES_PER_TITLE,
   pickBrazilianIsbn,
@@ -54,6 +56,78 @@ describe('cutterOf', () => {
     const cutter = cutterOf('Assis, Machado de', 'Dom Casmurro')
     expect(cutter).toMatch(/^A\d{3}d$/)
     expect(cutterOf('Assis, Machado de', 'Dom Casmurro')).toBe(cutter)
+  })
+})
+
+describe('isUsableCoverSource', () => {
+  it('aceita a capa de uma fonte de capas com largura boa', () => {
+    expect(
+      isUsableCoverSource({
+        width: 352,
+        source_url:
+          'https://m.media-amazon.com/images/I/4153E2zZmTS._SL500_.jpg',
+      }),
+    ).toBe(true)
+  })
+
+  it('recusa a página de título escaneada e a miniatura pequena', () => {
+    expect(
+      isUsableCoverSource({
+        width: 2346,
+        source_url:
+          'https://archive.org/download/isbn_9788508063314/isbn_9788508063314/page/title.jpg',
+      }),
+    ).toBe(false)
+    expect(
+      isUsableCoverSource({
+        width: 128,
+        source_url: 'http://books.google.com/books?vid=ISBN8522103046',
+      }),
+    ).toBe(false)
+  })
+})
+
+describe('isSameBook', () => {
+  it('aceita a edição com as palavras do título e o sobrenome do autor', () => {
+    expect(
+      isSameBook(
+        {
+          title: 'Direito Civil: Parte Geral',
+          author: 'Carlos Roberto Gonçalves',
+        },
+        {
+          title: 'Direito civil brasileiro, v. 1: parte geral',
+          authors: ['Carlos Roberto Gonçalves'],
+        },
+      ),
+    ).toBe(true)
+  })
+
+  it('recusa outro livro que só aparece primeiro na busca', () => {
+    expect(
+      isSameBook(
+        { title: 'Estruturas de Dados e Algoritmos', author: 'Goodrich' },
+        {
+          title: 'Algorithm Engineering and Experimentation',
+          authors: ['Michael T. Goodrich'],
+        },
+      ),
+    ).toBe(false)
+    expect(
+      isSameBook(
+        { title: 'Física Básica, Vol. 2' },
+        { title: 'Anais do 2º Simpósio Regional', authors: [] },
+      ),
+    ).toBe(false)
+  })
+
+  it('recusa o mesmo título de outro autor', () => {
+    expect(
+      isSameBook(
+        { title: 'Algoritmos', author: 'Thomas H. Cormen' },
+        { title: 'Algoritmos', authors: ['José Augusto Manzano'] },
+      ),
+    ).toBe(false)
   })
 })
 
