@@ -9,8 +9,11 @@ import {
   NOW_TIME,
   QUEUE_ENTRIES,
   USERS,
+  type BookSpec,
   type LoanSpec,
 } from './data.js'
+import type { CatalogData } from './catalog/load.js'
+import type { CatalogBookSpec } from './catalog/rules.js'
 import { buildUserDocument } from '../../src/shared/domain/user.js'
 import {
   COLLECTIONS,
@@ -100,6 +103,14 @@ export interface BuildOptions {
   // "Hoje" ("AAAA-MM-DD", America/Fortaleza). Toda data dos dados é deslocada do
   // dia de exemplo (15/10) para este dia, mantendo as mesmas situações.
   today: string
+  // Acervo gerado por `npm run seed:catalog` (scripts/data/catalog.json): os
+  // livros entram depois dos da seção 6.2 e as capas completam os da seção 6.2.
+  catalog?: CatalogData
+}
+
+// Livro do acervo gerado (tem as fontes externas que trouxeram os dados).
+function isCatalogBook(spec: BookSpec): spec is CatalogBookSpec {
+  return 'metadataSources' in spec
 }
 
 // Todos os documentos da carga, por coleção e por id.
@@ -162,7 +173,13 @@ export function buildSeed(options: BuildOptions): SeedData {
   const now = atLocalTime(today, NOW_TIME)
   const created = atLocalTime(shift('2026-09-01'), '09:50')
   const userByKey = new Map(USERS.map((user) => [user.key, user]))
-  const bookSpecByKey = new Map(BOOKS.map((book) => [book.key, book]))
+  // Os livros da seção 6.2 vêm primeiro (a ordem define o coverTone).
+  const bookSpecs: BookSpec[] = [...BOOKS, ...(options.catalog?.books ?? [])]
+  const demoCovers = options.catalog?.demoCovers ?? {}
+  const catalogSyncedAt = options.catalog
+    ? new Date(options.catalog.generatedAt)
+    : null
+  const bookSpecByKey = new Map(bookSpecs.map((book) => [book.key, book]))
   const loanSpecById = new Map(LOANS.map((loan) => [loan.id, loan]))
   // Acham o usuário e o livro pela chave dos dados; o dado que não existe é erro.
   const userOf = (key: string) => required(userByKey.get(key), `user ${key}`)
@@ -179,8 +196,9 @@ export function buildSeed(options: BuildOptions): SeedData {
   const books: Record<string, Book> = {}
   const copies: Record<string, Copy> = {}
 
-  BOOKS.forEach((spec, index) => {
+  bookSpecs.forEach((spec, index) => {
     const id = bookIdOf(spec.key)
+    const fromCatalog = isCatalogBook(spec)
     books[id] = {
       workId: spec.workId,
       isbn: spec.isbn,
@@ -197,16 +215,29 @@ export function buildSeed(options: BuildOptions): SeedData {
       series: spec.series,
       subjects: spec.subjects,
       synopsis: spec.synopsis,
-      coverUrl: null,
+      coverUrl: fromCatalog ? spec.coverUrl : (demoCovers[spec.key] ?? null),
       coverTone: (index % 6) + 1,
       cdu: spec.cdu,
       cutter: spec.cutter,
       shelf: spec.cdu ? `Estante ${spec.cdu}` : '',
       location: LIBRARY_PLACE,
-      externalMetadata: spec.isbn
-        ? { sources: [], lastSyncedAt: null, found: true }
-        : undefined,
-      dataSource: spec.isbn ? DATA_SOURCE.mixed : DATA_SOURCE.manual,
+      externalMetadata: fromCatalog
+        ? {
+            sources: spec.metadataSources,
+            ...(spec.openLibraryKey
+              ? { openLibraryKey: spec.openLibraryKey }
+              : {}),
+            lastSyncedAt: catalogSyncedAt,
+            found: true,
+          }
+        : spec.isbn
+          ? { sources: [], lastSyncedAt: null, found: true }
+          : undefined,
+      dataSource: fromCatalog
+        ? DATA_SOURCE.external
+        : spec.isbn
+          ? DATA_SOURCE.mixed
+          : DATA_SOURCE.manual,
       copiesTotal: 0,
       copiesAvailable: 0,
       queueLength: 0,
@@ -431,7 +462,7 @@ export function buildSeed(options: BuildOptions): SeedData {
   }
 
   const works: Record<string, Work> = {}
-  for (const spec of BOOKS) {
+  for (const spec of bookSpecs) {
     const work = works[spec.workId]
     const bookId = bookIdOf(spec.key)
     if (work) {

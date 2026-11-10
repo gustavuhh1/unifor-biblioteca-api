@@ -18,6 +18,7 @@
     "format": "prettier --write .",
     "emulators": "firebase emulators:start",
     "seed": "tsx --env-file-if-exists=.env scripts/seed.ts",
+    "seed:catalog": "tsx scripts/seed/catalog/generate.ts",
     "catalog:sync": "tsx --env-file-if-exists=.env scripts/catalog-sync.ts",
     "deploy": "tsx --env-file-if-exists=.env scripts/deploy.ts",
     "deploy:firestore": "tsx --env-file-if-exists=.env scripts/deploy-firestore.ts",

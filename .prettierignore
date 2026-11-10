@@ -7,3 +7,5 @@ package-lock.json
 docs
 CLAUDE.md
 PROMPT-INICIAL.md
+# Gerado por npm run seed:catalog
+scripts/data/catalog.json

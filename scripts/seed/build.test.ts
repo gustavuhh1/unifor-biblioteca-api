@@ -380,6 +380,68 @@ describe('documentos', () => {
     expect(tones.slice(0, 8)).toEqual([1, 2, 3, 4, 5, 6, 1, 2])
   })
 
+  it('junta o acervo gerado depois dos livros da seção 6.2, com capa e exemplares', () => {
+    const withCatalog = buildSeed({
+      holidays,
+      tokenSecret: 'segredo-de-teste',
+      today: BASE_DAY,
+      catalog: {
+        generatedAt: '2026-11-10T12:00:00.000Z',
+        demoCovers: {
+          codigo_limpo: 'https://covers.openlibrary.org/b/id/9-L.jpg',
+        },
+        books: [
+          {
+            key: 'acervo_9788535914849',
+            workId: '1984--orwell',
+            title: '1984',
+            authors: ['George Orwell'],
+            isbn: '9788535914849',
+            subjects: ['Literatura'],
+            cdu: '82',
+            cutter: 'O79m',
+            copies: [{ registration: '400001' }, { registration: '400002' }],
+            coverUrl: 'https://covers.openlibrary.org/b/id/1-L.jpg',
+            metadataSources: ['open_library', 'brasil_api'],
+            openLibraryKey: '/books/OL1M',
+          },
+        ],
+      },
+    })
+
+    expect(Object.keys(withCatalog.books)).toHaveLength(
+      Object.keys(data.books).length + 1,
+    )
+    expect(withCatalog.books.book_acervo_9788535914849).toMatchObject({
+      coverUrl: 'https://covers.openlibrary.org/b/id/1-L.jpg',
+      dataSource: 'external',
+      shelf: 'Estante 82',
+      copiesTotal: 2,
+      copiesAvailable: 2,
+      externalMetadata: {
+        sources: ['open_library', 'brasil_api'],
+        openLibraryKey: '/books/OL1M',
+        lastSyncedAt: new Date('2026-11-10T12:00:00.000Z'),
+        found: true,
+      },
+    })
+    expect(withCatalog.copies.copy_400001).toMatchObject({
+      bookId: 'book_acervo_9788535914849',
+    })
+    expect(withCatalog.works['1984--orwell']).toMatchObject({
+      bookIds: ['book_acervo_9788535914849'],
+      editionCount: 1,
+    })
+    // A capa completa o livro da seção 6.2 sem mudar mais nada nele.
+    expect(withCatalog.books.book_codigo_limpo).toMatchObject({
+      coverUrl: 'https://covers.openlibrary.org/b/id/9-L.jpg',
+      copiesTotal: data.books.book_codigo_limpo!.copiesTotal,
+      dataSource: 'mixed',
+    })
+    // Sem o acervo gerado, os livros da seção 6.2 seguem sem capa.
+    expect(data.books.book_codigo_limpo!.coverUrl).toBeNull()
+  })
+
   it('não tem "hoje" simulado nas configurações: as datas são reais', () => {
     expect(data.settings).not.toHaveProperty('simulatedNow')
   })

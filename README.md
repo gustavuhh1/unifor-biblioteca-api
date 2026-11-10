@@ -357,7 +357,7 @@ O que **não existe**: não há limite de requisições por IP ou por usuário n
    curl -i http://localhost:8080/me -H "Authorization: Bearer $TOKEN"
    ```
 
-O `seed` cria 12 contas (11 alunos e 1 bibliotecário), livros, exemplares, empréstimos, filas, multas, salvos e avisos. Todas as datas partem do dia em que ele roda, e pode ser executado de novo a qualquer momento. As contas de teste nascem **sem e-mail de aviso**, porque os endereços são fictícios. Para gravar em produção é preciso `--prod` e digitar o ID do projeto (veja o apêndice).
+O `seed` cria 12 contas (11 alunos e 1 bibliotecário), cerca de 300 livros com capa oficial (o acervo de `scripts/data/catalog.json`, com no máximo 4 exemplares por título), empréstimos, filas, multas, salvos e avisos. Todas as datas partem do dia em que ele roda, e pode ser executado de novo a qualquer momento. As contas de teste nascem **sem e-mail de aviso**, porque os endereços são fictícios. Para gravar em produção é preciso `--prod` e digitar o ID do projeto (veja o apêndice).
 
 **Variáveis de ambiente** (só os nomes; os valores ficam no seu `.env` e, em produção, no Secret Manager):
 
@@ -670,12 +670,13 @@ A API roda no **Google Cloud Run** (serviço `unibooks-api`, região `southameri
 
 Outros comandos úteis:
 
-| Comando                | O que faz                                                                                                         |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `npm run seed`         | Carrega os dados de demonstração (emuladores por padrão). Com `--prod`, grava na produção e pede confirmação      |
-| `npm run catalog:sync` | Atualiza os livros com ISBN pela Open Library e pela BrasilAPI (emuladores por padrão; `--prod` pede confirmação) |
-| `npm run build`        | Compila para `dist/`                                                                                              |
-| `npm start`            | Roda o servidor compilado                                                                                         |
+| Comando                | O que faz                                                                                                                                                                                             |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run seed`         | Carrega os dados de demonstração (emuladores por padrão). Com `--prod`, grava na produção e pede confirmação                                                                                          |
+| `npm run catalog:sync` | Atualiza os livros com ISBN pela Open Library e pela BrasilAPI (emuladores por padrão; `--prod` pede confirmação)                                                                                     |
+| `npm run seed:catalog` | Refaz `scripts/data/catalog.json`, o acervo do seed, com edições em português da Open Library e da BrasilAPI. Não toca no banco; `-- --only-demo-covers` refaz só as capas dos livros da demonstração |
+| `npm run build`        | Compila para `dist/`                                                                                                                                                                                  |
+| `npm start`            | Roda o servidor compilado                                                                                                                                                                             |
 
 ### Estrutura de pastas
 

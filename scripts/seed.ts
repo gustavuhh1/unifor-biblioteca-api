@@ -23,6 +23,7 @@ import { buildSeed, toWrites, uidOf } from './seed/build.js'
 import { checkEnvironment, parseCliArgs, type CliOptions } from './seed/cli.js'
 import { AUTH_EMAIL_DOMAIN, BASE_DATE, USERS } from './seed/data.js'
 import { clearDatabase, writeAll } from './seed/firestore.js'
+import { loadCatalog } from './seed/catalog/load.js'
 import { enrichFromExternalSources } from './seed/external-metadata.js'
 import { loadHolidaysFile } from './seed/holidays.js'
 import { countDocuments, runChecks } from './seed/verify.js'
@@ -128,7 +129,13 @@ async function main(): Promise<number> {
   console.log(`  ${USERS.length} contas prontas`)
 
   console.log('5. a 7. Dados')
-  const data = buildSeed({ holidays, tokenSecret: password, today })
+  const catalog = await loadCatalog()
+  console.log(
+    catalog
+      ? `  Acervo gerado: ${catalog.books.length} títulos de scripts/data/catalog.json`
+      : '  Acervo gerado: sem scripts/data/catalog.json, só os livros da seção 6.2',
+  )
+  const data = buildSeed({ holidays, tokenSecret: password, today, catalog })
   if (options.externalMetadata) {
     const result = await enrichFromExternalSources(data.books)
     console.log(

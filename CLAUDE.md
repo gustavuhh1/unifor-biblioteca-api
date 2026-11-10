@@ -123,3 +123,4 @@ Regras:
 - `npm run emulators`: Firebase Emulator Suite (Firestore e Auth)
 - `npm run seed`: carga do banco (emulador por padrão)
 - `npm run catalog:sync`: atualiza os livros com ISBN pela Open Library e BrasilAPI (emulador por padrão; `--prod` pede confirmação)
+- `npm run seed:catalog`: refaz `scripts/data/catalog.json` (acervo do seed, com capas oficiais); não toca no banco
