@@ -1,3 +1,4 @@
+import { bookCoverOf, type BookCoverIndex } from '../../../shared/book-cover.js'
 import { isoOrNull } from '../../../shared/iso-date.js'
 import {
   ACTIVE_QUEUE_STATUSES,
@@ -36,15 +37,17 @@ function activeStatusOf(entry: Pick<QueueEntryRecord, 'id' | 'status'>) {
   return status
 }
 
-// Monta um lugar do aluno numa fila ativa (Minhas filas).
+// Monta um lugar do aluno numa fila ativa (Minhas filas), com a capa do livro.
 export function toQueueEntryResponse(
   entry: QueueEntryRecord,
   position: number,
+  covers: BookCoverIndex,
 ): QueueEntryResponse {
   return {
     id: entry.id,
     bookId: entry.bookId,
     bookTitle: entry.bookTitle,
+    ...bookCoverOf(entry.bookId, covers),
     status: activeStatusOf(entry),
     position,
     peopleAhead: position - 1,
@@ -101,7 +104,14 @@ export function toPreviewEdition(
 export function toLibrarianQueue(
   book: Pick<
     BookRecord,
-    'id' | 'title' | 'edition' | 'year' | 'copiesTotal' | 'copiesAvailable'
+    | 'id'
+    | 'title'
+    | 'edition'
+    | 'year'
+    | 'copiesTotal'
+    | 'copiesAvailable'
+    | 'coverUrl'
+    | 'coverTone'
   >,
   queue: readonly QueueEntryRecord[],
 ): LibrarianQueueResponse {
@@ -109,6 +119,8 @@ export function toLibrarianQueue(
     book: {
       id: book.id,
       title: book.title,
+      coverUrl: book.coverUrl ?? null,
+      coverTone: book.coverTone,
       edition: book.edition ?? null,
       year: book.year ?? null,
       copiesTotal: book.copiesTotal,

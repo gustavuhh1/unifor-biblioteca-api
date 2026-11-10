@@ -22,6 +22,7 @@ import { areSameWork, checkJoinEdition } from '../rules/join.rules.js'
 import { buildNewEntry } from '../rules/new-entry.rules.js'
 import { nextOrderAtEnd } from '../rules/placement.rules.js'
 import { toQueueEntryResponse } from '../rules/queue-view.rules.js'
+import { bookCoverIndexOf } from '../../../shared/book-cover.js'
 
 // Entra na fila de uma ou mais edições do mesmo livro (RF-FIL-02, RF-FIL-03,
 // RF-FIL-04). Numa transação, para cada edição marcada: confere as regras da seção
@@ -110,10 +111,13 @@ export async function joinQueue(
       at,
     )
 
+    // As capas vêm dos livros já lidos na transação.
+    const covers = bookCoverIndexOf(editions)
     return entries.map((entry, index) =>
       toQueueEntryResponse(
         { id: entryIds[index]!, ...entry },
         (queues[index]?.length ?? 0) + 1,
+        covers,
       ),
     )
   })

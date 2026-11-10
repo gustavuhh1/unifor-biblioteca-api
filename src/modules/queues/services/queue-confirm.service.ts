@@ -40,6 +40,7 @@ import {
   notifyMovedUp,
   planQueueExit,
 } from './queue-exit.service.js'
+import { loadBookCoversOf } from '../../catalog/services/book-covers.service.js'
 
 // O aluno confirma a vez (RF-FIL-06, RF-FIL-04). Só o dono do lugar (outro aluno
 // recebe 404). Recusa, com o motivo no code: o lugar já saiu da fila
@@ -171,7 +172,12 @@ export async function confirmTurn(
   return {
     loan: toLoanResponse(
       { id: loanId, ...result.newLoan },
-      { at, dueSoonDays: settings.dueSoonDays, renewalDenial: null },
+      {
+        at,
+        dueSoonDays: settings.dueSoonDays,
+        renewalDenial: null,
+        covers: await loadBookCoversOf([result.newLoan.bookId]),
+      },
     ),
     cancelledEntryIds: result.cancelledEntryIds,
   }

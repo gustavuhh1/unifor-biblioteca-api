@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { bookCoverIndexOf } from '../../../shared/book-cover.js'
 import { atLocalTime } from '../../../shared/calendar/dates.js'
 import {
   belongsToView,
@@ -13,7 +14,14 @@ import {
   makeLoanRecord,
 } from './loan.fixtures.js'
 
-const ctx = { at: NOW, dueSoonDays: 2, renewalDenial: null } as const
+const ctx = {
+  at: NOW,
+  dueSoonDays: 2,
+  renewalDenial: null,
+  covers: bookCoverIndexOf([
+    { id: 'book1', coverUrl: 'https://covers.example/1.jpg', coverTone: 3 },
+  ]),
+} as const
 
 describe('estado mostrado ao aluno (displayStateOf)', () => {
   const state = (loan: Parameters<typeof displayStateOf>[0], at = NOW) =>
@@ -138,6 +146,8 @@ describe('pedido ou empréstimo da resposta (toLoanResponse)', () => {
       bookId: 'book1',
       bookTitle: 'Código Limpo',
       bookShelf: 'Estante 005.1',
+      bookCoverUrl: 'https://covers.example/1.jpg',
+      bookCoverTone: 3,
       status: 'awaiting_pickup',
       state: 'ready_for_pickup',
       pickupCode: 'RET-4821',

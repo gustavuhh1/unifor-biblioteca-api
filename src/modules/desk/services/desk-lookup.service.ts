@@ -13,6 +13,7 @@ import { loanNotFound } from '../../loans/loans.errors.js'
 import { loanNotAwaitingPickup, studentNotFound } from '../desk.errors.js'
 import type { DeskLookupBody, DeskLookupResponse } from '../desk.types.js'
 import { toLookupResponse } from '../rules/desk-view.rules.js'
+import { loadBookCovers } from '../../catalog/services/book-covers.service.js'
 
 // Acha o pedido que o QR ou o código apontou. O QR vale para o pedido de que saiu:
 // se ele não está mais aguardando a retirada, o balcão é avisado (409). O código
@@ -66,9 +67,10 @@ export async function lookupStudent(
 
   const settings = await readLoanSettings()
   const at = nowOf(settings)
-  const [calendar, loans] = await Promise.all([
+  const [calendar, loans, covers] = await Promise.all([
     readLibraryCalendar(settings.openingHours, at),
     loansRepository.listByStudent(uid),
+    loadBookCovers(),
   ])
 
   return toLookupResponse({
@@ -81,6 +83,7 @@ export async function lookupStudent(
       dueSoonDays: settings.dueSoonDays,
       fineCentsPerBusinessDay: settings.fineCentsPerBusinessDay,
       closedDates: calendar.closedDates,
+      covers,
       maxActiveLoans: settings.maxActiveLoans,
     },
   })

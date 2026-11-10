@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { isoDateSchema as isoDate } from '../../../shared/iso-date.js'
 import { BLOCKED_REASON, FINE_STATUSES } from '../../../shared/types/index.js'
+import { bookCoverShape } from '../../catalog/schemas/response.schemas.js'
 import { loanSchema } from '../../loans/schemas/response.schemas.js'
 
 // Schemas de saída do módulo do balcão. Também alimentam o Swagger. Data vai em
@@ -16,6 +17,8 @@ export const deskLoanSchema = loanSchema
     bookId: true,
     bookTitle: true,
     bookShelf: true,
+    bookCoverUrl: true,
+    bookCoverTone: true,
     status: true,
     state: true,
     pickupCode: true,
@@ -138,6 +141,7 @@ export const pickupItemSchema = z
     studentName: z.string(),
     bookTitle: z.string(),
     bookShelf: z.string(),
+    ...bookCoverShape,
     pickupDeadline: isoDate.meta({
       description: 'Último instante para retirar, no fechamento da biblioteca.',
     }),

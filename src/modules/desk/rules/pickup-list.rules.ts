@@ -1,11 +1,15 @@
+import { bookCoverOf, type BookCoverIndex } from '../../../shared/book-cover.js'
 import type { LoanRecord } from '../../../shared/types/index.js'
 import type { PickupItem } from '../desk.types.js'
 
 // A lista Retiradas do balcão (RF-BAL-05). Funções puras.
 
 // Um pedido aguardando retirada na lista. O segredo do QR não sai daqui: o
-// bibliotecário só precisa do código curto, do aluno e do livro.
-export function toPickupItem(loan: LoanRecord): PickupItem {
+// bibliotecário só precisa do código curto, do aluno e do livro (com a capa).
+export function toPickupItem(
+  loan: LoanRecord,
+  covers: BookCoverIndex,
+): PickupItem {
   return {
     loanId: loan.id,
     pickupCode: loan.pickupCode,
@@ -13,6 +17,7 @@ export function toPickupItem(loan: LoanRecord): PickupItem {
     studentName: loan.studentName,
     bookTitle: loan.bookTitle,
     bookShelf: loan.bookShelf,
+    ...bookCoverOf(loan.bookId, covers),
     pickupDeadline: loan.pickupDeadline.toISOString(),
   }
 }

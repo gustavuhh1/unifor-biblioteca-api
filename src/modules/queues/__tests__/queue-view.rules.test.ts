@@ -9,6 +9,7 @@ import {
   toPreviewEdition,
   toQueueEntryResponse,
 } from '../rules/queue-view.rules.js'
+import { bookCoverIndexOf } from '../../../shared/book-cover.js'
 import { NOW, makeEntryRecord, makeQueue } from './queue.fixtures.js'
 
 const book = {
@@ -18,7 +19,11 @@ const book = {
   year: 2019,
   copiesTotal: 2,
   copiesAvailable: 0,
+  coverUrl: 'https://covers.example/1.jpg',
+  coverTone: 4,
 }
+
+const covers = bookCoverIndexOf([book])
 
 describe('posição na fila (positionOf, RF-FIL-08)', () => {
   it('conta a partir de 1, pela ordem real da fila', () => {
@@ -36,11 +41,13 @@ describe('posição na fila (positionOf, RF-FIL-08)', () => {
 describe('lugar do aluno na resposta (toQueueEntryResponse)', () => {
   it('mostra a posição e as pessoas na frente', () => {
     expect(
-      toQueueEntryResponse(makeEntryRecord('qe2', { order: 2000 }), 2),
+      toQueueEntryResponse(makeEntryRecord('qe2', { order: 2000 }), 2, covers),
     ).toEqual({
       id: 'qe2',
       bookId: 'book1',
       bookTitle: 'Código Limpo',
+      bookCoverUrl: 'https://covers.example/1.jpg',
+      bookCoverTone: 4,
       status: 'waiting',
       position: 2,
       peopleAhead: 1,
@@ -61,6 +68,7 @@ describe('lugar do aluno na resposta (toQueueEntryResponse)', () => {
           editionGroupId: 'grupo1',
         }),
         1,
+        covers,
       ),
     ).toMatchObject({
       status: 'your_turn',
@@ -73,7 +81,11 @@ describe('lugar do aluno na resposta (toQueueEntryResponse)', () => {
 
   it('lugar que já saiu da fila não é mostrado como fila ativa', () => {
     expect(() =>
-      toQueueEntryResponse(makeEntryRecord('qe1', { status: 'left' }), 1),
+      toQueueEntryResponse(
+        makeEntryRecord('qe1', { status: 'left' }),
+        1,
+        covers,
+      ),
     ).toThrow(/não está na fila ativa/)
   })
 })
@@ -171,6 +183,8 @@ describe('fila do livro para o bibliotecário (toLibrarianQueue, RF-BAL-06)', ()
     expect(response.book).toEqual({
       id: 'book1',
       title: 'Arquitetura Limpa',
+      coverUrl: 'https://covers.example/1.jpg',
+      coverTone: 4,
       edition: '1. ed.',
       year: 2019,
       copiesTotal: 2,

@@ -29,6 +29,7 @@ import { loanNotReturnable } from '../desk.errors.js'
 import type { ReturnLoanBody, ReturnResponse } from '../desk.types.js'
 import { toDeskLoan } from '../rules/desk-view.rules.js'
 import { booksReadAfterReturn, returnFields } from '../rules/return.rules.js'
+import { loadBookCoversOf } from '../../catalog/services/book-covers.service.js'
 
 // Registra a devolução de um livro no balcão (RF-BAL-04, RF-BAL-08). Só vale para
 // empréstimo ativo (senão 409). Numa transação, depois de todas as leituras:
@@ -144,8 +145,13 @@ export async function registerReturn(
   })
 
   invalidateCatalogCache()
+  const covers = await loadBookCoversOf([result.loan.bookId])
   return {
-    loan: toDeskLoan(result.loan, { at, dueSoonDays: settings.dueSoonDays }),
+    loan: toDeskLoan(result.loan, {
+      at,
+      dueSoonDays: settings.dueSoonDays,
+      covers,
+    }),
     fine: result.returned.fine ?? null,
     queueNotified: result.returned.turnStartedFor !== undefined,
   }

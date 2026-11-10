@@ -2,6 +2,7 @@ import * as loansRepository from '../../../shared/repositories/loans.repository.
 import { PICKUP_LIST_LIMIT } from '../desk.constants.js'
 import type { PickupsQuery, PickupsResponse } from '../desk.types.js'
 import { filterByMatricula, toPickupItem } from '../rules/pickup-list.rules.js'
+import { loadBookCovers } from '../../catalog/services/book-covers.service.js'
 
 // Retiradas (RF-BAL-05): os pedidos aguardando retirada, do prazo mais curto ao
 // mais longo, com busca opcional pelos primeiros dígitos da matrícula. A busca é
@@ -10,8 +11,13 @@ import { filterByMatricula, toPickupItem } from '../rules/pickup-list.rules.js'
 export async function listPickups(
   query: PickupsQuery,
 ): Promise<PickupsResponse> {
-  const loans = await loansRepository.listAwaitingPickup(PICKUP_LIST_LIMIT)
+  const [loans, covers] = await Promise.all([
+    loansRepository.listAwaitingPickup(PICKUP_LIST_LIMIT),
+    loadBookCovers(),
+  ])
   return {
-    items: filterByMatricula(loans, query.matricula).map(toPickupItem),
+    items: filterByMatricula(loans, query.matricula).map((loan) =>
+      toPickupItem(loan, covers),
+    ),
   }
 }

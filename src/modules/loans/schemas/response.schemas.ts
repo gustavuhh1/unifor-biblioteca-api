@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { isoDateSchema as isoDate } from '../../../shared/iso-date.js'
 import { LOAN_STATUSES } from '../../../shared/types/index.js'
+import { bookCoverShape } from '../../catalog/schemas/response.schemas.js'
 import {
   LOAN_DISPLAY_STATES,
   LOAN_VIEWS,
@@ -19,6 +20,7 @@ export const loanSchema = z
     bookId: z.string(),
     bookTitle: z.string(),
     bookShelf: z.string(),
+    ...bookCoverShape,
     status: z.enum(LOAN_STATUSES).meta({
       description: 'O estado gravado do pedido.',
     }),

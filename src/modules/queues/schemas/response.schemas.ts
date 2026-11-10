@@ -6,6 +6,10 @@ import {
   QUEUE_ENTRY_STATUSES,
   QUEUE_ORIGINS,
 } from '../../../shared/types/index.js'
+import {
+  bookCoverShape,
+  coverToneSchema,
+} from '../../catalog/schemas/response.schemas.js'
 import { loanSchema } from '../../loans/schemas/response.schemas.js'
 
 // Schemas de saída do módulo de filas. Também alimentam o Swagger. Data vai em
@@ -22,6 +26,7 @@ export const queueEntrySchema = z
     id: z.string(),
     bookId: z.string(),
     bookTitle: z.string(),
+    ...bookCoverShape,
     status: z.enum(ACTIVE_QUEUE_STATUSES).meta({
       description:
         '`waiting` (Na fila) ou `your_turn` (É a sua vez: confirme até `confirmDeadline`).',
@@ -143,6 +148,8 @@ export const librarianQueueSchema = z
     book: z.object({
       id: z.string(),
       title: z.string(),
+      coverUrl: nullableText,
+      coverTone: coverToneSchema,
       edition: nullableText,
       year: z.number().int().nullable(),
       copiesTotal: z.number().int(),

@@ -2,6 +2,7 @@ import { nowOf } from '../../../shared/clock.js'
 import { readLoanSettings } from '../../../shared/firestore/settings.js'
 import { LOAN_STATUS, type BookRecord } from '../../../shared/types/index.js'
 import * as booksRepository from '../../catalog/repositories/books.repository.js'
+import { loadBookCovers } from '../../catalog/services/book-covers.service.js'
 import type { LoanView, MyLoansResponse } from '../loans.types.js'
 import * as loansRepository from '../../../shared/repositories/loans.repository.js'
 import { belongsToView, toLoanResponse } from '../rules/loan-view.rules.js'
@@ -32,9 +33,11 @@ export async function listMyLoans(
     ),
   ]
   const books = new Map<string, BookRecord>()
-  for (const book of await Promise.all(
-    activeBookIds.map((id) => booksRepository.findById(id)),
-  )) {
+  const [activeBooks, covers] = await Promise.all([
+    Promise.all(activeBookIds.map((id) => booksRepository.findById(id))),
+    loadBookCovers(),
+  ])
+  for (const book of activeBooks) {
     if (book) books.set(book.id, book)
   }
 
@@ -55,6 +58,7 @@ export async function listMyLoans(
         at,
         dueSoonDays: settings.dueSoonDays,
         renewalDenial,
+        covers,
       })
     }),
   }

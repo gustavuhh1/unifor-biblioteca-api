@@ -1,3 +1,4 @@
+import { bookCoverOf, type BookCoverIndex } from '../../../shared/book-cover.js'
 import { isoOrNull } from '../../../shared/iso-date.js'
 import { isOverdue } from '../../../shared/time.js'
 import { LOAN_STATUS, type LoanRecord } from '../../../shared/types/index.js'
@@ -90,9 +91,11 @@ export function toLoanResponse(
     at: Date
     dueSoonDays: number
     renewalDenial: RenewalDenialReason | null
+    // Capas dos livros ativos (o livro removido fica com a capa gerada).
+    covers: BookCoverIndex
   },
 ): LoanResponse {
-  const { at, dueSoonDays, renewalDenial } = context
+  const { at, dueSoonDays, renewalDenial, covers } = context
   const waiting = loan.status === LOAN_STATUS.awaitingPickup
   const active = loan.status === LOAN_STATUS.active
   return {
@@ -100,6 +103,7 @@ export function toLoanResponse(
     bookId: loan.bookId,
     bookTitle: loan.bookTitle,
     bookShelf: loan.bookShelf,
+    ...bookCoverOf(loan.bookId, covers),
     status: loan.status,
     state: displayStateOf(loan, at, dueSoonDays),
     requestedAt: loan.requestedAt.toISOString(),

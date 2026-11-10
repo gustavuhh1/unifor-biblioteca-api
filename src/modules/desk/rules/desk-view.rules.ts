@@ -1,3 +1,4 @@
+import { bookCoverOf, type BookCoverIndex } from '../../../shared/book-cover.js'
 import { isoOrNull } from '../../../shared/iso-date.js'
 import { displayNameOf } from '../../../shared/domain/user.js'
 import { isOverdue } from '../../../shared/time.js'
@@ -29,20 +30,23 @@ export interface DeskViewContext {
   closedDates: ReadonlySet<DateOnly>
   // Limite de livros ao mesmo tempo ("3 de 10").
   maxActiveLoans: number
+  // Capas dos livros ativos (o livro removido fica com a capa gerada).
+  covers: BookCoverIndex
 }
 
 // O pedido ou empréstimo como o balcão o mostra. O código curto só sai enquanto o
 // pedido espera a retirada.
 export function toDeskLoan(
   loan: LoanRecord,
-  context: Pick<DeskViewContext, 'at' | 'dueSoonDays'>,
+  context: Pick<DeskViewContext, 'at' | 'dueSoonDays' | 'covers'>,
 ): DeskLoan {
-  const { at, dueSoonDays } = context
+  const { at, dueSoonDays, covers } = context
   return {
     id: loan.id,
     bookId: loan.bookId,
     bookTitle: loan.bookTitle,
     bookShelf: loan.bookShelf,
+    ...bookCoverOf(loan.bookId, covers),
     status: loan.status,
     state: displayStateOf(loan, at, dueSoonDays),
     pickupCode:

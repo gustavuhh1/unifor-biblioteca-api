@@ -27,6 +27,7 @@ import {
 import type { PickupResponse } from '../desk.types.js'
 import { pickupDenialOf, pickupFields } from '../rules/pickup.rules.js'
 import { toDeskLoan } from '../rules/desk-view.rules.js'
+import { loadBookCoversOf } from '../../catalog/services/book-covers.service.js'
 
 // Registra a retirada de um pedido no balcão (RF-BAL-02): o aluno leva o exemplar e
 // o empréstimo de 14 dias começa a contar. Recusada se o pedido não está mais
@@ -97,5 +98,12 @@ export async function registerPickup(
   })
 
   invalidateCatalogCache()
-  return { loan: toDeskLoan(picked, { at, dueSoonDays: settings.dueSoonDays }) }
+  const covers = await loadBookCoversOf([picked.bookId])
+  return {
+    loan: toDeskLoan(picked, {
+      at,
+      dueSoonDays: settings.dueSoonDays,
+      covers,
+    }),
+  }
 }

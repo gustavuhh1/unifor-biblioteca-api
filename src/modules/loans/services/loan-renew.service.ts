@@ -18,6 +18,7 @@ import {
   renewalDenialOf,
   renewalUpdate,
 } from '../rules/renewal.rules.js'
+import { loadBookCoversOf } from '../../catalog/services/book-covers.service.js'
 
 // Renova um empréstimo uma única vez (RF-EMP-09, RF-EMP-10, RF-EMP-11). Só o dono do
 // empréstimo (outro aluno recebe 404) e só se estiver ativo (senão 409). É negada,
@@ -89,5 +90,6 @@ export async function renewLoan(
     at,
     dueSoonDays: settings.dueSoonDays,
     renewalDenial: renewed.renewalDenial,
+    covers: await loadBookCoversOf([renewed.updated.bookId]),
   })
 }

@@ -11,6 +11,7 @@ const { listPickups } = await import('../services/pickup-list.service.js')
 const { filterByMatricula, toPickupItem } =
   await import('../rules/pickup-list.rules.js')
 const { atLocalTime } = await import('../../../shared/calendar/dates.js')
+const { bookCoverIndexOf } = await import('../../../shared/book-cover.js')
 const { makeActiveLoan, makeLoan, makeLoanRecord } =
   await import('../../loans/__tests__/loan.fixtures.js')
 
@@ -19,9 +20,12 @@ beforeEach(() => {
 })
 
 describe('um pedido na lista (toPickupItem)', () => {
-  it('traz o código, o aluno, o livro e o prazo, e nunca o qrToken', () => {
+  it('traz o código, o aluno, o livro com a capa e o prazo, e nunca o qrToken', () => {
     const item = toPickupItem(
       makeLoanRecord('loan1', { qrToken: 'segredo-do-qr-aaaaaaaaaaaa' }),
+      bookCoverIndexOf([
+        { id: 'book1', coverUrl: 'https://covers.example/1.jpg', coverTone: 2 },
+      ]),
     )
 
     expect(item).toEqual({
@@ -31,6 +35,8 @@ describe('um pedido na lista (toPickupItem)', () => {
       studentName: 'Lucas Almeida',
       bookTitle: 'Código Limpo',
       bookShelf: 'Estante 005.1',
+      bookCoverUrl: 'https://covers.example/1.jpg',
+      bookCoverTone: 2,
       pickupDeadline: atLocalTime('2026-10-19', '21:55').toISOString(),
     })
     expect(JSON.stringify(item)).not.toContain('segredo-do-qr')

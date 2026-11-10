@@ -31,6 +31,7 @@ import {
   generatePickupCode,
   generateQrToken,
 } from '../rules/pickup-code.rules.js'
+import { loadBookCoversOf } from '../../catalog/services/book-covers.service.js'
 
 // Solicita um empréstimo (RF-EMP-01 a RF-EMP-04, RF-EMP-07, RF-EMP-11). Numa
 // transação, confere as regras da seção 2.9 e grava o pedido:
@@ -131,6 +132,11 @@ export async function requestLoan(
   invalidateCatalogCache()
   return toLoanResponse(
     { id: loanId, ...loan },
-    { at, dueSoonDays: settings.dueSoonDays, renewalDenial: null },
+    {
+      at,
+      dueSoonDays: settings.dueSoonDays,
+      renewalDenial: null,
+      covers: await loadBookCoversOf([loan.bookId]),
+    },
   )
 }

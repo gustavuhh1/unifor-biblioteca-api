@@ -11,6 +11,7 @@ import type { LoanResponse } from '../loans.types.js'
 import * as loansRepository from '../../../shared/repositories/loans.repository.js'
 import { toLoanResponse } from '../rules/loan-view.rules.js'
 import { applyCopyRelease, planCopyRelease } from './copy-release.service.js'
+import { loadBookCoversOf } from '../../catalog/services/book-covers.service.js'
 
 // Cancela um pedido antes da retirada (RF-EMP-05). Só o dono do pedido (outro aluno
 // recebe 404) e só enquanto aguarda a retirada (senão 409). Numa transação: o pedido
@@ -59,5 +60,6 @@ export async function cancelLoan(
     at,
     dueSoonDays: settings.dueSoonDays,
     renewalDenial: null,
+    covers: await loadBookCoversOf([cancelled.bookId]),
   })
 }

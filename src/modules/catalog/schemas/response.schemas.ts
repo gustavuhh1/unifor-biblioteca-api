@@ -15,6 +15,16 @@ import { COVER_TONE_COUNT, METADATA_SYNC_FIELDS } from '../catalog.constants.js'
 
 const nullableText = z.string().nullable()
 
+// Tom da capa gerada, de 1 a 6 (design system, BookCover).
+export const coverToneSchema = z.number().int().min(1).max(COVER_TONE_COUNT)
+
+// A capa do livro nas respostas que mostram o livro fora do acervo (empréstimos,
+// filas e balcão): a imagem, quando houver, e o tom da capa gerada sem imagem.
+export const bookCoverShape = {
+  bookCoverUrl: nullableText,
+  bookCoverTone: coverToneSchema,
+}
+
 // --- Livro para o aluno --------------------------------------------------------
 
 // Resumo do livro no card da busca (RF-ACE-01).
@@ -24,7 +34,7 @@ export const bookSummarySchema = z
     title: z.string(),
     authors: z.array(z.string()),
     coverUrl: nullableText,
-    coverTone: z.number().int().min(1).max(COVER_TONE_COUNT),
+    coverTone: coverToneSchema,
     copiesTotal: z.number().int(),
     copiesAvailable: z.number().int(),
     queueLength: z.number().int(),
@@ -91,7 +101,7 @@ export const bookDetailSchema = z
     subjects: z.array(z.string()),
     synopsis: nullableText,
     coverUrl: nullableText,
-    coverTone: z.number().int().min(1).max(COVER_TONE_COUNT),
+    coverTone: coverToneSchema,
     cdu: z.string(),
     cutter: z.string(),
     shelf: z.string(),
@@ -141,7 +151,7 @@ export const bookRecordSchema = z
     subjects: z.array(z.string()),
     synopsis: nullableText,
     coverUrl: nullableText,
-    coverTone: z.number().int().min(1).max(COVER_TONE_COUNT),
+    coverTone: coverToneSchema,
     cdu: z.string(),
     cutter: z.string(),
     shelf: z.string(),
