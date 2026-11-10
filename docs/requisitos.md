@@ -167,7 +167,7 @@ Cada tarefa de código deve citar o código do requisito que atende (ex.: `RF-EM
 
 ### Manutenção
 
-- **RNF-MAN-01 — Dois repositórios, só a main, entregas por tag** (Alta, Comum): São dois repositórios, unifor-biblioteca-api e unifor-biblioteca-app, cada um só com a branch main. Cada tarefa vira uma branch curta com PR para a main, e cada entrega é marcada por tag: integration-delivery (27/10, nos dois) e mobile-delivery (09/11).
+- **RNF-MAN-01 — Dois repositórios, main e development, entregas por tag** (Alta, Comum): São dois repositórios, unifor-biblioteca-api e unifor-biblioteca-app, cada um com a branch main (produção) e a branch development (integração, desde 10/11/2026). Cada tarefa vira uma branch curta com PR para a development e é testada localmente; a development vai para a main antes do deploy. Cada entrega é marcada por tag: integration-delivery (27/10, nos dois) e mobile-delivery (09/11).
 - **RNF-MAN-02 — README e código do app em inglês** (Alta, Comum): README e código do app em inglês; commits e interface em português. O README da API é em português (decidido em 26/10).
 - **RNF-MAN-03 — Usar o design system UniforBib** (Média, Comum): As telas usam o design system UniforBib (cores, tipos e componentes) em vez de estilos soltos.
 

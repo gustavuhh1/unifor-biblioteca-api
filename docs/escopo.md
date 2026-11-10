@@ -138,10 +138,10 @@ Os critérios das duas cadeiras foram comparados e estas decisões valem para o 
 
 ### Repositórios e branches
 
-- **Dois repositórios** (decidido em 18/10): [`unifor-biblioteca-api`](https://github.com/gustavuhh1/unifor-biblioteca-api) e [`unifor-biblioteca-app`](https://github.com/gustavuhh1/unifor-biblioteca-app). Cada um tem só a branch `main`, que é a única origem do código.
+- **Dois repositórios** (decidido em 18/10): [`unifor-biblioteca-api`](https://github.com/gustavuhh1/unifor-biblioteca-api) e [`unifor-biblioteca-app`](https://github.com/gustavuhh1/unifor-biblioteca-app). Cada um tem duas branches fixas (decidido em 10/11/2026): `main`, a versão em produção, e `development`, a integração onde as tarefas se juntam e são testadas localmente antes de ir para a produção.
 - **Entregas por tag, não por branch:** em 27/10 a tag `integration-delivery` marca a versão entregue à cadeira de Integração, nos dois repositórios; em 09/11 a tag `mobile-delivery` marca a versão entregue à cadeira de Mobile.
 - **O que muda entre as entregas fica fora do código:** o README da API traz clone, execução, variáveis de ambiente, deploy e link (Integração); o README do app segue o modelo da cadeira de Mobile, junto com o PDF de requisitos e protótipo.
-- **Regra de trabalho:** cada tarefa vira uma branch curta com PR para a `main`.
+- **Regra de trabalho (atualizada em 10/11/2026):** cada tarefa vira uma branch curta criada da `development`, com PR para a `development`. A tarefa é testada localmente (API com `npm run dev` no Firebase Emulator Suite e o app em modo de desenvolvimento apontando para ela). Quando a `development` está aprovada, ela vai para a `main`, e só então vêm o deploy e o seed de produção.
 
 Como o app passa sempre pela API e é o mesmo nas duas entregas, cadastro, confirmação de e-mail, recuperação de senha e login valem igualmente para as duas cadeiras: passkey como login principal do aluno e senha pelo Firebase Authentication como alternativa.
 

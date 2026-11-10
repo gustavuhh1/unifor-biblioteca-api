@@ -15,7 +15,7 @@ Responsáveis: **Gustavo** (contas, cartão, DNS, chaves) e **Claude** (pesquisa
 | Domínio | `uni-books.app` (Name.com, GitHub Student Pack, vence em 16/10/2027, renovação automática desligada) |
 | API | `api.uni-books.app` → Firebase Hosting → Cloud Run |
 | Autenticação | Firebase Authentication (e-mail e senha): senha e sessão ficam no Firebase. O passkey é o login principal do aluno nas duas entregas (app único desde 18/10); a API o confere e troca por um custom token do Firebase. |
-| Código | Dois repositórios, só com a branch `main`: [unifor-biblioteca-api](https://github.com/gustavuhh1/unifor-biblioteca-api) e [unifor-biblioteca-app](https://github.com/gustavuhh1/unifor-biblioteca-app). Entregas por tag (`integration-delivery`, `mobile-delivery`). |
+| Código | Dois repositórios, com as branches `main` (produção) e `development` (integração e teste local, desde 10/11): [unifor-biblioteca-api](https://github.com/gustavuhh1/unifor-biblioteca-api) e [unifor-biblioteca-app](https://github.com/gustavuhh1/unifor-biblioteca-app). Entregas por tag (`integration-delivery`, `mobile-delivery`). |
 | E-mail | Resend, enviando de `email.uni-books.app` |
 | Teste | Firebase Emulator Suite (local, sem custo, sem chaves de produção) |
 
@@ -191,3 +191,19 @@ Protótipo de passkey na **terça, 20/10**. Código a partir de quarta, 21/10. E
 5. **Qua 21/10 em diante:** código da API (Cloud Run + Hosting) e primeiro deploy, com a política de limpeza do Artifact Registry. ✅ Primeiro deploy em 24/10 (seção 6).
 
 Depois (não bloqueia o protótipo): Expo Push só no Android (credenciais do FCM). O Cloud Scheduler está na seção 7. No iPhone não há push nem passkey (dependem da conta paga da Apple); como o app vai rodar lá será decidido depois que o Android funcionar.
+
+## Desenvolvimento local (decidido em 10/11/2026)
+
+Para ver uma mudança sem deploy e sem build de APK, tudo roda no PC, na branch da tarefa (criada da `development`). Os dados ficam no Firebase Emulator Suite: nada toca a produção.
+
+| Terminal | Repositório | Comando | O que faz |
+|---|---|---|---|
+| 1 | API | `npm run emulators` | Firebase Emulator Suite: Auth (9099), Firestore (8085) e o painel em http://127.0.0.1:4000. Precisa do Java (JDK 17 ou mais novo) |
+| 2 | API | `npm run seed` | Carrega os dados de demonstração no emulador (311 livros; as contas usam `SEED_TEST_PASSWORD`). Rodar de novo apaga e recarrega |
+| 2 | API | `npm run dev` | API em http://localhost:8080, recarrega ao salvar |
+| 3 | App | `npx expo run:android` | Só na primeira vez, ou quando entra biblioteca nativa: build de desenvolvimento no emulador Android (cerca de 15 min) |
+| 3 | App | `npm start` | Metro: com o app de desenvolvimento instalado, a mudança no código aparece na hora |
+
+O app em desenvolvimento lê o `.env.development.local` (fora do Git), que vale por cima do `.env`: `EXPO_PUBLIC_API_URL=http://10.0.2.2:8080`, `EXPO_PUBLIC_USE_EMULATORS=true` e `EXPO_PUBLIC_AUTH_EMULATOR_URL=http://10.0.2.2:9099` (no emulador Android, o computador é `10.0.2.2`). O build de release continua lendo só o `.env`, que aponta para a produção.
+
+Caminho até a produção: testes (`npm test`, `npm run lint`, `npm run typecheck`) → teste no app local → PR da tarefa para a `development` → `development` para a `main` → `npm run deploy` (API) → `npm run seed -- --prod --reset` quando os dados de demonstração mudarem → APK de release do app.

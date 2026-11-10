@@ -53,7 +53,7 @@ Se dois documentos se contradizem, ou se uma tarefa exige algo que não está ne
 - **Mensagens de erro para o usuário** em português (o app mostra), com um `code` em inglês estável. Sem sessão → 401; perfil errado → 403.
 - **Commits em português**, curtos e no imperativo (ex.: `cria script de carga do banco`).
 - **Não mencione o Claude nem o Claude Code** em commits e PRs: nada de `Co-Authored-By`, "Generated with Claude Code" ou frase parecida. Commits e PRs saem só com o conteúdo da mudança.
-- Uma **branch curta por tarefa** (`feat/...`, `fix/...`, `chore/...`) com PR para a `main`. Nunca commitar direto na `main`. **Não faça push nem abra PR sem o Gustavo pedir.**
+- Uma **branch curta por tarefa** (`feat/...`, `fix/...`, `chore/...`) criada da `development`, com PR para a `development`. Nunca commitar direto na `main` nem na `development`. A `development` vai para a `main` só depois de testada localmente e aprovada pelo Gustavo; o deploy sai da `main`. **Não faça push nem abra PR sem o Gustavo pedir.**
 - Cite o código do requisito atendido no PR (ex.: `RF-EMP-01`).
 - Dinheiro em **centavos** (inteiro). Datas gravadas em UTC; contas e textos em `America/Fortaleza`.
 - Sessão: o app manda o **ID token do Firebase** no cabeçalho `Authorization: Bearer`; a API confere com o Admin SDK (incluindo revogação) e lê o `role` (`student` | `librarian`) em `users/{uid}`. Não há JWT próprio.
